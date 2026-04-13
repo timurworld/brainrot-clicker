@@ -828,7 +828,14 @@ export default function App() {
         setPlayer(p);
         setLoginUsername(p.username);
         loadGameCloud(p.id).then(res => {
-          if (res.save) setGame({ ...defaultState(), ...res.save, username: p.username });
+          if (res.save) {
+            // Use whichever has higher lifetime points — cloud or local
+            const localGame = loadGame();
+            const cloudPoints = res.save.lifetimePoints || 0;
+            const localPoints = localGame.lifetimePoints || 0;
+            const bestSave = cloudPoints >= localPoints ? res.save : localGame;
+            setGame({ ...defaultState(), ...bestSave, username: p.username });
+          }
         });
         setScreen('start');
       } catch { /* ignore bad data */ }

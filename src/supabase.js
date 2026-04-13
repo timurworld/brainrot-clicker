@@ -32,25 +32,49 @@ export async function loginPlayer(username, pin) {
 
 // Save game to cloud
 export async function saveGameCloud(playerId, gameState) {
-  const { error } = await supabase
+  // Get current cloud save to compare
+  const { data: currentSave } = await supabase
     .from('game_saves')
-    .upsert({
-      player_id: playerId,
-      save_data: gameState,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'player_id' });
+    .select('save_data')
+    .eq('player_id', playerId)
+    .single();
 
-  // Update leaderboard
-  await supabase
+  // Only save if new score is higher (or no save exists yet)
+  const cloudPoints = currentSave?.save_data?.lifetimePoints || 0;
+  const localPoints = gameState.lifetimePoints || 0;
+
+  if (localPoints >= cloudPoints) {
+    await supabase
+      .from('game_saves')
+      .upsert({
+        player_id: playerId,
+        save_data: gameState,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'player_id' });
+  }
+
+  // Leaderboard: only update if score is higher
+  const { data: currentBoard } = await supabase
     .from('leaderboard')
-    .upsert({
-      player_id: playerId,
-      username: gameState.username || 'Player',
-      lifetime_points: Math.floor(gameState.lifetimePoints || 0),
-      prestige_count: gameState.prestigeCount || 0,
-      equipped_skin: gameState.equippedSkin || 0,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'player_id' });
+    .select('lifetime_points')
+    .eq('player_id', playerId)
+    .single();
+
+  const boardPoints = currentBoard?.lifetime_points || 0;
+  const newPoints = Math.floor(localPoints);
+
+  if (newPoints > boardPoints) {
+    await supabase
+      .from('leaderboard')
+      .upsert({
+        player_id: playerId,
+        username: gameState.username || 'Player',
+        lifetime_points: newPoints,
+        prestige_count: gameState.prestigeCount || 0,
+        equipped_skin: gameState.equippedSkin || 0,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'player_id' });
+  }
 
   return { error };
 }
