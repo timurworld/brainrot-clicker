@@ -1139,9 +1139,30 @@ function AdminCountdown({ schedule }) {
   return (
     <div style={{
       position: 'absolute', top: '0', left: 0, right: 0, zIndex: 24,
-      padding: '6px 16px', background: 'rgba(162,89,255,0.85)', color: '#fff',
-      fontFamily: "'Bangers', cursive", fontSize: '14px', textAlign: 'center',
-    }}>⚡ ADMIN ABUSE IN {text} — {schedule.event_name}</div>
+      padding: '12px 20px',
+      background: 'linear-gradient(135deg, rgba(162,89,255,0.95), rgba(106,13,173,0.95))',
+      borderBottom: '2px solid rgba(255,255,255,0.18)',
+      boxShadow: '0 4px 20px rgba(162,89,255,0.4)',
+      color: '#fff', fontFamily: "'Bangers', cursive",
+      fontSize: 'clamp(16px, 4vw, 22px)',
+      letterSpacing: '1px', textAlign: 'center', lineHeight: 1.2,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      gap: '10px', flexWrap: 'wrap',
+    }}>
+      <span style={{ fontSize: '1.2em' }}>⚡</span>
+      <span style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '0.55em', color: 'rgba(255,255,255,0.75)', letterSpacing: '2px' }}>
+        ADMIN ABUSE IN
+      </span>
+      <span className="font-mono" style={{ fontWeight: 700, fontSize: '1.1em', color: '#fff' }}>
+        {text}
+      </span>
+      {schedule.event_name && (
+        <>
+          <span style={{ opacity: 0.5 }}>·</span>
+          <span style={{ opacity: 0.95 }}>{schedule.event_name}</span>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -2938,8 +2959,11 @@ export default function App() {
       {weatherParticles}
       {seasonalParticles}
 
-      {/* Sound toggle */}
-      <button style={styles.soundBtn} onClick={(e) => {
+      {/* Sound toggle — push down when admin countdown banner is overhead */}
+      <button style={{
+        ...styles.soundBtn,
+        top: (adminSchedule && !adminEvent.active) ? 'clamp(80px, 11vh, 95px)' : '10px',
+      }} onClick={(e) => {
         e.stopPropagation();
         soundEngine.enabled = !soundEngine.enabled;
         setSettingsOpen(false);
@@ -2949,14 +2973,23 @@ export default function App() {
       </button>
 
       {/* Settings gear */}
-      <button style={{ ...styles.soundBtn, right: '50px' }} onClick={(e) => {
+      <button style={{
+        ...styles.soundBtn,
+        right: '50px',
+        top: (adminSchedule && !adminEvent.active) ? 'clamp(80px, 11vh, 95px)' : '10px',
+      }} onClick={(e) => {
         e.stopPropagation();
         setSettingsOpen(!settingsOpen);
         setActivePanel(null);
       }}>⚙️</button>
 
-      {/* HUD */}
-      <div style={styles.hud}>
+      {/* HUD — push down when admin countdown banner is overhead */}
+      <div style={{
+        ...styles.hud,
+        paddingTop: (adminSchedule && !adminEvent.active)
+          ? 'clamp(96px, 13vh, 110px)'
+          : '12px',
+      }}>
         <div style={styles.points}>{formatNumber(game.points)}</div>
         <div style={styles.subStats}>
           <span>⚡ {formatNumber(cps)}/s</span>
