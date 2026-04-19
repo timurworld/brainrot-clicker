@@ -2039,25 +2039,25 @@ export default function App() {
       {/* Admin: Global message banner — sits above the character circle */}
       {adminMessage && (
         <div key={adminMessage.id} style={{
-          position: 'absolute', top: '11%', left: '50%', transform: 'translateX(-50%)',
-          zIndex: 50, padding: '18px 28px', borderRadius: '18px',
+          position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 50, padding: '24px 36px', borderRadius: '22px',
           background: 'linear-gradient(135deg, rgba(20,5,40,0.96), rgba(40,10,80,0.96))',
           border: '2px solid #a259ff',
           color: '#fff', fontFamily: "'Bangers', cursive",
-          fontSize: 'clamp(20px, 4.5vw, 28px)', letterSpacing: '1px',
-          textAlign: 'center', lineHeight: 1.2,
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(162,89,255,0.5), 0 0 60px rgba(162,89,255,0.4)',
-          maxWidth: 'min(560px, 88vw)',
+          fontSize: 'clamp(26px, 6.5vw, 38px)', letterSpacing: '1.5px',
+          textAlign: 'center', lineHeight: 1.15,
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 12px 40px rgba(162,89,255,0.55), 0 0 80px rgba(162,89,255,0.45)',
+          maxWidth: 'min(620px, 90vw)',
           animation: 'broadcastIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), broadcastGlow 2s ease-in-out 0.5s infinite',
         }}>
           <div style={{
-            fontFamily: "'Press Start 2P', monospace", fontSize: '9px',
-            color: '#a259ff', letterSpacing: '3px', marginBottom: '8px',
+            fontFamily: "'Press Start 2P', monospace", fontSize: '10px',
+            color: '#a259ff', letterSpacing: '3px', marginBottom: '12px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           }}>
             <span style={{
-              display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%',
-              background: '#a259ff', boxShadow: '0 0 8px #a259ff',
+              display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%',
+              background: '#a259ff', boxShadow: '0 0 10px #a259ff',
               animation: 'pulse 1s ease-in-out infinite',
             }} />
             BROADCAST FROM TIMUR
