@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { registerPlayer, loginPlayer, saveGameCloud, loadGameCloud, getLeaderboard } from './supabase.js';
+import { subscribeToAdmin, submitVote } from './adminBridge.js';
 
 // ============================================================
 // CONSTANTS & CONFIG
@@ -712,6 +713,109 @@ function WorldBackground({ skinId }) {
 // ============================================================
 // MAIN APP
 // ============================================================
+// ============================================================
+// ADMIN EFFECT RENDERERS — triggered by admin hub
+// ============================================================
+function AdminCountdown({ schedule }) {
+  const [text, setText] = useState('');
+  useEffect(() => {
+    const i = setInterval(() => {
+      const diff = new Date(schedule.scheduled_for).getTime() - Date.now();
+      if (diff <= 0) { setText('STARTING NOW...'); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setText(`${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`);
+    }, 1000);
+    return () => clearInterval(i);
+  }, [schedule]);
+  return (
+    <div style={{
+      position: 'absolute', top: '0', left: 0, right: 0, zIndex: 24,
+      padding: '6px 16px', background: 'rgba(162,89,255,0.85)', color: '#fff',
+      fontFamily: "'Bangers', cursive", fontSize: '14px', textAlign: 'center',
+    }}>⚡ ADMIN ABUSE IN {text} — {schedule.event_name}</div>
+  );
+}
+
+function AdminEffectDisco() {
+  return (<>
+    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(45deg, #ff00ff30, #00ffff30, #ffff0030, #ff00ff30)', backgroundSize: '400% 400%', animation: 'discoWash 2s linear infinite', zIndex: 15, pointerEvents: 'none' }} />
+    <div style={{ position: 'absolute', top: '5%', left: '50%', transform: 'translateX(-50%)', fontSize: '80px', zIndex: 16, animation: 'discoSwing 2s ease-in-out infinite' }}>🪩</div>
+    <style>{`@keyframes discoWash { 0% { background-position: 0% 0%; } 100% { background-position: 400% 400%; } } @keyframes discoSwing { 0%,100% { transform: translateX(-50%) rotate(-20deg); } 50% { transform: translateX(-50%) rotate(20deg); } }`}</style>
+  </>);
+}
+function AdminEffectFireworks() {
+  return (<>
+    {[...Array(6)].map((_, i) => (
+      <div key={i} style={{ position: 'absolute', bottom: 0, left: `${15 + i*14}%`, width: 6, height: 6, borderRadius: '50%', background: ['#ff0','#f0f','#0ff','#f00','#0f0','#f90'][i], animation: `fwRocket ${1.5 + i*0.2}s ease-out infinite`, zIndex: 15 }} />
+    ))}
+    <style>{`@keyframes fwRocket { 0% { bottom: 0; opacity: 1; transform: scale(1); } 70% { bottom: 60%; opacity: 1; transform: scale(1); } 100% { bottom: 60%; opacity: 0; transform: scale(10); box-shadow: 0 0 40px currentColor; } }`}</style>
+  </>);
+}
+function AdminEffectPoop() {
+  return (<>
+    {[...Array(40)].map((_, i) => (
+      <div key={i} style={{ position: 'absolute', top: -40, left: `${(i*5.3) % 100}%`, fontSize: `${24 + (i%3)*8}px`, animation: `poopFall ${2 + (i%4)}s linear infinite`, animationDelay: `${(i*0.15) % 3}s`, zIndex: 15 }}>💩</div>
+    ))}
+    <style>{`@keyframes poopFall { 0% { top: -40px; } 100% { top: 110%; } }`}</style>
+  </>);
+}
+function AdminEffectRocket() {
+  return (<div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', fontSize: '100px', animation: 'rocketLaunch 3s ease-out forwards', zIndex: 20 }}>🚀<style>{`@keyframes rocketLaunch { 0% { bottom: 0; } 100% { bottom: 120%; } }`}</style></div>);
+}
+function AdminEffectCats() {
+  return (<>
+    {[...Array(10)].map((_, i) => (
+      <div key={i} style={{ position: 'absolute', top: `${8 + i*9}%`, left: -60, fontSize: '44px', animation: `catZoom ${2 + (i%3)*0.5}s linear infinite`, animationDelay: `${i*0.3}s`, zIndex: 15, filter: `hue-rotate(${i*36}deg)` }}>🐱</div>
+    ))}
+    <style>{`@keyframes catZoom { 0% { left: -60px; } 100% { left: 110%; } }`}</style>
+  </>);
+}
+function AdminEffectTsunami({ setGame }) {
+  useEffect(() => {
+    const i = setInterval(() => setGame(prev => ({ ...prev, points: prev.points + 50, lifetimePoints: prev.lifetimePoints + 50 })), 500);
+    return () => clearInterval(i);
+  }, [setGame]);
+  return (<>
+    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%', background: 'linear-gradient(180deg, transparent, rgba(0,212,255,0.5))', animation: 'tsuWave 2s ease-in-out infinite', zIndex: 14 }} />
+    {[...Array(20)].map((_, i) => (
+      <div key={i} style={{ position: 'absolute', bottom: `${Math.random()*60}%`, left: `${Math.random()*100}%`, fontSize: '24px', animation: `coinPop ${1+Math.random()}s ease-out infinite`, animationDelay: `${Math.random()*2}s`, zIndex: 15 }}>🪙</div>
+    ))}
+    <style>{`@keyframes tsuWave { 0%,100% { transform: translateY(10px); } 50% { transform: translateY(-10px); } } @keyframes coinPop { 0% { transform: scale(0); } 50% { transform: scale(1.3); } 100% { transform: scale(0); opacity: 0; } }`}</style>
+  </>);
+}
+function AdminEffectLightning() {
+  return (<>
+    <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,226,61,0.25)', animation: 'lightFlash 0.4s ease-in-out infinite', zIndex: 14, pointerEvents: 'none' }} />
+    {[...Array(6)].map((_, i) => (
+      <div key={i} style={{ position: 'absolute', top: `${Math.random()*60}%`, left: `${Math.random()*90}%`, fontSize: '60px', animation: `lightStrike 0.8s ease-out infinite`, animationDelay: `${i*0.15}s`, zIndex: 15 }}>⚡</div>
+    ))}
+    <style>{`@keyframes lightFlash { 0%,100% { opacity: 0; } 50% { opacity: 1; } } @keyframes lightStrike { 0%,100% { opacity: 0; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.5); } }`}</style>
+  </>);
+}
+function AdminEffectBomb() {
+  const chars = ['01_noobini_lovini','02_la_romantic_grande','03_lovini_lovini_lovini','04_teddy_and_rosie','05_noobini_partini','06_cakini_and_presintini','07_lovin_rose','08_heartini_smilekur','09_dragon_partyini'];
+  return (<>
+    {chars.map((c, i) => {
+      const angle = (i / chars.length) * 360;
+      return <img key={c} src={`/characters/${c}.png`} alt="" style={{ position: 'absolute', top: '45%', left: '50%', width: 80, height: 80, zIndex: 20, animation: `bombExplode 3s ease-out forwards`, '--ang': `${angle}deg` }} />;
+    })}
+    <style>{`@keyframes bombExplode { 0% { transform: translate(-50%, -50%) rotate(var(--ang)) translateY(0) rotate(calc(-1 * var(--ang))); opacity: 1; } 100% { transform: translate(-50%, -50%) rotate(var(--ang)) translateY(-500px) rotate(calc(-1 * var(--ang))); opacity: 0; } }`}</style>
+  </>);
+}
+function AdminEffectCrowd() {
+  const emojis = ['🎉','🥳','🎊','👏','🙌','🎤','🔥'];
+  return (<>
+    <div style={{ position: 'absolute', top: '20%', left: 0, right: 0, textAlign: 'center', zIndex: 20, fontSize: '40px', fontWeight: 900, color: '#fff', textShadow: '0 0 20px #00e87a, 0 0 40px #00e87a', animation: 'crowdPulse 0.5s ease-in-out infinite', fontFamily: "'Bungee Shade', cursive", letterSpacing: '3px' }}>THE CROWD GOES WILD</div>
+    {[...Array(25)].map((_, i) => (
+      <div key={i} style={{ position: 'absolute', top: -40, left: `${(i*4.1) % 100}%`, fontSize: '32px', animation: `poopFall ${2 + (i%4)}s linear infinite`, animationDelay: `${(i*0.12) % 3}s`, zIndex: 15 }}>{emojis[i % emojis.length]}</div>
+    ))}
+    <style>{`@keyframes crowdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }`}</style>
+  </>);
+}
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState('login'); // login, start, game, reflex
@@ -722,6 +826,12 @@ export default function App() {
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPin, setLoginPin] = useState('');
   const [cloudLeaderboard, setCloudLeaderboard] = useState([]);
+  const [adminEvent, setAdminEvent] = useState({ active: false, name: '' });
+  const [adminEffects, setAdminEffects] = useState({}); // { effectId: bool }
+  const [adminMessage, setAdminMessage] = useState(null); // { text, id }
+  const [adminSchedule, setAdminSchedule] = useState(null); // { event_name, scheduled_for }
+  const [adminVote, setAdminVote] = useState(null); // { id, question, ends_at }
+  const [votedOn, setVotedOn] = useState({}); // { voteId: true }
   const [particles, setParticles] = useState([]);
   const [popups, setPopups] = useState([]);
   const [shaking, setShaking] = useState(false);
@@ -841,6 +951,41 @@ export default function App() {
       } catch { /* ignore bad data */ }
     }
   }, []);
+
+  // Admin bridge subscription
+  useEffect(() => {
+    const unsub = subscribeToAdmin({
+      currentUsername: game.username,
+      onEventStateChange: (active, name) => setAdminEvent({ active, name: name || '' }),
+      onEffectChange: (effectId, active) => setAdminEffects(prev => ({ ...prev, [effectId]: active })),
+      onGlobalMessage: (text) => {
+        setAdminMessage({ text, id: Date.now() });
+        setTimeout(() => setAdminMessage(null), 5000);
+      },
+      onSkinGift: (skinName) => {
+        // Find and unlock matching skin
+        const idx = CHARACTERS.findIndex(c => c.name.toLowerCase() === skinName.toLowerCase());
+        if (idx >= 0) {
+          setGame(prev => prev.unlockedSkins.includes(idx) ? prev : { ...prev, unlockedSkins: [...prev.unlockedSkins, idx] });
+          const ch = CHARACTERS[idx];
+          setSkinCelebration(ch);
+          soundEngine.play('unlock');
+          setTimeout(() => setSkinCelebration(null), 3500);
+        }
+      },
+      onCoinGift: (amount) => {
+        setGame(prev => ({
+          ...prev,
+          points: prev.points + amount,
+          lifetimePoints: prev.lifetimePoints + amount,
+        }));
+        soundEngine.play('purchase');
+      },
+      onVoteStart: (v) => setAdminVote(v),
+      onScheduled: (s) => setAdminSchedule(s),
+    });
+    return unsub;
+  }, [game.username]);
 
   // Loading screen
   useEffect(() => {
@@ -1458,16 +1603,18 @@ export default function App() {
     },
     bottomNav: {
       position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
-      display: 'flex',
-      background: 'linear-gradient(180deg, rgba(15,10,40,0.95), rgba(5,0,20,0.98))',
-      borderTop: '2px solid rgba(106,13,173,0.6)',
-      backdropFilter: 'blur(10px)',
+      display: 'flex', gap: '2px',
+      padding: '6px 8px 8px',
+      background: 'linear-gradient(180deg, rgba(10,5,30,0.92), rgba(5,0,15,0.98))',
+      borderTop: '1px solid rgba(255,255,255,0.08)',
+      backdropFilter: 'blur(16px)',
     },
     navBtn: {
-      flex: 1, padding: '10px 4px', textAlign: 'center', color: '#fff',
+      flex: 1, padding: '8px 2px 6px', textAlign: 'center', color: '#fff',
       fontSize: '10px', cursor: 'pointer', border: 'none', background: 'none',
       fontFamily: "'Bangers', cursive", display: 'flex', flexDirection: 'column',
-      alignItems: 'center', gap: '3px', transition: 'all 0.15s',
+      alignItems: 'center', gap: '4px', transition: 'all 0.2s',
+      borderRadius: '12px', position: 'relative',
     },
     panel: {
       position: 'absolute', bottom: '56px', left: 0, right: 0, zIndex: 15,
@@ -1888,6 +2035,70 @@ export default function App() {
           {combo}X {combo >= 5 ? '🔥🔥🔥' : combo >= 3 ? '🔥🔥' : '🔥'}
         </div>
       )}
+
+      {/* Admin: Global message banner */}
+      {adminMessage && (
+        <div style={{
+          position: 'absolute', top: '60px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 50, padding: '10px 20px', borderRadius: '12px',
+          background: 'linear-gradient(135deg, #4a9eff, #6a0dad)', color: '#fff',
+          fontFamily: "'Bangers', cursive", fontSize: '16px',
+          boxShadow: '0 0 30px rgba(74,158,255,0.5)', maxWidth: '90vw',
+          animation: 'slideDown 0.3s ease-out',
+        }}>📢 {adminMessage.text}</div>
+      )}
+
+      {/* Admin: Scheduled event countdown */}
+      {adminSchedule && !adminEvent.active && <AdminCountdown schedule={adminSchedule} />}
+
+      {/* Admin: Live event strip */}
+      {adminEvent.active && (
+        <div style={{
+          position: 'absolute', top: '0', left: 0, right: 0, zIndex: 25,
+          padding: '6px 16px',
+          background: 'linear-gradient(90deg, rgba(255,74,74,0.9), rgba(255,100,0,0.9))',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px',
+          color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '14px',
+          animation: 'pulse 1s ease-in-out infinite',
+        }}>
+          🔴 ADMIN ABUSE LIVE {adminEvent.name ? `— ${adminEvent.name}` : ''}
+        </div>
+      )}
+
+      {/* Admin: Vote popup */}
+      {adminVote && !votedOn[adminVote.id] && (
+        <div style={{
+          position: 'absolute', bottom: '100px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 45, padding: '16px 20px', borderRadius: '16px',
+          background: 'rgba(15,5,35,0.98)', border: '2px solid #a259ff',
+          boxShadow: '0 0 40px rgba(162,89,255,0.5)', minWidth: '280px',
+        }}>
+          <div style={{ fontSize: '16px', color: '#fff', marginBottom: '12px', textAlign: 'center' }}>
+            🗳 {adminVote.question}
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => { submitVote(adminVote.id, 'yes'); setVotedOn(p => ({ ...p, [adminVote.id]: true })); }} style={{
+              flex: 1, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+              background: '#00e87a', color: '#000', fontFamily: "'Bangers', cursive", fontSize: '16px',
+            }}>YES</button>
+            <button onClick={() => { submitVote(adminVote.id, 'no'); setVotedOn(p => ({ ...p, [adminVote.id]: true })); }} style={{
+              flex: 1, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+              background: '#ff4a4a', color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '16px',
+            }}>NO</button>
+          </div>
+        </div>
+      )}
+
+      {/* Admin: Effect renderers */}
+      {adminEffects.disco && <AdminEffectDisco />}
+      {adminEffects.fireworks && <AdminEffectFireworks />}
+      {adminEffects.poop && <AdminEffectPoop />}
+      {adminEffects.rocket && <AdminEffectRocket />}
+      {adminEffects.cats && <AdminEffectCats />}
+      {adminEffects.tsunami && <AdminEffectTsunami setGame={setGame} />}
+      {adminEffects.lightning && <AdminEffectLightning />}
+      {adminEffects.bomb && <AdminEffectBomb />}
+      {adminEffects.crowd && <AdminEffectCrowd />}
 
       {/* Dark backdrop behind character */}
       <div style={{
