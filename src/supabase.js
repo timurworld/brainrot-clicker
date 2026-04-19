@@ -94,15 +94,23 @@ export async function loadGameCloud(playerId) {
 // Stored lowercased — comparison ignores case. Keep the actual rows in the DB.
 const HIDDEN_FROM_LEADERBOARD = new Set(['tmoney']);
 
+// Hide leftover dev/test accounts that match these patterns.
+function isHiddenUsername(name) {
+  const lower = (name || '').toLowerCase();
+  if (HIDDEN_FROM_LEADERBOARD.has(lower)) return true;
+  if (lower.startsWith('testplayer')) return true;
+  return false;
+}
+
 // Get leaderboard (top 20 visible)
 export async function getLeaderboard() {
   const { data, error } = await supabase
     .from('leaderboard')
     .select('*')
     .order('lifetime_points', { ascending: false })
-    .limit(25); // fetch a few extra to compensate for filtered rows
+    .limit(30); // fetch extras to compensate for filtered rows
   if (error) return [];
   return (data || [])
-    .filter(r => !HIDDEN_FROM_LEADERBOARD.has((r.username || '').toLowerCase()))
+    .filter(r => !isHiddenUsername(r.username))
     .slice(0, 20);
 }
