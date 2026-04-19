@@ -739,80 +739,463 @@ function AdminCountdown({ schedule }) {
   );
 }
 
+/* ==================================================================
+ * DJ EFFECTS — each one a full-screen production
+ * ================================================================== */
+
 function AdminEffectDisco() {
+  // Strobe color cycle, dance floor grid, multiple disco balls, beat banner
   return (<>
-    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(45deg, #ff00ff30, #00ffff30, #ffff0030, #ff00ff30)', backgroundSize: '400% 400%', animation: 'discoWash 2s linear infinite', zIndex: 15, pointerEvents: 'none' }} />
-    <div style={{ position: 'absolute', top: '5%', left: '50%', transform: 'translateX(-50%)', fontSize: '80px', zIndex: 16, animation: 'discoSwing 2s ease-in-out infinite' }}>🪩</div>
-    <style>{`@keyframes discoWash { 0% { background-position: 0% 0%; } 100% { background-position: 400% 400%; } } @keyframes discoSwing { 0%,100% { transform: translateX(-50%) rotate(-20deg); } 50% { transform: translateX(-50%) rotate(20deg); } }`}</style>
+    {/* Strobe color wash */}
+    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(45deg, #ff00ff60, #00ffff60, #ffff0060, #ff00ff60)', backgroundSize: '400% 400%', animation: 'discoWash 1.2s linear infinite', zIndex: 15, pointerEvents: 'none', mixBlendMode: 'screen' }} />
+    {/* Strobe flash */}
+    <div style={{ position: 'absolute', inset: 0, background: '#fff', animation: 'discoStrobe 0.4s steps(2) infinite', zIndex: 16, pointerEvents: 'none' }} />
+    {/* Dance floor squares */}
+    {[...Array(20)].map((_, i) => (
+      <div key={'sq'+i} style={{
+        position: 'absolute', bottom: `${(i % 5) * 15}%`, left: `${(i % 4) * 25}%`,
+        width: '25%', height: '15%', zIndex: 14,
+        background: ['#ff00ff','#00ffff','#ffff00','#00ff00','#ff0066'][i % 5],
+        opacity: 0.35, animation: `floorPulse 0.6s ease-in-out infinite`, animationDelay: `${i * 0.05}s`,
+        mixBlendMode: 'overlay',
+      }} />
+    ))}
+    {/* Multiple disco balls */}
+    <div style={{ position: 'absolute', top: '5%', left: '20%', fontSize: '70px', zIndex: 17, animation: 'discoSwing 1.4s ease-in-out infinite' }}>🪩</div>
+    <div style={{ position: 'absolute', top: '8%', left: '50%', transform: 'translateX(-50%)', fontSize: '110px', zIndex: 17, animation: 'discoSpin 1.5s linear infinite, discoBob 2s ease-in-out infinite', filter: 'drop-shadow(0 0 30px #ff00ff)' }}>🪩</div>
+    <div style={{ position: 'absolute', top: '5%', right: '20%', fontSize: '70px', zIndex: 17, animation: 'discoSwing 1.4s ease-in-out 0.3s infinite reverse' }}>🪩</div>
+    {/* Banner */}
+    <div style={{
+      position: 'absolute', top: '14%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
+      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 6vw, 36px)', color: '#fff',
+      textShadow: '0 0 18px #ff00ff, 0 0 36px #00ffff, 3px 3px 0 #000',
+      letterSpacing: '3px', whiteSpace: 'nowrap',
+      animation: 'discoBannerPulse 0.5s ease-in-out infinite',
+    }}>🎧 DJ TIMUR ON THE DECKS 🎧</div>
+    <style>{`
+      @keyframes discoWash { 0% { background-position: 0% 0%; } 100% { background-position: 400% 400%; } }
+      @keyframes discoStrobe { 0%, 100% { opacity: 0; } 50% { opacity: 0.18; } }
+      @keyframes floorPulse { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.55; } }
+      @keyframes discoSwing { 0%, 100% { transform: rotate(-25deg); } 50% { transform: rotate(25deg); } }
+      @keyframes discoSpin { from { transform: translateX(-50%) rotate(0deg); } to { transform: translateX(-50%) rotate(360deg); } }
+      @keyframes discoBob { 0%, 100% { margin-top: 0; } 50% { margin-top: 20px; } }
+      @keyframes discoBannerPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.1); } }
+    `}</style>
   </>);
 }
+
 function AdminEffectFireworks() {
+  // 12 firework bursts at random positions with radial particle explosions
+  const colors = ['#ff3060','#ffd900','#00f0ff','#ff00ff','#33ff66','#ff7a00','#ffffff','#ff5599'];
   return (<>
-    {[...Array(6)].map((_, i) => (
-      <div key={i} style={{ position: 'absolute', bottom: 0, left: `${15 + i*14}%`, width: 6, height: 6, borderRadius: '50%', background: ['#ff0','#f0f','#0ff','#f00','#0f0','#f90'][i], animation: `fwRocket ${1.5 + i*0.2}s ease-out infinite`, zIndex: 15 }} />
-    ))}
-    <style>{`@keyframes fwRocket { 0% { bottom: 0; opacity: 1; transform: scale(1); } 70% { bottom: 60%; opacity: 1; transform: scale(1); } 100% { bottom: 60%; opacity: 0; transform: scale(10); box-shadow: 0 0 40px currentColor; } }`}</style>
+    {/* Sky darken */}
+    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,30,0.35)', zIndex: 13, pointerEvents: 'none' }} />
+    {/* Firework launches */}
+    {[...Array(12)].map((_, i) => {
+      const x = 8 + (i * 8) % 84;
+      const yEnd = 15 + (i % 5) * 12;
+      const color = colors[i % colors.length];
+      const delay = (i * 0.35) % 4;
+      return (
+        <div key={'fw'+i} style={{
+          position: 'absolute', bottom: 0, left: `${x}%`,
+          width: 4, height: 4, borderRadius: '50%', background: color,
+          boxShadow: `0 0 12px ${color}`, zIndex: 16,
+          animation: `fwLaunch 1.6s ease-out ${delay}s infinite`,
+          ['--yEnd']: `${yEnd}%`,
+        }} />
+      );
+    })}
+    {/* Burst sparks — 12 fireworks × 8 sparks each */}
+    {[...Array(12)].map((_, i) => {
+      const x = 8 + (i * 8) % 84;
+      const yEnd = 15 + (i % 5) * 12;
+      const color = colors[i % colors.length];
+      const delay = (i * 0.35) % 4;
+      return [...Array(8)].map((_, j) => {
+        const ang = (j / 8) * 360;
+        return (
+          <div key={`sp${i}-${j}`} style={{
+            position: 'absolute', bottom: `${100 - yEnd}%`, left: `${x}%`,
+            width: 6, height: 6, borderRadius: '50%', background: color,
+            boxShadow: `0 0 8px ${color}`, zIndex: 17, opacity: 0,
+            animation: `fwBurst 1s ease-out ${delay + 1.2}s infinite`,
+            ['--ang']: `${ang}deg`,
+          }} />
+        );
+      });
+    })}
+    {/* Banner */}
+    <div style={{
+      position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
+      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
+      textShadow: '0 0 18px #ffd900, 0 0 36px #ff3060, 3px 3px 0 #000',
+      letterSpacing: '2px', whiteSpace: 'nowrap',
+    }}>🎆 FIREWORKS! 🎆</div>
+    <style>{`
+      @keyframes fwLaunch {
+        0% { bottom: 0; opacity: 1; }
+        70% { bottom: var(--yEnd); opacity: 1; }
+        72% { opacity: 0; }
+        100% { opacity: 0; }
+      }
+      @keyframes fwBurst {
+        0% { opacity: 1; transform: rotate(var(--ang)) translateY(0) scale(1); }
+        100% { opacity: 0; transform: rotate(var(--ang)) translateY(-140px) scale(0.4); }
+      }
+    `}</style>
   </>);
 }
+
 function AdminEffectPoop() {
+  // Heavy storm: 60 poops in 3 size tiers, brown haze, splat counter
   return (<>
-    {[...Array(40)].map((_, i) => (
-      <div key={i} style={{ position: 'absolute', top: -40, left: `${(i*5.3) % 100}%`, fontSize: `${24 + (i%3)*8}px`, animation: `poopFall ${2 + (i%4)}s linear infinite`, animationDelay: `${(i*0.15) % 3}s`, zIndex: 15 }}>💩</div>
-    ))}
-    <style>{`@keyframes poopFall { 0% { top: -40px; } 100% { top: 110%; } }`}</style>
+    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at top, rgba(80,45,15,0.45), transparent 60%)', zIndex: 13, pointerEvents: 'none' }} />
+    {[...Array(60)].map((_, i) => {
+      const tier = i % 3; // 0 small, 1 mid, 2 huge
+      const size = tier === 2 ? 56 : tier === 1 ? 36 : 22;
+      const dur = 1.4 + (i % 5) * 0.4;
+      const rot = (i % 2 === 0 ? '+' : '-') + (90 + (i % 5) * 80);
+      return (
+        <div key={i} style={{
+          position: 'absolute', top: -60, left: `${(i * 3.7) % 100}%`,
+          fontSize: `${size}px`, zIndex: 15,
+          animation: `poopFall${tier} ${dur}s linear ${(i * 0.1) % 3}s infinite`,
+          ['--rot']: `${rot}deg`,
+          filter: tier === 2 ? 'drop-shadow(0 4px 6px rgba(0,0,0,0.4))' : 'none',
+        }}>💩</div>
+      );
+    })}
+    <div style={{
+      position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
+      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
+      textShadow: '0 0 18px #8b5a2b, 0 0 36px #5a3a18, 3px 3px 0 #000',
+      letterSpacing: '2px', whiteSpace: 'nowrap',
+    }}>💩 POOP STORM 💩</div>
+    <style>{`
+      @keyframes poopFall0 { 0% { top: -60px; transform: rotate(0deg); } 100% { top: 110%; transform: rotate(var(--rot)); } }
+      @keyframes poopFall1 { 0% { top: -60px; transform: rotate(0deg) scale(1); } 100% { top: 110%; transform: rotate(var(--rot)) scale(1); } }
+      @keyframes poopFall2 { 0% { top: -60px; transform: rotate(0deg) scale(1); } 100% { top: 110%; transform: rotate(var(--rot)) scale(1.05); } }
+    `}</style>
   </>);
 }
+
 function AdminEffectRocket() {
-  return (<div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', fontSize: '100px', animation: 'rocketLaunch 3s ease-out forwards', zIndex: 20 }}>🚀<style>{`@keyframes rocketLaunch { 0% { bottom: 0; } 100% { bottom: 120%; } }`}</style></div>);
-}
-function AdminEffectCats() {
+  // Multiple rockets, smoke trails, screen shake, repeating launches
   return (<>
-    {[...Array(10)].map((_, i) => (
-      <div key={i} style={{ position: 'absolute', top: `${8 + i*9}%`, left: -60, fontSize: '44px', animation: `catZoom ${2 + (i%3)*0.5}s linear infinite`, animationDelay: `${i*0.3}s`, zIndex: 15, filter: `hue-rotate(${i*36}deg)` }}>🐱</div>
-    ))}
-    <style>{`@keyframes catZoom { 0% { left: -60px; } 100% { left: 110%; } }`}</style>
+    {/* Screen shake on root via filter */}
+    <div style={{ position: 'absolute', inset: 0, animation: 'rocketShake 0.18s linear infinite', zIndex: 19, pointerEvents: 'none' }}>
+      {/* Rockets */}
+      {[...Array(5)].map((_, i) => (
+        <div key={'r'+i} style={{
+          position: 'absolute', bottom: '-10%', left: `${15 + i * 18}%`,
+          fontSize: 'clamp(60px, 12vw, 100px)', zIndex: 20,
+          animation: `rocketUp 2.4s ease-out ${i * 0.4}s infinite`,
+          filter: 'drop-shadow(0 0 16px #ff6a00)',
+        }}>🚀</div>
+      ))}
+      {/* Smoke trails */}
+      {[...Array(15)].map((_, i) => {
+        const lane = i % 5;
+        return (
+          <div key={'s'+i} style={{
+            position: 'absolute', bottom: '-5%', left: `${17 + lane * 18}%`,
+            fontSize: 28, zIndex: 19, opacity: 0.8,
+            animation: `smokePuff 2.4s ease-out ${lane * 0.4 + (i / 5) * 0.15}s infinite`,
+          }}>💨</div>
+        );
+      })}
+    </div>
+    {/* Banner */}
+    <div style={{
+      position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
+      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
+      textShadow: '0 0 18px #ff6a00, 0 0 36px #ffd900, 3px 3px 0 #000',
+      letterSpacing: '2px', whiteSpace: 'nowrap',
+      animation: 'rocketBannerShake 0.18s linear infinite',
+    }}>🚀 LIFT OFF 🚀</div>
+    <style>{`
+      @keyframes rocketUp {
+        0% { bottom: -10%; transform: translateY(0) rotate(-3deg); }
+        100% { bottom: 110%; transform: translateY(-20px) rotate(3deg); }
+      }
+      @keyframes smokePuff {
+        0% { bottom: -5%; opacity: 1; transform: scale(0.6); }
+        100% { bottom: 110%; opacity: 0; transform: scale(2); }
+      }
+      @keyframes rocketShake {
+        0%, 100% { transform: translate(0, 0); }
+        25% { transform: translate(-2px, 1px); }
+        50% { transform: translate(2px, -1px); }
+        75% { transform: translate(-1px, 2px); }
+      }
+      @keyframes rocketBannerShake {
+        0%, 100% { transform: translateX(-50%); }
+        50% { transform: translateX(calc(-50% + 2px)) translateY(-1px); }
+      }
+    `}</style>
   </>);
 }
+
+function AdminEffectCats() {
+  // Cats in waves, varying sizes, bouncing, MEOW bubbles, hue rave
+  return (<>
+    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent, rgba(255,105,180,0.2))', animation: 'discoWash 2s linear infinite', backgroundSize: '400% 400%', zIndex: 13, pointerEvents: 'none' }} />
+    {[...Array(16)].map((_, i) => {
+      const tier = i % 3;
+      const size = tier === 2 ? 80 : tier === 1 ? 56 : 38;
+      const top = 6 + ((i * 7) % 80);
+      const dir = i % 2; // 0 left→right, 1 right→left
+      return (
+        <div key={i} style={{
+          position: 'absolute', top: `${top}%`, left: dir ? 'auto' : '-80px', right: dir ? '-80px' : 'auto',
+          fontSize: `${size}px`, zIndex: 15,
+          animation: `${dir ? 'catZoomR' : 'catZoomL'} ${2.5 + (i % 3) * 0.7}s linear ${i * 0.2}s infinite, catBounce 0.4s ease-in-out infinite`,
+          filter: `hue-rotate(${i * 30}deg)`,
+        }}>🐱</div>
+      );
+    })}
+    {/* MEOW bubbles */}
+    {[...Array(8)].map((_, i) => (
+      <div key={'m'+i} style={{
+        position: 'absolute', top: `${10 + (i * 11) % 70}%`, left: `${(i * 13) % 90}%`,
+        fontFamily: "'Bangers', cursive", fontSize: '22px', color: '#fff',
+        textShadow: '0 0 8px #ff69b4, 2px 2px 0 #000',
+        zIndex: 16, opacity: 0,
+        animation: `meowBubble 1.8s ease-out ${i * 0.4}s infinite`,
+      }}>MEOW!</div>
+    ))}
+    <div style={{
+      position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
+      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
+      textShadow: '0 0 18px #ff69b4, 0 0 36px #ff00ff, 3px 3px 0 #000',
+      letterSpacing: '2px', whiteSpace: 'nowrap',
+    }}>🐱 CAT RAVE 🐱</div>
+    <style>{`
+      @keyframes catZoomL { 0% { left: -80px; } 100% { left: calc(100% + 80px); } }
+      @keyframes catZoomR { 0% { right: -80px; } 100% { right: calc(100% + 80px); } }
+      @keyframes catBounce { 0%, 100% { margin-top: 0; } 50% { margin-top: -16px; } }
+      @keyframes meowBubble { 0% { opacity: 0; transform: scale(0.5); } 30% { opacity: 1; transform: scale(1.2); } 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.8) translateY(-30px); } }
+    `}</style>
+  </>);
+}
+
 function AdminEffectTsunami({ setGame }) {
   useEffect(() => {
-    const i = setInterval(() => setGame(prev => ({ ...prev, points: prev.points + 50, lifetimePoints: prev.lifetimePoints + 50 })), 500);
+    const i = setInterval(() => setGame(prev => ({ ...prev, points: prev.points + 100, lifetimePoints: prev.lifetimePoints + 100 })), 300);
     return () => clearInterval(i);
   }, [setGame]);
   return (<>
-    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%', background: 'linear-gradient(180deg, transparent, rgba(0,212,255,0.5))', animation: 'tsuWave 2s ease-in-out infinite', zIndex: 14 }} />
-    {[...Array(20)].map((_, i) => (
-      <div key={i} style={{ position: 'absolute', bottom: `${Math.random()*60}%`, left: `${Math.random()*100}%`, fontSize: '24px', animation: `coinPop ${1+Math.random()}s ease-out infinite`, animationDelay: `${Math.random()*2}s`, zIndex: 15 }}>🪙</div>
+    {/* Blue overlay */}
+    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,80,180,0.15), rgba(0,150,220,0.45))', zIndex: 13, pointerEvents: 'none' }} />
+    {/* Wave layers */}
+    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '70%', background: 'linear-gradient(180deg, transparent, #0066cc88, #003e7fdd)', animation: 'tsuWave1 2.5s ease-in-out infinite', zIndex: 14 }} />
+    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(180deg, transparent, #00b4ff66, #0080dd99)', animation: 'tsuWave2 2s ease-in-out infinite', zIndex: 14 }} />
+    {/* Coin wave — 50 coins */}
+    {[...Array(50)].map((_, i) => (
+      <div key={i} style={{
+        position: 'absolute', bottom: `-10%`, left: `${(i * 2.1) % 100}%`,
+        fontSize: 16 + (i % 4) * 8, zIndex: 16,
+        animation: `coinFloat ${1.2 + (i % 5) * 0.4}s ease-out ${(i * 0.06) % 2}s infinite`,
+        filter: 'drop-shadow(0 0 8px #ffd700)',
+      }}>🪙</div>
     ))}
-    <style>{`@keyframes tsuWave { 0%,100% { transform: translateY(10px); } 50% { transform: translateY(-10px); } } @keyframes coinPop { 0% { transform: scale(0); } 50% { transform: scale(1.3); } 100% { transform: scale(0); opacity: 0; } }`}</style>
+    {/* +100 floaters */}
+    {[...Array(8)].map((_, i) => (
+      <div key={'p'+i} style={{
+        position: 'absolute', bottom: '40%', left: `${10 + i * 11}%`,
+        fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(16px, 4vw, 22px)', color: '#ffd700',
+        textShadow: '0 0 10px #ff9500, 2px 2px 0 #000', zIndex: 17, opacity: 0,
+        animation: `coinScore 1.5s ease-out ${i * 0.3}s infinite`,
+      }}>+100</div>
+    ))}
+    <div style={{
+      position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
+      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
+      textShadow: '0 0 18px #00d4ff, 0 0 36px #0066cc, 3px 3px 0 #000',
+      letterSpacing: '2px', whiteSpace: 'nowrap',
+    }}>🌊 COIN TSUNAMI 🌊</div>
+    <style>{`
+      @keyframes tsuWave1 { 0%, 100% { transform: translateY(20px) skewX(-2deg); } 50% { transform: translateY(-15px) skewX(2deg); } }
+      @keyframes tsuWave2 { 0%, 100% { transform: translateY(-10px) skewX(2deg); } 50% { transform: translateY(15px) skewX(-2deg); } }
+      @keyframes coinFloat {
+        0% { bottom: -10%; opacity: 1; transform: scale(0.7) rotate(0deg); }
+        100% { bottom: 110%; opacity: 0; transform: scale(1.2) rotate(720deg); }
+      }
+      @keyframes coinScore {
+        0% { opacity: 0; transform: translateY(0) scale(0.5); }
+        20% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+        100% { opacity: 0; transform: translateY(-120px) scale(0.8); }
+      }
+    `}</style>
   </>);
 }
+
 function AdminEffectLightning() {
+  // CSS bolts, flash cycle, "THUNDER" text, dark/bright extremes
   return (<>
-    <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,226,61,0.25)', animation: 'lightFlash 0.4s ease-in-out infinite', zIndex: 14, pointerEvents: 'none' }} />
-    {[...Array(6)].map((_, i) => (
-      <div key={i} style={{ position: 'absolute', top: `${Math.random()*60}%`, left: `${Math.random()*90}%`, fontSize: '60px', animation: `lightStrike 0.8s ease-out infinite`, animationDelay: `${i*0.15}s`, zIndex: 15 }}>⚡</div>
+    {/* Dark sky */}
+    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,30,0.55)', zIndex: 13, pointerEvents: 'none' }} />
+    {/* Strobe flash */}
+    <div style={{ position: 'absolute', inset: 0, background: '#ffffd9', zIndex: 14, pointerEvents: 'none', animation: 'thunderFlash 1.5s steps(2) infinite' }} />
+    {/* CSS lightning bolts (zigzag lines) */}
+    {[...Array(7)].map((_, i) => {
+      const x = 5 + (i * 14) % 90;
+      const delay = (i * 0.22) % 1.6;
+      return (
+        <div key={'b'+i} style={{
+          position: 'absolute', top: 0, left: `${x}%`,
+          width: 6, height: '100%',
+          background: 'linear-gradient(180deg, transparent, #fff700 5%, #fff 30%, #fff700 60%, transparent)',
+          filter: 'drop-shadow(0 0 12px #fff700) drop-shadow(0 0 24px #fff)',
+          zIndex: 15, opacity: 0, transformOrigin: 'top',
+          animation: `boltStrike 1.6s ease-in ${delay}s infinite`,
+          clipPath: 'polygon(50% 0, 75% 30%, 30% 50%, 70% 65%, 25% 100%, 50% 70%, 80% 50%, 35% 35%)',
+        }} />
+      );
+    })}
+    {/* Extra lightning emojis */}
+    {[...Array(5)].map((_, i) => (
+      <div key={i} style={{
+        position: 'absolute', top: `${5 + i * 18}%`, left: `${10 + (i * 20) % 80}%`,
+        fontSize: 'clamp(50px, 10vw, 80px)', zIndex: 16,
+        animation: `lightStrike 1s ease-out ${i * 0.3}s infinite`,
+        filter: 'drop-shadow(0 0 20px #fff700)',
+      }}>⚡</div>
     ))}
-    <style>{`@keyframes lightFlash { 0%,100% { opacity: 0; } 50% { opacity: 1; } } @keyframes lightStrike { 0%,100% { opacity: 0; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.5); } }`}</style>
+    <div style={{
+      position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
+      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff700',
+      textShadow: '0 0 18px #fff700, 0 0 36px #fff, 3px 3px 0 #000',
+      letterSpacing: '2px', whiteSpace: 'nowrap',
+      animation: 'lightStrike 1s ease-out infinite',
+    }}>⚡ THUNDER STRIKES ⚡</div>
+    <style>{`
+      @keyframes thunderFlash { 0%, 100% { opacity: 0; } 50% { opacity: 0.35; } }
+      @keyframes boltStrike {
+        0%, 100% { opacity: 0; transform: scaleY(0.5); }
+        15% { opacity: 1; transform: scaleY(1); }
+        25% { opacity: 0.4; }
+        35% { opacity: 1; transform: scaleY(1); }
+        45% { opacity: 0; }
+      }
+      @keyframes lightStrike { 0%, 100% { opacity: 0; transform: scale(0.6); } 50% { opacity: 1; transform: scale(1.4); } }
+    `}</style>
   </>);
 }
+
 function AdminEffectBomb() {
+  // Big explosion ring + character shrapnel + repeating
   const chars = ['01_noobini_lovini','02_la_romantic_grande','03_lovini_lovini_lovini','04_teddy_and_rosie','05_noobini_partini','06_cakini_and_presintini','07_lovin_rose','08_heartini_smilekur','09_dragon_partyini'];
   return (<>
+    {/* Sky darken */}
+    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 13, pointerEvents: 'none', animation: 'bombFlash 2.4s ease-out infinite' }} />
+    {/* Expanding ring */}
+    <div style={{
+      position: 'absolute', top: '45%', left: '50%', zIndex: 14,
+      width: '20px', height: '20px', borderRadius: '50%',
+      background: 'radial-gradient(circle, #fff 0%, #ffd700 30%, #ff4400 60%, transparent 80%)',
+      animation: 'bombRing 2.4s ease-out infinite',
+      transform: 'translate(-50%, -50%)',
+    }} />
+    {/* Shockwave ring 2 */}
+    <div style={{
+      position: 'absolute', top: '45%', left: '50%', zIndex: 14,
+      width: '20px', height: '20px', borderRadius: '50%',
+      border: '4px solid #fff', boxShadow: '0 0 30px #ffd700',
+      animation: 'bombShock 2.4s ease-out infinite',
+      transform: 'translate(-50%, -50%)',
+    }} />
+    {/* BOOM text */}
+    <div style={{
+      position: 'absolute', top: '40%', left: '50%', zIndex: 21,
+      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(60px, 18vw, 140px)',
+      color: '#fff',
+      textShadow: '0 0 20px #ff4400, 0 0 40px #ff0000, 0 0 60px #ffd700, 6px 6px 0 #000',
+      letterSpacing: '4px', opacity: 0,
+      animation: 'boomText 2.4s ease-out infinite',
+      transform: 'translate(-50%, -50%)',
+      whiteSpace: 'nowrap', pointerEvents: 'none',
+    }}>BOOM!</div>
+    {/* Character shrapnel */}
     {chars.map((c, i) => {
       const angle = (i / chars.length) * 360;
-      return <img key={c} src={`/characters/${c}.png`} alt="" style={{ position: 'absolute', top: '45%', left: '50%', width: 80, height: 80, zIndex: 20, animation: `bombExplode 3s ease-out forwards`, '--ang': `${angle}deg` }} />;
+      return (
+        <img key={c} src={`/characters/${c}.png`} alt="" style={{
+          position: 'absolute', top: '45%', left: '50%', width: 80, height: 80, zIndex: 20,
+          animation: `bombExplode 2.4s ease-out infinite`,
+          ['--ang']: `${angle}deg`,
+          filter: 'drop-shadow(0 0 12px #ff4400)',
+        }} />
+      );
     })}
-    <style>{`@keyframes bombExplode { 0% { transform: translate(-50%, -50%) rotate(var(--ang)) translateY(0) rotate(calc(-1 * var(--ang))); opacity: 1; } 100% { transform: translate(-50%, -50%) rotate(var(--ang)) translateY(-500px) rotate(calc(-1 * var(--ang))); opacity: 0; } }`}</style>
+    <style>{`
+      @keyframes bombFlash { 0% { background: rgba(255,255,255,0.95); } 12% { background: rgba(255,200,50,0.6); } 30%, 100% { background: rgba(0,0,0,0.4); } }
+      @keyframes bombRing { 0% { width: 20px; height: 20px; opacity: 1; } 100% { width: 200vmax; height: 200vmax; opacity: 0; } }
+      @keyframes bombShock { 0% { width: 20px; height: 20px; opacity: 1; } 100% { width: 180vmax; height: 180vmax; opacity: 0; border-width: 1px; } }
+      @keyframes boomText { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-15deg); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1.3) rotate(0deg); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
+      @keyframes bombExplode {
+        0% { transform: translate(-50%, -50%) rotate(var(--ang)) translateY(0) rotate(calc(-1 * var(--ang))); opacity: 1; }
+        100% { transform: translate(-50%, -50%) rotate(var(--ang)) translateY(-700px) rotate(calc(-1 * var(--ang) + 1080deg)) scale(0.4); opacity: 0; }
+      }
+    `}</style>
   </>);
 }
+
 function AdminEffectCrowd() {
-  const emojis = ['🎉','🥳','🎊','👏','🙌','🎤','🔥'];
+  // Stadium lights, marquee text, floating emojis going UP, roar
+  const emojis = ['🎉','🥳','🎊','👏','🙌','🎤','🔥','🌟','💚'];
   return (<>
-    <div style={{ position: 'absolute', top: '20%', left: 0, right: 0, textAlign: 'center', zIndex: 20, fontSize: '40px', fontWeight: 900, color: '#fff', textShadow: '0 0 20px #00e87a, 0 0 40px #00e87a', animation: 'crowdPulse 0.5s ease-in-out infinite', fontFamily: "'Bungee Shade', cursive", letterSpacing: '3px' }}>THE CROWD GOES WILD</div>
-    {[...Array(25)].map((_, i) => (
-      <div key={i} style={{ position: 'absolute', top: -40, left: `${(i*4.1) % 100}%`, fontSize: '32px', animation: `poopFall ${2 + (i%4)}s linear infinite`, animationDelay: `${(i*0.12) % 3}s`, zIndex: 15 }}>{emojis[i % emojis.length]}</div>
+    {/* Green stadium glow */}
+    <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at top, rgba(0,232,122,0.4), transparent 70%)', zIndex: 13, pointerEvents: 'none' }} />
+    {/* Stadium lights — sweeping spotlights from the sides */}
+    {[...Array(4)].map((_, i) => (
+      <div key={'sl'+i} style={{
+        position: 'absolute', top: '-10%', left: i < 2 ? `${i * 15}%` : 'auto', right: i >= 2 ? `${(i - 2) * 15}%` : 'auto',
+        width: '4px', height: '140%', zIndex: 14,
+        background: 'linear-gradient(180deg, rgba(255,255,200,0.9), transparent)',
+        boxShadow: '0 0 60px rgba(255,255,150,0.6)',
+        transformOrigin: 'top center',
+        animation: `spotSweep ${3 + i * 0.5}s ease-in-out ${i * 0.3}s infinite alternate`,
+      }} />
     ))}
-    <style>{`@keyframes crowdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }`}</style>
+    {/* Floating crowd emojis going UP */}
+    {[...Array(40)].map((_, i) => (
+      <div key={i} style={{
+        position: 'absolute', bottom: -60, left: `${(i * 2.6) % 100}%`,
+        fontSize: `${28 + (i % 4) * 8}px`, zIndex: 15,
+        animation: `crowdRise ${2.5 + (i % 4) * 0.7}s ease-out ${(i * 0.08) % 3}s infinite`,
+      }}>{emojis[i % emojis.length]}</div>
+    ))}
+    {/* Hands raising */}
+    {[...Array(8)].map((_, i) => (
+      <div key={'h'+i} style={{
+        position: 'absolute', bottom: '0%', left: `${5 + i * 11}%`,
+        fontSize: '50px', zIndex: 16,
+        animation: `handsUp ${0.6 + (i % 3) * 0.2}s ease-in-out ${i * 0.1}s infinite alternate`,
+      }}>🙌</div>
+    ))}
+    {/* Pulsing main text */}
+    <div style={{
+      position: 'absolute', top: '20%', left: 0, right: 0, textAlign: 'center', zIndex: 20,
+      fontSize: 'clamp(28px, 8vw, 56px)', fontWeight: 900, color: '#fff',
+      textShadow: '0 0 25px #00e87a, 0 0 50px #00e87a, 4px 4px 0 #000',
+      animation: 'crowdPulse 0.45s ease-in-out infinite',
+      fontFamily: "'Bungee Shade', cursive", letterSpacing: '4px', lineHeight: 1.1,
+    }}>THE CROWD<br/>GOES WILD</div>
+    <style>{`
+      @keyframes spotSweep { 0% { transform: rotate(-30deg); } 100% { transform: rotate(30deg); } }
+      @keyframes crowdRise {
+        0% { bottom: -60px; opacity: 0; transform: rotate(0deg); }
+        15% { opacity: 1; }
+        100% { bottom: 110%; opacity: 0; transform: rotate(360deg); }
+      }
+      @keyframes handsUp {
+        0% { transform: translateY(20px); }
+        100% { transform: translateY(-20px); }
+      }
+      @keyframes crowdPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+    `}</style>
   </>);
 }
 
