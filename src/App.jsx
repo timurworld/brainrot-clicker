@@ -960,7 +960,7 @@ export default function App() {
       onEffectChange: (effectId, active) => setAdminEffects(prev => ({ ...prev, [effectId]: active })),
       onGlobalMessage: (text) => {
         setAdminMessage({ text, id: Date.now() });
-        setTimeout(() => setAdminMessage(null), 5000);
+        setTimeout(() => setAdminMessage(null), 8000);
       },
       onSkinGift: (skinName) => {
         // Find and unlock matching skin
@@ -2036,32 +2036,63 @@ export default function App() {
         </div>
       )}
 
-      {/* Admin: Global message banner */}
+      {/* Admin: Global message banner — sits above the character circle */}
       {adminMessage && (
-        <div style={{
-          position: 'absolute', top: '60px', left: '50%', transform: 'translateX(-50%)',
-          zIndex: 50, padding: '10px 20px', borderRadius: '12px',
-          background: 'linear-gradient(135deg, #4a9eff, #6a0dad)', color: '#fff',
-          fontFamily: "'Bangers', cursive", fontSize: '16px',
-          boxShadow: '0 0 30px rgba(74,158,255,0.5)', maxWidth: '90vw',
-          animation: 'slideDown 0.3s ease-out',
-        }}>📢 {adminMessage.text}</div>
+        <div key={adminMessage.id} style={{
+          position: 'absolute', top: '11%', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 50, padding: '18px 28px', borderRadius: '18px',
+          background: 'linear-gradient(135deg, rgba(20,5,40,0.96), rgba(40,10,80,0.96))',
+          border: '2px solid #a259ff',
+          color: '#fff', fontFamily: "'Bangers', cursive",
+          fontSize: 'clamp(20px, 4.5vw, 28px)', letterSpacing: '1px',
+          textAlign: 'center', lineHeight: 1.2,
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(162,89,255,0.5), 0 0 60px rgba(162,89,255,0.4)',
+          maxWidth: 'min(560px, 88vw)',
+          animation: 'broadcastIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), broadcastGlow 2s ease-in-out 0.5s infinite',
+        }}>
+          <div style={{
+            fontFamily: "'Press Start 2P', monospace", fontSize: '9px',
+            color: '#a259ff', letterSpacing: '3px', marginBottom: '8px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          }}>
+            <span style={{
+              display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%',
+              background: '#a259ff', boxShadow: '0 0 8px #a259ff',
+              animation: 'pulse 1s ease-in-out infinite',
+            }} />
+            BROADCAST FROM TIMUR
+          </div>
+          <div style={{ wordBreak: 'break-word' }}>📢 {adminMessage.text}</div>
+        </div>
       )}
 
       {/* Admin: Scheduled event countdown */}
       {adminSchedule && !adminEvent.active && <AdminCountdown schedule={adminSchedule} />}
 
-      {/* Admin: Live event strip */}
+      {/* Admin: LIVE status badge — compact pill, top-left */}
       {adminEvent.active && (
         <div style={{
-          position: 'absolute', top: '0', left: 0, right: 0, zIndex: 25,
-          padding: '6px 16px',
-          background: 'linear-gradient(90deg, rgba(255,74,74,0.9), rgba(255,100,0,0.9))',
-          display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px',
-          color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '14px',
-          animation: 'pulse 1s ease-in-out infinite',
+          position: 'absolute', top: '12px', left: '12px', zIndex: 25,
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '6px 12px 6px 10px', borderRadius: '999px',
+          background: 'linear-gradient(135deg, #ff0040, #d10030)',
+          color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '13px',
+          letterSpacing: '1.5px', textTransform: 'uppercase',
+          boxShadow: '0 2px 12px rgba(255,0,64,0.5), 0 0 0 1px rgba(255,255,255,0.15)',
+          animation: 'liveBadgeIn 0.3s ease-out',
         }}>
-          🔴 ADMIN ABUSE LIVE {adminEvent.name ? `— ${adminEvent.name}` : ''}
+          <span style={{
+            display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%',
+            background: '#fff', boxShadow: '0 0 6px #fff',
+            animation: 'liveDot 1.2s ease-in-out infinite',
+          }} />
+          <span style={{ fontWeight: 700 }}>LIVE</span>
+          {adminEvent.name && (
+            <>
+              <span style={{ opacity: 0.5, fontSize: '11px' }}>·</span>
+              <span style={{ fontSize: '12px', opacity: 0.95, letterSpacing: '1px' }}>{adminEvent.name}</span>
+            </>
+          )}
         </div>
       )}
 
@@ -2607,6 +2638,22 @@ export default function App() {
         @keyframes bgGlow {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 0.6; }
+        }
+        @keyframes broadcastIn {
+          0% { transform: translate(-50%, -40px) scale(0.85); opacity: 0; }
+          100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+        }
+        @keyframes broadcastGlow {
+          0%, 100% { box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(162,89,255,0.5), 0 0 60px rgba(162,89,255,0.4); }
+          50% { box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 12px 40px rgba(162,89,255,0.7), 0 0 80px rgba(162,89,255,0.6); }
+        }
+        @keyframes liveBadgeIn {
+          from { transform: translateY(-12px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes liveDot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.85); }
         }
 
         ::-webkit-scrollbar { width: 6px; }
