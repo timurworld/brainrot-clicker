@@ -90,13 +90,19 @@ export async function loadGameCloud(playerId) {
   return { save: data.save_data };
 }
 
-// Get leaderboard (top 20)
+// Usernames hidden from the public leaderboard (admin/owner accounts).
+// Stored lowercased — comparison ignores case. Keep the actual rows in the DB.
+const HIDDEN_FROM_LEADERBOARD = new Set(['tmoney']);
+
+// Get leaderboard (top 20 visible)
 export async function getLeaderboard() {
   const { data, error } = await supabase
     .from('leaderboard')
     .select('*')
     .order('lifetime_points', { ascending: false })
-    .limit(20);
+    .limit(25); // fetch a few extra to compensate for filtered rows
   if (error) return [];
-  return data || [];
+  return (data || [])
+    .filter(r => !HIDDEN_FROM_LEADERBOARD.has((r.username || '').toLowerCase()))
+    .slice(0, 20);
 }
