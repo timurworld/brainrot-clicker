@@ -842,6 +842,7 @@ export default function App() {
   const [comboTimer, setComboTimer] = useState(null);
   const [newsIdx, setNewsIdx] = useState(0);
   const [skinCelebration, setSkinCelebration] = useState(null);
+  const [coinCelebration, setCoinCelebration] = useState(null);
   const [achievementToast, setAchievementToast] = useState(null);
   const [storyPopup, setStoryPopup] = useState(null);
   const [offlineReward, setOfflineReward] = useState(null);
@@ -974,12 +975,19 @@ export default function App() {
         }
       },
       onCoinGift: (amount) => {
-        setGame(prev => ({
-          ...prev,
-          points: prev.points + amount,
-          lifetimePoints: prev.lifetimePoints + amount,
-        }));
         soundEngine.play('purchase');
+        // Show celebration first — box flies in, opens, reveals amount
+        setCoinCelebration({ amount, id: Date.now() });
+        // Add coins to balance after the box opens and the amount is revealed (~2.4s in)
+        setTimeout(() => {
+          setGame(prev => ({
+            ...prev,
+            points: prev.points + amount,
+            lifetimePoints: prev.lifetimePoints + amount,
+          }));
+        }, 2400);
+        // Dismiss popup after full sequence
+        setTimeout(() => setCoinCelebration(null), 5000);
       },
       onVoteStart: (v) => setAdminVote(v),
       onScheduled: (s) => setAdminSchedule(s),
@@ -2551,6 +2559,95 @@ export default function App() {
         </div>
       )}
 
+      {/* Coin gift celebration — gift box flies in → wiggles → bursts open → reveals amount */}
+      {coinCelebration && (
+        <div key={coinCelebration.id} style={{
+          position: 'absolute', inset: 0, zIndex: 200,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'radial-gradient(ellipse at center, rgba(255,215,0,0.2), rgba(0,0,0,0.78) 70%)',
+          backdropFilter: 'blur(4px)', pointerEvents: 'none',
+          animation: 'coinFlash 0.4s ease-out',
+        }}>
+          {/* "From Timur" header */}
+          <div style={{
+            position: 'absolute', top: '14%', left: '50%', transform: 'translateX(-50%)',
+            fontFamily: "'Press Start 2P', monospace", fontSize: '11px',
+            color: '#ffd700', letterSpacing: '3px',
+            textShadow: '0 0 12px rgba(255,215,0,0.7)',
+            animation: 'fadeInDown 0.5s ease-out 0.1s both',
+            whiteSpace: 'nowrap',
+          }}>
+            🎁 A GIFT FROM TIMUR 🎁
+          </div>
+
+          {/* Stage container — holds box (phase 1) and reveal (phase 2) */}
+          <div style={{
+            position: 'relative',
+            width: 'min(280px, 70vw)', height: 'min(280px, 70vw)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {/* Gift box — flies in, wiggles, then explodes */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 'clamp(110px, 28vw, 180px)',
+              animation: 'giftFly 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, giftShake 0.5s ease-in-out 0.9s 2, giftBurst 0.4s ease-out 1.95s both',
+              filter: 'drop-shadow(0 12px 30px rgba(255,180,0,0.6)) drop-shadow(0 0 40px rgba(255,215,0,0.5))',
+              transformOrigin: 'center',
+            }}>
+              🎁
+            </div>
+
+            {/* Burst rays — fire when box opens */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,235,100,0.9) 0%, rgba(255,180,0,0.5) 30%, transparent 70%)',
+              opacity: 0,
+              animation: 'burstRays 0.6s ease-out 2.0s both',
+            }} />
+
+            {/* Amount reveal — appears as box bursts */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              opacity: 0,
+              animation: 'amountReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 2.15s both',
+            }}>
+              <div style={{
+                fontFamily: "'Bungee Shade', cursive",
+                fontSize: 'clamp(44px, 12vw, 84px)',
+                color: '#fff', lineHeight: 1, textAlign: 'center',
+                textShadow: '0 0 20px #ffd700, 0 0 40px #ff9500, 4px 4px 0 #6a0d0d',
+              }}>
+                +{coinCelebration.amount.toLocaleString()}
+              </div>
+              <div style={{
+                fontFamily: "'Bangers', cursive", fontSize: 'clamp(20px, 4.5vw, 28px)',
+                color: '#ffd700', letterSpacing: '2px', marginTop: '6px',
+                textShadow: '0 0 12px rgba(255,215,0,0.8)',
+              }}>
+                🪙 COINS 🪙
+              </div>
+            </div>
+          </div>
+
+          {/* Falling coins — only after box opens */}
+          {Array.from({ length: 24 }).map((_, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              top: '40%', left: '50%',
+              fontSize: 24 + (i % 4) * 6,
+              opacity: 0,
+              animation: `coinBurst ${1.6 + (i % 5) * 0.2}s ease-out 2.0s forwards`,
+              ['--burst-angle']: `${(i / 24) * 360}deg`,
+              ['--burst-dist']: `${120 + (i % 4) * 40}px`,
+              filter: 'drop-shadow(0 0 8px rgba(255,215,0,0.8))',
+            }}>🪙</div>
+          ))}
+        </div>
+      )}
+
       {/* Achievement toast */}
       {achievementToast && (
         <div style={{
@@ -2654,6 +2751,52 @@ export default function App() {
         @keyframes liveDot {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(0.85); }
+        }
+        @keyframes coinFlash {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translate(-50%, -10px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes giftFly {
+          0% { transform: translate(-120vw, -60vh) rotate(-360deg) scale(0.4); }
+          100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+        }
+        @keyframes giftShake {
+          0%, 100% { transform: rotate(0deg) scale(1); }
+          15% { transform: rotate(-12deg) scale(1.05); }
+          30% { transform: rotate(10deg) scale(1.05); }
+          45% { transform: rotate(-8deg) scale(1.05); }
+          60% { transform: rotate(8deg) scale(1.05); }
+          75% { transform: rotate(-4deg) scale(1.05); }
+        }
+        @keyframes giftBurst {
+          0% { transform: scale(1); opacity: 1; }
+          40% { transform: scale(1.6); opacity: 1; }
+          100% { transform: scale(2.4); opacity: 0; }
+        }
+        @keyframes burstRays {
+          0% { opacity: 0; transform: scale(0.3); }
+          40% { opacity: 1; transform: scale(1.2); }
+          100% { opacity: 0; transform: scale(2.4); }
+        }
+        @keyframes amountReveal {
+          0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+          70% { transform: scale(1.15) rotate(0deg); opacity: 1; }
+          100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+        @keyframes coinBurst {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) rotate(var(--burst-angle)) translateY(0) rotate(calc(-1 * var(--burst-angle)));
+          }
+          15% { opacity: 1; }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) rotate(var(--burst-angle)) translateY(calc(-1 * var(--burst-dist))) rotate(calc(-1 * var(--burst-angle) + 720deg));
+          }
         }
 
         ::-webkit-scrollbar { width: 6px; }
