@@ -2530,15 +2530,18 @@ export default function App() {
       )}
 
       {/* Admin: Effect renderers */}
-      {adminEffects.disco && <AdminEffectDisco />}
-      {adminEffects.fireworks && <AdminEffectFireworks />}
-      {adminEffects.poop && <AdminEffectPoop />}
-      {adminEffects.rocket && <AdminEffectRocket />}
-      {adminEffects.cats && <AdminEffectCats />}
-      {adminEffects.tsunami && <AdminEffectTsunami setGame={setGame} />}
-      {adminEffects.lightning && <AdminEffectLightning />}
-      {adminEffects.bomb && <AdminEffectBomb />}
-      {adminEffects.crowd && <AdminEffectCrowd />}
+      {/* Wrapper makes all DJ effects non-interactive so clicks pass through to the character */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+        {adminEffects.disco && <AdminEffectDisco />}
+        {adminEffects.fireworks && <AdminEffectFireworks />}
+        {adminEffects.poop && <AdminEffectPoop />}
+        {adminEffects.rocket && <AdminEffectRocket />}
+        {adminEffects.cats && <AdminEffectCats />}
+        {adminEffects.tsunami && <AdminEffectTsunami setGame={setGame} />}
+        {adminEffects.lightning && <AdminEffectLightning />}
+        {adminEffects.bomb && <AdminEffectBomb />}
+        {adminEffects.crowd && <AdminEffectCrowd />}
+      </div>
 
       {/* Dark backdrop behind character */}
       <div style={{
