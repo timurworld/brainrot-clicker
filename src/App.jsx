@@ -1096,6 +1096,29 @@ function WorldBackground({ skinId }) {
 // ============================================================
 // MAIN APP
 // ============================================================
+// Small floating "← timur.world" link — shown on login + start screens
+// so players can return to the marketing site without using browser back.
+// ============================================================
+function BackToSiteLink() {
+  return (
+    <a
+      href="https://timur.world"
+      style={{
+        position: 'absolute', top: '14px', left: '14px', zIndex: 60,
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        padding: '6px 12px', borderRadius: '999px',
+        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(255,255,255,0.18)',
+        color: 'rgba(255,255,255,0.85)', textDecoration: 'none',
+        fontFamily: "'Press Start 2P', monospace", fontSize: '9px',
+        letterSpacing: '1.5px',
+      }}
+    >
+      ← TIMUR.WORLD
+    </a>
+  );
+}
+
 // ============================================================
 // ADMIN EFFECT RENDERERS — triggered by admin hub
 // ============================================================
@@ -2656,6 +2679,7 @@ export default function App() {
 
     return (
       <div style={{ ...styles.container, background: 'linear-gradient(135deg, #0f0825, #1a0e3a, #0f0825)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '24px' }}>
+        <BackToSiteLink />
         <div style={{ fontSize: '48px', marginBottom: '8px' }}>🧠</div>
         <div style={{
           fontSize: 'clamp(32px, 8vw, 52px)', fontFamily: "'Bungee Shade', cursive", color: '#fff',
@@ -2742,6 +2766,7 @@ export default function App() {
     const floatingEmoji = ['🧠', '💀', '🔥', '⭐', '💎', '🎮', '👾', '🚀', '💥', '🌈'];
     return (
       <div style={{ ...styles.container, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '16px' }}>
+        <BackToSiteLink />
         {floatingEmoji.map((e, i) => (
           <div key={i} style={{
             position: 'absolute',
@@ -3468,6 +3493,14 @@ export default function App() {
               background: 'transparent', color: '#fff', fontFamily: "'Bangers', cursive",
               fontSize: '16px', cursor: 'pointer', marginTop: '8px',
             }}>Logout</button>
+            <a href="https://timur.world" style={{
+              display: 'block', width: '100%', padding: '10px', borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'transparent', color: 'rgba(255,255,255,0.7)',
+              fontFamily: "'Bangers', cursive", fontSize: '14px',
+              textAlign: 'center', textDecoration: 'none',
+              marginTop: '8px', boxSizing: 'border-box',
+            }}>← Back to timur.world</a>
           </div>
         </div>
       )}
