@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { registerPlayer, loginPlayer, saveGameCloud, loadGameCloud, getLeaderboard } from './supabase.js';
-import { subscribeToAdmin, submitVote } from './adminBridge.js';
+import { subscribeToAdmin, submitVote, announcePresence } from './adminBridge.js';
 
 // ============================================================
 // CONSTANTS & CONFIG
@@ -1907,6 +1907,12 @@ export default function App() {
     });
     return unsub;
   }, [game.username]);
+
+  // Broadcast our presence so the admin hub knows we're live
+  useEffect(() => {
+    if (!game.username || screen !== 'game') return;
+    return announcePresence(game.username);
+  }, [game.username, screen]);
 
   // DJ effect sounds — start/stop sound loop alongside each visual effect
   useEffect(() => {

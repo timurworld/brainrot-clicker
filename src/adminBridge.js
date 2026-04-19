@@ -81,3 +81,19 @@ export async function submitVote(voteId, choice) {
   if (!cur) return;
   await supabase.from('active_votes').update({ [col]: (cur[col] || 0) + 1 }).eq('id', voteId);
 }
+
+// Announce this player's presence so the admin hub can see who's live.
+// Returns an unsubscribe function.
+export function announcePresence(username) {
+  if (!username) return () => {};
+  const key = username.toLowerCase();
+  const channel = supabase.channel('brainrot:presence', {
+    config: { presence: { key } },
+  });
+  channel.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await channel.track({ username: key, online_at: new Date().toISOString() });
+    }
+  });
+  return () => { supabase.removeChannel(channel); };
+}

@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["vite", "--host"],
       "port": 5173
+    },
+    {
+      "name": "admin-hub",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd '/Users/emccleave/Documents/CCODE/Timur Admin Hub' && npm run dev"],
+      "port": 3002
     }
   ]
 }
