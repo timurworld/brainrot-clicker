@@ -254,33 +254,148 @@ class SoundEngine {
 
     const t = {};
 
-    // DISCO — four-on-the-floor kick + offset hi-hat
-    t.disco = function() {
-      const vol = v();
-      tone(120, 'sine', 0.18, vol * 0.6, 40); // kick
-      setTimeout(() => noiseHit(0.04, vol * 0.4, 8000), 250); // hi-hat
-    };
-    t.disco.intervalMs = 500;
+    // DISCO — 10 rotating "tracks" so it sounds like a real DJ set
+    const kick = (vol) => tone(120, 'sine', 0.18, vol * 0.6, 40);
+    const subKick = (vol) => tone(80, 'sine', 0.25, vol * 0.7, 28);
+    const snare = (vol) => { noiseHit(0.08, vol * 0.5, 1500, 5000); tone(220, 'triangle', 0.06, vol * 0.3, 180); };
+    const clap = (vol) => { noiseHit(0.04, vol * 0.5, 1200); setTimeout(() => noiseHit(0.06, vol * 0.45, 1200), 18); };
+    const hat = (vol) => noiseHit(0.04, vol * 0.35, 8000);
+    const openHat = (vol) => noiseHit(0.18, vol * 0.3, 7000);
+    const bass = (vol, freq) => tone(freq, 'sawtooth', 0.18, vol * 0.35);
+    const lead = (vol, freq) => tone(freq, 'square', 0.15, vol * 0.25);
+    const arp = (vol, freq) => tone(freq, 'triangle', 0.1, vol * 0.3);
+    const zap = (vol) => tone(800, 'sawtooth', 0.12, vol * 0.4, 80);
+    const cowbell = (vol) => { tone(800, 'square', 0.08, vol * 0.25); tone(540, 'square', 0.08, vol * 0.2); };
 
-    // FIREWORKS — whistle up then BANG
+    // 16-step patterns. Each function takes (vol, step) where step is 0..15 (16th notes)
+    const discoTracks = [
+      // 0 — Classic house: 4-on-floor kick + offbeat hat
+      (vol, s) => { if (s % 4 === 0) kick(vol); if (s % 4 === 2) hat(vol); if (s % 8 === 4) clap(vol); },
+      // 1 — Disco bass walk
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        const walk = [55, 55, 65, 73];
+        if (s % 2 === 0) bass(vol, walk[(s / 2) % 4]);
+        if (s % 4 === 2) hat(vol);
+      },
+      // 2 — Techno pulse
+      (vol, s) => {
+        if (s % 4 === 0) subKick(vol);
+        bass(vol * 0.6, 55); // constant pulse
+        if (s % 2 === 1) hat(vol);
+      },
+      // 3 — Funk groove
+      (vol, s) => {
+        if (s === 0 || s === 6 || s === 8 || s === 14) kick(vol);
+        if (s === 4 || s === 12) snare(vol);
+        if (s % 2 === 1) hat(vol);
+      },
+      // 4 — Synthwave arp
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        const arpNotes = [261, 329, 392, 523, 392, 329];
+        arp(vol, arpNotes[s % arpNotes.length]);
+        if (s % 4 === 2) hat(vol);
+      },
+      // 5 — Hip-hop boom-bap
+      (vol, s) => {
+        if (s === 0 || s === 10) subKick(vol);
+        if (s === 4 || s === 12) snare(vol);
+        if (s % 2 === 1) hat(vol);
+      },
+      // 6 — Trance lead melody
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        const mel = [440, 0, 523, 0, 587, 0, 523, 0, 440, 0, 392, 0, 349, 0, 392, 0];
+        if (mel[s]) lead(vol, mel[s]);
+        if (s % 4 === 2) openHat(vol);
+      },
+      // 7 — Acid house with squelchy bass
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        const bassPat = [55, 55, 0, 110, 55, 0, 73, 0];
+        if (bassPat[s % 8]) bass(vol, bassPat[s % 8]);
+        if (s % 2 === 1) hat(vol);
+      },
+      // 8 — Drum & bass breakbeat
+      (vol, s) => {
+        if (s === 0 || s === 6 || s === 10) kick(vol);
+        if (s === 4 || s === 12) snare(vol);
+        hat(vol * 0.6);
+      },
+      // 9 — Electro / cowbell party
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        if (s % 2 === 0) cowbell(vol);
+        if (s === 4 || s === 12) clap(vol);
+        if (s === 8) zap(vol);
+      },
+    ];
+
+    let discoStep = 0; let discoTrackIdx = 0;
+    const BARS_PER_TRACK = 4; // 4 bars × 16 steps = 64 steps before rotating
+    t.disco = function(sustain) {
+      // Reset on first tick of fresh activation (sustain array starts empty)
+      if (sustain.length === 0) { discoStep = 0; discoTrackIdx = Math.floor(Math.random() * discoTracks.length); sustain.push(true); }
+      const trk = discoTracks[discoTrackIdx];
+      try { trk(v(), discoStep % 16); } catch (e) { /* ignore */ }
+      discoStep++;
+      if (discoStep % (BARS_PER_TRACK * 16) === 0) {
+        discoTrackIdx = (discoTrackIdx + 1) % discoTracks.length;
+      }
+    };
+    t.disco.intervalMs = 125; // 16th notes @ 120 BPM
+
+    // FIREWORKS — realistic: ascending whistle → SHARP CRACK → deep BOOM → crackling tail
     t.fireworks = function() {
       const vol = v();
-      // whistle
-      const ctx = ctxOf(); const now = ctx.currentTime;
+      const ctx = ctxOf();
+      // 1) Whistle ascending (the shell flying up)
+      const now = ctx.currentTime;
       const o = ctx.createOscillator(); const g = ctx.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(400, now);
-      o.frequency.exponentialRampToValueAtTime(2400, now + 0.5);
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(300, now);
+      o.frequency.exponentialRampToValueAtTime(1800, now + 0.7);
+      // Add slight vibrato for whistling
+      const lfo = ctx.createOscillator(); const lfoG = ctx.createGain();
+      lfo.frequency.value = 6; lfoG.gain.value = 40;
+      lfo.connect(lfoG); lfoG.connect(o.frequency);
       o.connect(g); g.connect(ctx.destination);
-      g.gain.setValueAtTime(vol * 0.25, now);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-      o.start(now); o.stop(now + 0.55);
-      // BOOM
+      g.gain.setValueAtTime(vol * 0.2, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      lfo.start(now); o.start(now);
+      lfo.stop(now + 0.72); o.stop(now + 0.72);
+
+      // 2) Sharp CRACK — high-frequency white noise burst (the explosion)
       setTimeout(() => {
-        noiseHit(0.4, v() * 0.9, 0, 2000);
-        tone(80, 'sine', 0.3, v() * 0.5, 30);
-      }, 520);
+        // Initial sharp transient — mid/high noise
+        noiseHit(0.04, vol * 1.0, 2000);
+        // Body of bang — full-spectrum boom
+        noiseHit(0.25, vol * 0.85, 0, 4000);
+      }, 720);
+
+      // 3) Deep low BOOM — sub-bass thump
+      setTimeout(() => {
+        const ctx2 = ctxOf(); const now2 = ctx2.currentTime;
+        const lo = ctx2.createOscillator(); const lg = ctx2.createGain();
+        lo.type = 'sine';
+        lo.frequency.setValueAtTime(140, now2);
+        lo.frequency.exponentialRampToValueAtTime(35, now2 + 0.5);
+        lo.connect(lg); lg.connect(ctx2.destination);
+        lg.gain.setValueAtTime(vol * 0.7, now2);
+        lg.gain.exponentialRampToValueAtTime(0.001, now2 + 0.6);
+        lo.start(now2); lo.stop(now2 + 0.65);
+      }, 740);
+
+      // 4) Crackling sparks tail — random short noise pops
+      for (let i = 0; i < 14; i++) {
+        const delay = 900 + i * 90 + (Math.random() * 80);
+        setTimeout(() => {
+          if (Math.random() < 0.7) noiseHit(0.025, vol * 0.5, 5000);
+        }, delay);
+      }
     };
-    t.fireworks.intervalMs = 1600;
+    t.fireworks.intervalMs = 2400;
 
     // POOP — wet farty bass blip
     t.poop = function() {
@@ -1032,64 +1147,115 @@ function AdminEffectDisco() {
 }
 
 function AdminEffectFireworks() {
-  // 12 firework bursts at random positions with radial particle explosions
-  const colors = ['#ff3060','#ffd900','#00f0ff','#ff00ff','#33ff66','#ff7a00','#ffffff','#ff5599'];
+  // Big shell bursts: glowing fireballs trailing up, exploding into 20-spark
+  // radial bursts that travel ~30-40% of the viewport and fade with sparkle tails
+  const colors = ['#ff3060','#ffd900','#00f0ff','#ff00ff','#33ff66','#ff7a00','#ffffff','#ff5599','#ffa500','#88ff00'];
+  // 8 burst sites — each gets a launching shell + bigger explosion
+  const shells = [...Array(8)].map((_, i) => ({
+    x: 10 + (i * 11) % 80,
+    yEnd: 20 + (i % 4) * 15, // 20%, 35%, 50%, 65% from bottom
+    color: colors[i % colors.length],
+    altColor: colors[(i + 3) % colors.length],
+    delay: (i * 0.5) % 4,
+    big: i % 3 === 0, // every 3rd burst is a big shell
+  }));
   return (<>
-    {/* Sky darken */}
-    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,30,0.35)', zIndex: 13, pointerEvents: 'none' }} />
-    {/* Firework launches */}
-    {[...Array(12)].map((_, i) => {
-      const x = 8 + (i * 8) % 84;
-      const yEnd = 15 + (i % 5) * 12;
-      const color = colors[i % colors.length];
-      const delay = (i * 0.35) % 4;
-      return (
-        <div key={'fw'+i} style={{
-          position: 'absolute', bottom: 0, left: `${x}%`,
-          width: 4, height: 4, borderRadius: '50%', background: color,
-          boxShadow: `0 0 12px ${color}`, zIndex: 16,
-          animation: `fwLaunch 1.6s ease-out ${delay}s infinite`,
-          ['--yEnd']: `${yEnd}%`,
-        }} />
-      );
-    })}
-    {/* Burst sparks — 12 fireworks × 8 sparks each */}
-    {[...Array(12)].map((_, i) => {
-      const x = 8 + (i * 8) % 84;
-      const yEnd = 15 + (i % 5) * 12;
-      const color = colors[i % colors.length];
-      const delay = (i * 0.35) % 4;
-      return [...Array(8)].map((_, j) => {
-        const ang = (j / 8) * 360;
+    {/* Night sky */}
+    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,40,0.6), rgba(0,0,20,0.3))', zIndex: 13, pointerEvents: 'none' }} />
+    {/* Star twinkles in background */}
+    {[...Array(40)].map((_, i) => (
+      <div key={'st'+i} style={{
+        position: 'absolute', top: `${(i * 7) % 80}%`, left: `${(i * 11) % 100}%`,
+        width: 2, height: 2, borderRadius: '50%', background: '#fff',
+        boxShadow: '0 0 4px #fff', zIndex: 13,
+        animation: `starTwinkle ${2 + (i % 3)}s ease-in-out ${(i * 0.1) % 2}s infinite`,
+      }} />
+    ))}
+    {/* Launching shells — bright trailing fireball */}
+    {shells.map((s, i) => (
+      <div key={'shell'+i} style={{
+        position: 'absolute', bottom: 0, left: `${s.x}%`,
+        width: s.big ? 28 : 22, height: s.big ? 28 : 22, borderRadius: '50%',
+        background: `radial-gradient(circle, #fff 20%, ${s.color} 60%, transparent)`,
+        boxShadow: `0 0 30px ${s.color}, 0 0 60px ${s.color}, 0 12px 40px ${s.color}`,
+        zIndex: 16, transform: 'translateX(-50%)',
+        animation: `fwLaunch 1.5s ease-out ${s.delay}s infinite`,
+        ['--yEnd']: `${s.yEnd}%`,
+      }} />
+    ))}
+    {/* Burst flash — huge bright disc when shell explodes */}
+    {shells.map((s, i) => (
+      <div key={'flash'+i} style={{
+        position: 'absolute', bottom: `${s.yEnd}%`, left: `${s.x}%`,
+        width: s.big ? 200 : 140, height: s.big ? 200 : 140, borderRadius: '50%',
+        background: `radial-gradient(circle, #fff 0%, ${s.color}dd 30%, transparent 70%)`,
+        zIndex: 17, opacity: 0, transform: 'translate(-50%, 50%)',
+        animation: `fwFlash 0.6s ease-out ${s.delay + 1.5}s infinite`,
+      }} />
+    ))}
+    {/* Burst sparks — large glowing particles flying outward */}
+    {shells.flatMap((s, i) => {
+      const numSparks = s.big ? 28 : 20;
+      const dist = s.big ? 480 : 340;
+      return [...Array(numSparks)].map((_, j) => {
+        const ang = (j / numSparks) * 360 + (i * 7);
+        const sparkColor = j % 3 === 0 ? s.altColor : s.color;
+        const sz = s.big ? 30 + (j % 3) * 6 : 22 + (j % 3) * 4;
         return (
           <div key={`sp${i}-${j}`} style={{
-            position: 'absolute', bottom: `${100 - yEnd}%`, left: `${x}%`,
-            width: 6, height: 6, borderRadius: '50%', background: color,
-            boxShadow: `0 0 8px ${color}`, zIndex: 17, opacity: 0,
-            animation: `fwBurst 1s ease-out ${delay + 1.2}s infinite`,
+            position: 'absolute', bottom: `${s.yEnd}%`, left: `${s.x}%`,
+            width: sz, height: sz, borderRadius: '50%',
+            background: `radial-gradient(circle, #fff 0%, ${sparkColor} 45%, transparent 80%)`,
+            boxShadow: `0 0 24px ${sparkColor}, 0 0 48px ${sparkColor}, 0 0 80px ${sparkColor}66`,
+            zIndex: 18, opacity: 0, transform: 'translate(-50%, 50%)',
+            animation: `fwBurst 2s cubic-bezier(0.2, 0.8, 0.4, 1) ${s.delay + 1.5}s infinite`,
             ['--ang']: `${ang}deg`,
+            ['--dist']: `${dist + (j % 4) * 80}px`,
           }} />
         );
       });
     })}
+    {/* Trail sparkles — bigger falling embers after burst */}
+    {shells.flatMap((s, i) => [...Array(10)].map((_, j) => (
+      <div key={`tr${i}-${j}`} style={{
+        position: 'absolute', bottom: `${s.yEnd}%`, left: `${s.x + (j - 5) * 5}%`,
+        width: 10, height: 10, borderRadius: '50%',
+        background: `radial-gradient(circle, #fff 0%, ${s.color} 60%, transparent)`,
+        boxShadow: `0 0 16px ${s.color}, 0 0 32px ${s.color}`,
+        zIndex: 17, opacity: 0,
+        animation: `fwTrail 2.4s ease-in ${s.delay + 1.7}s infinite`,
+      }} />
+    )))}
     {/* Banner */}
     <div style={{
-      position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
-      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
-      textShadow: '0 0 18px #ffd900, 0 0 36px #ff3060, 3px 3px 0 #000',
-      letterSpacing: '2px', whiteSpace: 'nowrap',
-    }}>🎆 FIREWORKS! 🎆</div>
+      position: 'absolute', top: '11%', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
+      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(26px, 6.5vw, 40px)', color: '#fff',
+      textShadow: '0 0 18px #ffd900, 0 0 40px #ff3060, 0 0 60px #ff00ff, 4px 4px 0 #000',
+      letterSpacing: '3px', whiteSpace: 'nowrap',
+      animation: 'fwBannerPulse 1.6s ease-in-out infinite',
+    }}>🎆 FIREWORKS SHOW 🎆</div>
     <style>{`
+      @keyframes starTwinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
       @keyframes fwLaunch {
-        0% { bottom: 0; opacity: 1; }
-        70% { bottom: var(--yEnd); opacity: 1; }
-        72% { opacity: 0; }
+        0% { bottom: 0; opacity: 1; transform: translateX(-50%) scale(1); }
+        80% { bottom: var(--yEnd); opacity: 1; transform: translateX(-50%) scale(1.2); }
+        82% { opacity: 0; transform: translateX(-50%) scale(2); }
         100% { opacity: 0; }
       }
-      @keyframes fwBurst {
-        0% { opacity: 1; transform: rotate(var(--ang)) translateY(0) scale(1); }
-        100% { opacity: 0; transform: rotate(var(--ang)) translateY(-140px) scale(0.4); }
+      @keyframes fwFlash {
+        0% { opacity: 1; transform: translate(-50%, 50%) scale(0.4); }
+        100% { opacity: 0; transform: translate(-50%, 50%) scale(2); }
       }
+      @keyframes fwBurst {
+        0% { opacity: 1; transform: translate(-50%, 50%) rotate(var(--ang)) translateY(0) scale(1.4); }
+        70% { opacity: 1; transform: translate(-50%, 50%) rotate(var(--ang)) translateY(calc(-1 * var(--dist))) scale(1); }
+        100% { opacity: 0; transform: translate(-50%, 50%) rotate(var(--ang)) translateY(calc(-1 * var(--dist) - 40px)) scale(0.3); }
+      }
+      @keyframes fwTrail {
+        0% { opacity: 1; transform: translate(-50%, 50%); }
+        100% { opacity: 0; transform: translate(-50%, calc(50% + 220px)); }
+      }
+      @keyframes fwBannerPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.08); } }
     `}</style>
   </>);
 }
