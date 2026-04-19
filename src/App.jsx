@@ -881,30 +881,39 @@ function AdminEffectPoop() {
 }
 
 function AdminEffectRocket() {
-  // Multiple rockets, smoke trails, screen shake, repeating launches
+  // 5 rockets launch from bottom of screen straight up using translateY
   return (<>
-    {/* Screen shake on root via filter */}
+    {/* Screen shake wrapper */}
     <div style={{ position: 'absolute', inset: 0, animation: 'rocketShake 0.18s linear infinite', zIndex: 19, pointerEvents: 'none' }}>
-      {/* Rockets */}
+      {/* Rockets — anchored at bottom: 0, translateY moves them upward */}
       {[...Array(5)].map((_, i) => (
         <div key={'r'+i} style={{
-          position: 'absolute', bottom: '-10%', left: `${15 + i * 18}%`,
+          position: 'absolute', bottom: 0, left: `${15 + i * 18}%`,
           fontSize: 'clamp(60px, 12vw, 100px)', zIndex: 20,
-          animation: `rocketUp 2.4s ease-out ${i * 0.4}s infinite`,
+          animation: `rocketLiftOff 2.4s ease-in ${i * 0.4}s infinite`,
           filter: 'drop-shadow(0 0 16px #ff6a00)',
+          transformOrigin: 'center bottom',
         }}>🚀</div>
       ))}
-      {/* Smoke trails */}
-      {[...Array(15)].map((_, i) => {
+      {/* Smoke puffs — stay near launch pad, expand and fade */}
+      {[...Array(20)].map((_, i) => {
         const lane = i % 5;
         return (
           <div key={'s'+i} style={{
-            position: 'absolute', bottom: '-5%', left: `${17 + lane * 18}%`,
-            fontSize: 28, zIndex: 19, opacity: 0.8,
-            animation: `smokePuff 2.4s ease-out ${lane * 0.4 + (i / 5) * 0.15}s infinite`,
+            position: 'absolute', bottom: 0, left: `${17 + lane * 18}%`,
+            fontSize: 32, zIndex: 18, opacity: 0,
+            animation: `smokePoof 1.6s ease-out ${lane * 0.4 + (Math.floor(i / 5)) * 0.2}s infinite`,
           }}>💨</div>
         );
       })}
+      {/* Exhaust flames trailing each rocket */}
+      {[...Array(5)].map((_, i) => (
+        <div key={'f'+i} style={{
+          position: 'absolute', bottom: 0, left: `${15 + i * 18}%`,
+          fontSize: 'clamp(40px, 8vw, 64px)', zIndex: 19,
+          animation: `rocketFlame 2.4s ease-in ${i * 0.4}s infinite`,
+        }}>🔥</div>
+      ))}
     </div>
     {/* Banner */}
     <div style={{
@@ -915,13 +924,20 @@ function AdminEffectRocket() {
       animation: 'rocketBannerShake 0.18s linear infinite',
     }}>🚀 LIFT OFF 🚀</div>
     <style>{`
-      @keyframes rocketUp {
-        0% { bottom: -10%; transform: translateY(0) rotate(-3deg); }
-        100% { bottom: 110%; transform: translateY(-20px) rotate(3deg); }
+      @keyframes rocketLiftOff {
+        0% { transform: translateY(0); opacity: 1; }
+        15% { transform: translateY(-30px); opacity: 1; }
+        100% { transform: translateY(calc(-100vh - 200px)); opacity: 0.85; }
       }
-      @keyframes smokePuff {
-        0% { bottom: -5%; opacity: 1; transform: scale(0.6); }
-        100% { bottom: 110%; opacity: 0; transform: scale(2); }
+      @keyframes rocketFlame {
+        0% { transform: translateY(20px) scale(0.6); opacity: 0; }
+        15% { transform: translateY(0) scale(1.1); opacity: 1; }
+        100% { transform: translateY(calc(-100vh - 100px)) scale(0.4); opacity: 0; }
+      }
+      @keyframes smokePoof {
+        0% { transform: translateY(0) scale(0.4); opacity: 0; }
+        20% { transform: translateY(-10px) scale(1); opacity: 0.9; }
+        100% { transform: translateY(-40px) scale(2.5); opacity: 0; }
       }
       @keyframes rocketShake {
         0%, 100% { transform: translate(0, 0); }
