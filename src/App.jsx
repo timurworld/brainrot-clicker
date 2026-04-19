@@ -173,11 +173,258 @@ class SoundEngine {
     this.musicVolume = 0.5;
     this.sfxVolume = 1.0;
     this.musicNodes = [];
+    this.loops = {}; // effectId -> { interval, sustainNodes }
   }
 
   init() {
     if (this.ctx) return;
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  // ---- White noise buffer helper ----
+  makeNoiseBuffer(durationSec) {
+    const sr = this.ctx.sampleRate;
+    const buf = this.ctx.createBuffer(1, sr * durationSec, sr);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    return buf;
+  }
+
+  // ---- Looping DJ effect sounds ----
+  startEffect(effectId) {
+    if (!this.enabled || !this.ctx || this.loops[effectId]) return;
+    const tick = this._tickers[effectId];
+    if (!tick) return;
+    const sustain = [];
+    tick.call(this, sustain);
+    const interval = setInterval(() => {
+      try { tick.call(this, sustain); } catch (e) { /* ignore */ }
+    }, tick.intervalMs);
+    this.loops[effectId] = { interval, sustain };
+  }
+
+  stopEffect(effectId) {
+    const loop = this.loops[effectId];
+    if (!loop) return;
+    clearInterval(loop.interval);
+    // Stop any sustained oscillators / sources
+    for (const node of loop.sustain) {
+      try { node.stop?.(); node.disconnect?.(); } catch (e) { /* ignore */ }
+    }
+    delete this.loops[effectId];
+  }
+
+  get _tickers() {
+    if (this.__t) return this.__t;
+    const v = () => this.sfxVolume * 0.3;
+    const ctxOf = () => this.ctx;
+
+    const tone = (freq, type, dur, peakGain, freqEnd = null) => {
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, now);
+      if (freqEnd != null) o.frequency.exponentialRampToValueAtTime(Math.max(freqEnd, 1), now + dur);
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(peakGain, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      o.start(now); o.stop(now + dur + 0.02);
+    };
+
+    const noiseHit = (dur, peakGain, hpFreq = 0, lpFreq = 0) => {
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = this.makeNoiseBuffer(dur);
+      const g = ctx.createGain();
+      let chain = src;
+      if (hpFreq) {
+        const hp = ctx.createBiquadFilter();
+        hp.type = 'highpass'; hp.frequency.value = hpFreq;
+        chain.connect(hp); chain = hp;
+      }
+      if (lpFreq) {
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass'; lp.frequency.value = lpFreq;
+        chain.connect(lp); chain = lp;
+      }
+      chain.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(peakGain, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      src.start(now); src.stop(now + dur + 0.02);
+    };
+
+    const t = {};
+
+    // DISCO — four-on-the-floor kick + offset hi-hat
+    t.disco = function() {
+      const vol = v();
+      tone(120, 'sine', 0.18, vol * 0.6, 40); // kick
+      setTimeout(() => noiseHit(0.04, vol * 0.4, 8000), 250); // hi-hat
+    };
+    t.disco.intervalMs = 500;
+
+    // FIREWORKS — whistle up then BANG
+    t.fireworks = function() {
+      const vol = v();
+      // whistle
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(400, now);
+      o.frequency.exponentialRampToValueAtTime(2400, now + 0.5);
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol * 0.25, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      o.start(now); o.stop(now + 0.55);
+      // BOOM
+      setTimeout(() => {
+        noiseHit(0.4, v() * 0.9, 0, 2000);
+        tone(80, 'sine', 0.3, v() * 0.5, 30);
+      }, 520);
+    };
+    t.fireworks.intervalMs = 1600;
+
+    // POOP — wet farty bass blip
+    t.poop = function() {
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(180 + Math.random() * 100, now);
+      o.frequency.exponentialRampToValueAtTime(40, now + 0.18);
+      // vibrato via LFO
+      const lfo = ctx.createOscillator(); const lfoGain = ctx.createGain();
+      lfo.frequency.value = 25; lfoGain.gain.value = 30;
+      lfo.connect(lfoGain); lfoGain.connect(o.frequency);
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(v() * 0.5, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      lfo.start(now); o.start(now);
+      lfo.stop(now + 0.22); o.stop(now + 0.22);
+    };
+    t.poop.intervalMs = 350;
+
+    // ROCKET — continuous engine rumble (sustained noise + low pitch)
+    t.rocket = function(sustain) {
+      // Only schedule on first tick — sustained nodes
+      if (sustain.length) return;
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const noise = ctx.createBufferSource();
+      noise.buffer = this.makeNoiseBuffer(2);
+      noise.loop = true;
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 600;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(v() * 0.7, now + 0.3);
+      noise.connect(lp); lp.connect(g); g.connect(ctx.destination);
+      noise.start(now);
+      // Low rumble oscillator
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth'; o.frequency.value = 60;
+      const og = ctx.createGain();
+      og.gain.setValueAtTime(0, now);
+      og.gain.linearRampToValueAtTime(v() * 0.4, now + 0.3);
+      o.connect(og); og.connect(ctx.destination);
+      o.start(now);
+      sustain.push(noise, o);
+    };
+    t.rocket.intervalMs = 99999; // run only on activation
+
+    // CATS — random meow chirps
+    t.cats = function() {
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const startF = 500 + Math.random() * 400;
+      const peakF = startF * 1.5;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(startF, now);
+      o.frequency.linearRampToValueAtTime(peakF, now + 0.1);
+      o.frequency.linearRampToValueAtTime(startF * 0.7, now + 0.35);
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(v() * 0.35, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      o.start(now); o.stop(now + 0.42);
+    };
+    t.cats.intervalMs = 700;
+
+    // TSUNAMI — sustained ocean rumble + occasional crash
+    t.tsunami = function(sustain) {
+      if (!sustain.length) {
+        const ctx = ctxOf(); const now = ctx.currentTime;
+        const noise = ctx.createBufferSource();
+        noise.buffer = this.makeNoiseBuffer(2);
+        noise.loop = true;
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass'; lp.frequency.value = 800;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(v() * 0.5, now + 0.4);
+        noise.connect(lp); lp.connect(g); g.connect(ctx.destination);
+        noise.start(now);
+        sustain.push(noise);
+      }
+      // Occasional wave crash
+      noiseHit(0.6, v() * 0.5, 200, 3000);
+    };
+    t.tsunami.intervalMs = 1400;
+
+    // LIGHTNING — thunder roll
+    t.lightning = function() {
+      const vol = v();
+      // Sharp crack
+      noiseHit(0.08, vol * 0.7, 3000);
+      // Long rumbling thunder
+      setTimeout(() => noiseHit(1.2, vol * 0.6, 0, 400), 60);
+    };
+    t.lightning.intervalMs = 1800;
+
+    // BOMB — deep boom every 2.4s (matches visual)
+    t.bomb = function() {
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      // Initial pop
+      noiseHit(0.05, v() * 0.8);
+      // Deep boom
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(120, now);
+      o.frequency.exponentialRampToValueAtTime(20, now + 0.8);
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(v() * 0.9, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+      o.start(now); o.stop(now + 0.95);
+      // Rumble tail
+      noiseHit(1.0, v() * 0.4, 0, 600);
+    };
+    t.bomb.intervalMs = 2400;
+
+    // CROWD — continuous cheering crowd noise + sporadic whoops
+    t.crowd = function(sustain) {
+      if (!sustain.length) {
+        const ctx = ctxOf(); const now = ctx.currentTime;
+        const noise = ctx.createBufferSource();
+        noise.buffer = this.makeNoiseBuffer(2);
+        noise.loop = true;
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 0.5;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(v() * 0.4, now + 0.3);
+        noise.connect(bp); bp.connect(g); g.connect(ctx.destination);
+        noise.start(now);
+        sustain.push(noise);
+      }
+      // Occasional "whoop" — quick rising tone
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(300 + Math.random() * 200, now);
+      o.frequency.linearRampToValueAtTime(800 + Math.random() * 400, now + 0.25);
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(v() * 0.3, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      o.start(now); o.stop(now + 0.32);
+    };
+    t.crowd.intervalMs = 600;
+
+    this.__t = t;
+    return t;
   }
 
   play(type) {
@@ -1395,6 +1642,17 @@ export default function App() {
     });
     return unsub;
   }, [game.username]);
+
+  // DJ effect sounds — start/stop sound loop alongside each visual effect
+  useEffect(() => {
+    const ids = ['disco', 'fireworks', 'poop', 'rocket', 'cats', 'tsunami', 'lightning', 'bomb', 'crowd'];
+    soundEngine.init();
+    for (const id of ids) {
+      if (adminEffects[id]) soundEngine.startEffect(id);
+      else soundEngine.stopEffect(id);
+    }
+    return () => { for (const id of ids) soundEngine.stopEffect(id); };
+  }, [adminEffects]);
 
   // Loading screen
   useEffect(() => {
