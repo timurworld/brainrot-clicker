@@ -843,6 +843,7 @@ export default function App() {
   const [newsIdx, setNewsIdx] = useState(0);
   const [skinCelebration, setSkinCelebration] = useState(null);
   const [coinCelebration, setCoinCelebration] = useState(null);
+  const [skinGiftCelebration, setSkinGiftCelebration] = useState(null);
   const [achievementToast, setAchievementToast] = useState(null);
   const [storyPopup, setStoryPopup] = useState(null);
   const [offlineReward, setOfflineReward] = useState(null);
@@ -964,15 +965,16 @@ export default function App() {
         setTimeout(() => setAdminMessage(null), 8000);
       },
       onSkinGift: (skinName) => {
-        // Find and unlock matching skin
         const idx = CHARACTERS.findIndex(c => c.name.toLowerCase() === skinName.toLowerCase());
-        if (idx >= 0) {
+        if (idx < 0) return;
+        const ch = CHARACTERS[idx];
+        soundEngine.play('unlock');
+        setSkinGiftCelebration({ skin: ch, id: Date.now() });
+        // Reveal the unlock in inventory after the box opens
+        setTimeout(() => {
           setGame(prev => prev.unlockedSkins.includes(idx) ? prev : { ...prev, unlockedSkins: [...prev.unlockedSkins, idx] });
-          const ch = CHARACTERS[idx];
-          setSkinCelebration(ch);
-          soundEngine.play('unlock');
-          setTimeout(() => setSkinCelebration(null), 3500);
-        }
+        }, 2400);
+        setTimeout(() => setSkinGiftCelebration(null), 5000);
       },
       onCoinGift: (amount) => {
         soundEngine.play('purchase');
@@ -2648,6 +2650,110 @@ export default function App() {
         </div>
       )}
 
+      {/* Skin gift celebration — gift box flies in → opens → reveals new character */}
+      {skinGiftCelebration && (
+        <div key={skinGiftCelebration.id} style={{
+          position: 'absolute', inset: 0, zIndex: 200,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: `radial-gradient(ellipse at center, ${skinGiftCelebration.skin.color}40, rgba(0,0,0,0.78) 70%)`,
+          backdropFilter: 'blur(4px)', pointerEvents: 'none',
+          animation: 'coinFlash 0.4s ease-out',
+        }}>
+          {/* Header */}
+          <div style={{
+            position: 'absolute', top: '14%', left: '50%', transform: 'translateX(-50%)',
+            fontFamily: "'Press Start 2P', monospace", fontSize: '11px',
+            color: skinGiftCelebration.skin.color, letterSpacing: '3px',
+            textShadow: `0 0 12px ${skinGiftCelebration.skin.color}`,
+            animation: 'fadeInDown 0.5s ease-out 0.1s both',
+            whiteSpace: 'nowrap',
+          }}>
+            🎁 A GIFT FROM TIMUR 🎁
+          </div>
+
+          {/* Stage container */}
+          <div style={{
+            position: 'relative',
+            width: 'min(280px, 70vw)', height: 'min(280px, 70vw)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {/* Gift box — flies in, shakes, bursts */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 'clamp(110px, 28vw, 180px)',
+              animation: 'giftFly 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, giftShake 0.5s ease-in-out 0.9s 2, giftBurst 0.4s ease-out 1.95s both',
+              filter: `drop-shadow(0 12px 30px ${skinGiftCelebration.skin.color}99) drop-shadow(0 0 40px ${skinGiftCelebration.skin.color})`,
+              transformOrigin: 'center',
+            }}>
+              🎁
+            </div>
+
+            {/* Burst rays */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${skinGiftCelebration.skin.color}E6 0%, ${skinGiftCelebration.skin.color}80 30%, transparent 70%)`,
+              opacity: 0,
+              animation: 'burstRays 0.6s ease-out 2.0s both',
+            }} />
+
+            {/* Character reveal — appears as box bursts */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              opacity: 0,
+              animation: 'amountReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 2.15s both',
+            }}>
+              <div style={{
+                width: 'min(180px, 50vw)', height: 'min(180px, 50vw)',
+                filter: `drop-shadow(0 0 20px ${skinGiftCelebration.skin.color}) drop-shadow(0 0 40px ${skinGiftCelebration.skin.color}88)`,
+                animation: 'skinSpin 3s ease-in-out 2.4s infinite',
+              }}>
+                <img src={`/characters/${skinGiftCelebration.skin.file}`} alt={skinGiftCelebration.skin.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+              <div style={{
+                position: 'absolute', bottom: '-12%', left: '50%', transform: 'translateX(-50%)',
+                fontFamily: "'Bungee Shade', cursive",
+                fontSize: 'clamp(18px, 4.5vw, 28px)',
+                color: '#fff', whiteSpace: 'nowrap',
+                textShadow: `0 0 14px ${skinGiftCelebration.skin.color}, 0 0 28px ${skinGiftCelebration.skin.color}aa, 3px 3px 0 #000`,
+              }}>
+                {skinGiftCelebration.skin.name}
+              </div>
+            </div>
+          </div>
+
+          {/* Tagline below */}
+          <div style={{
+            position: 'absolute', bottom: '18%', left: '50%', transform: 'translateX(-50%)',
+            fontFamily: "'Bangers', cursive", fontSize: 'clamp(16px, 4vw, 22px)',
+            color: skinGiftCelebration.skin.color, letterSpacing: '2px',
+            textShadow: `0 0 12px ${skinGiftCelebration.skin.color}`,
+            opacity: 0,
+            animation: 'fadeInDown 0.5s ease-out 2.6s both',
+            whiteSpace: 'nowrap',
+          }}>
+            ✨ NEW SKIN UNLOCKED ✨
+          </div>
+
+          {/* Sparkle burst */}
+          {Array.from({ length: 24 }).map((_, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              top: '50%', left: '50%',
+              fontSize: 16 + (i % 4) * 6,
+              opacity: 0,
+              animation: `coinBurst ${1.6 + (i % 5) * 0.2}s ease-out 2.0s forwards`,
+              ['--burst-angle']: `${(i / 24) * 360}deg`,
+              ['--burst-dist']: `${130 + (i % 4) * 40}px`,
+              filter: `drop-shadow(0 0 8px ${skinGiftCelebration.skin.color})`,
+            }}>{['✨', '⭐', '💫', '🌟'][i % 4]}</div>
+          ))}
+        </div>
+      )}
+
       {/* Achievement toast */}
       {achievementToast && (
         <div style={{
@@ -2797,6 +2903,10 @@ export default function App() {
             opacity: 0;
             transform: translate(-50%, -50%) rotate(var(--burst-angle)) translateY(calc(-1 * var(--burst-dist))) rotate(calc(-1 * var(--burst-angle) + 720deg));
           }
+        }
+        @keyframes skinSpin {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.08) rotate(5deg); }
         }
 
         ::-webkit-scrollbar { width: 6px; }
