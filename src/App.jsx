@@ -2096,7 +2096,7 @@ export default function App() {
             background: '#fff', boxShadow: '0 0 6px #fff',
             animation: 'liveDot 1.2s ease-in-out infinite',
           }} />
-          <span style={{ fontWeight: 700 }}>LIVE</span>
+          <span style={{ fontWeight: 700 }}>ADMIN ABUSE LIVE</span>
           {adminEvent.name && (
             <>
               <span style={{ opacity: 0.5, fontSize: '11px' }}>·</span>
