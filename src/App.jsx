@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { registerPlayer, loginPlayer, saveGameCloud, loadGameCloud, getLeaderboard } from './supabase.js';
 import { subscribeToAdmin, submitVote, announcePresence } from './adminBridge.js';
+import {
+  registerServiceWorker, notify,
+  shouldOfferOptIn, requestPermission, rememberOptInDismissed,
+  notificationPermission,
+} from './notifications.js';
 
 // ============================================================
 // CONSTANTS & CONFIG
@@ -1096,6 +1101,88 @@ function WorldBackground({ skinId }) {
 // ============================================================
 // MAIN APP
 // ============================================================
+// First-run tutorial — three quick steps for new players
+// ============================================================
+const TUTORIAL_STEPS = [
+  {
+    title: 'TAP THE CHARACTER',
+    body: 'Every tap earns you coins. Tap fast for combo multipliers — up to 5×!',
+    emoji: '👆',
+    target: 'character',
+  },
+  {
+    title: 'BUY UPGRADES IN THE SHOP',
+    body: 'Auto-clickers earn coins for you even when you\'re not tapping. Open the SHOP tab.',
+    emoji: '🛒',
+    target: 'shop',
+  },
+  {
+    title: 'SAVE YOUR PROGRESS',
+    body: 'Create an account so you can come back later and play across devices.',
+    emoji: '💾',
+    target: 'logout',
+  },
+];
+
+function TutorialOverlay({ step, onNext, onSkip }) {
+  const s = TUTORIAL_STEPS[step];
+  if (!s) return null;
+  const isLast = step === TUTORIAL_STEPS.length - 1;
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 100,
+      background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(2px)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '24px',
+    }} onClick={(e) => e.stopPropagation()}>
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(20,5,40,0.98), rgba(40,10,80,0.98))',
+        border: '2px solid #a259ff', borderRadius: '20px', padding: '24px',
+        boxShadow: '0 16px 60px rgba(162,89,255,0.5), 0 0 120px rgba(162,89,255,0.3)',
+        maxWidth: '380px', width: '100%', textAlign: 'center',
+      }}>
+        <div style={{
+          fontFamily: "'Press Start 2P', monospace", fontSize: '9px',
+          color: '#a259ff', letterSpacing: '2px', marginBottom: '8px',
+        }}>STEP {step + 1} OF {TUTORIAL_STEPS.length}</div>
+        <div style={{ fontSize: '64px', marginBottom: '8px' }}>{s.emoji}</div>
+        <div style={{
+          fontFamily: "'Bungee Shade', cursive", fontSize: '22px',
+          color: '#fff', letterSpacing: '1px', marginBottom: '10px',
+          textShadow: '0 0 12px rgba(162,89,255,0.7)',
+        }}>{s.title}</div>
+        <div style={{
+          fontFamily: "'Bangers', cursive", fontSize: '17px', color: 'rgba(255,255,255,0.85)',
+          lineHeight: 1.4, letterSpacing: '0.5px', marginBottom: '20px',
+        }}>{s.body}</div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={onSkip} style={{
+            padding: '10px 14px', borderRadius: '10px',
+            border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer',
+            background: 'transparent', color: 'rgba(255,255,255,0.6)',
+            fontFamily: "'Bangers', cursive", fontSize: '14px',
+          }}>Skip</button>
+          <button onClick={onNext} style={{
+            flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #a259ff, #6a0dad)', color: '#fff',
+            fontFamily: "'Bangers', cursive", fontSize: '17px', letterSpacing: '1px',
+          }}>{isLast ? '🎮 LET\'S GO!' : 'NEXT →'}</button>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '14px' }}>
+          {TUTORIAL_STEPS.map((_, i) => (
+            <div key={i} style={{
+              width: i === step ? '24px' : '8px', height: '8px', borderRadius: '999px',
+              background: i === step ? '#a259ff' : 'rgba(255,255,255,0.2)',
+              transition: 'all 0.2s',
+            }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // Small floating "← timur.world" link — shown on login + start screens
 // so players can return to the marketing site without using browser back.
 // ============================================================
@@ -1781,6 +1868,8 @@ export default function App() {
   const [adminEvent, setAdminEvent] = useState({ active: false, name: '' });
   const [adminEffects, setAdminEffects] = useState({}); // { effectId: bool }
   const adminEffectsRef = useRef({});
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(null); // null | 0 | 1 | 2
   const [adminMessage, setAdminMessage] = useState(null); // { text, id }
   const [adminSchedule, setAdminSchedule] = useState(null); // { event_name, scheduled_for }
   const [adminVote, setAdminVote] = useState(null); // { id, question, ends_at }
@@ -1913,17 +2002,34 @@ export default function App() {
   useEffect(() => {
     const unsub = subscribeToAdmin({
       currentUsername: game.username,
-      onEventStateChange: (active, name) => setAdminEvent({ active, name: name || '' }),
+      onEventStateChange: (active, name) => {
+        setAdminEvent({ active, name: name || '' });
+        if (active && document.hidden) {
+          notify('🔴 Admin Abuse is LIVE!', {
+            body: name ? `${name} — jump in now to catch the chaos.` : 'Jump in now to catch the chaos.',
+            tag: 'admin-event',
+          });
+        }
+      },
       onEffectChange: (effectId, active) => setAdminEffects(prev => ({ ...prev, [effectId]: active })),
       onGlobalMessage: (text) => {
         setAdminMessage({ text, id: Date.now() });
         setTimeout(() => setAdminMessage(null), 8000);
+        if (document.hidden) {
+          notify('📢 Message from Timur', { body: text, tag: 'broadcast' });
+        }
       },
       onSkinGift: (skinName) => {
         const idx = CHARACTERS.findIndex(c => c.name.toLowerCase() === skinName.toLowerCase());
         if (idx < 0) return;
         const ch = CHARACTERS[idx];
         soundEngine.play('unlock');
+        if (document.hidden) {
+          notify('🎁 New skin unlocked!', {
+            body: `${ch.name} is yours — open the game to equip it.`,
+            tag: 'skin-gift',
+          });
+        }
         setSkinGiftCelebration({ skin: ch, id: Date.now() });
         // Reveal the unlock in inventory after the box opens
         setTimeout(() => {
@@ -1933,6 +2039,12 @@ export default function App() {
       },
       onCoinGift: (amount) => {
         soundEngine.play('purchase');
+        if (document.hidden) {
+          notify('🎁 Timur gifted you coins!', {
+            body: `+${amount.toLocaleString()} coins waiting for you.`,
+            tag: 'coin-gift',
+          });
+        }
         // Show celebration first — box flies in, opens, reveals amount
         setCoinCelebration({ amount, id: Date.now() });
         // Add coins to balance after the box opens and the amount is revealed (~2.4s in)
@@ -1957,6 +2069,33 @@ export default function App() {
     if (!game.username || screen !== 'game') return;
     return announcePresence(game.username);
   }, [game.username, screen]);
+
+  // Register service worker once on mount
+  useEffect(() => { registerServiceWorker(); }, []);
+
+  // Onboarding tutorial — fires once for fresh players when they enter the game
+  useEffect(() => {
+    if (screen !== 'game') return;
+    if (localStorage.getItem('brainrot_tutorial_done') === '1') return;
+    if ((game.totalClicks || 0) > 5) {
+      // They already played a bit (returning local save) — skip tutorial
+      localStorage.setItem('brainrot_tutorial_done', '1');
+      return;
+    }
+    const t = setTimeout(() => setTutorialStep(0), 600);
+    return () => clearTimeout(t);
+  }, [screen, game.totalClicks]);
+
+  // Notification opt-in — offer after the player is engaged (~5 minutes in or admin event happens)
+  useEffect(() => {
+    if (screen !== 'game') return;
+    if (!shouldOfferOptIn()) return;
+    // Trigger when an admin event becomes active (highest perceived value moment)
+    if (adminEvent?.active) { setShowNotifPrompt(true); return; }
+    // Or after 5 minutes of play
+    const t = setTimeout(() => { if (shouldOfferOptIn()) setShowNotifPrompt(true); }, 5 * 60 * 1000);
+    return () => clearTimeout(t);
+  }, [screen, adminEvent?.active]);
 
   // DJ effect sounds — start/stop sound loop alongside each visual effect
   useEffect(() => {
@@ -3774,6 +3913,57 @@ export default function App() {
             <div style={{ color: '#fff', fontSize: '12px' }}>{achievementToast.name}</div>
           </div>
         </div>
+      )}
+
+      {/* Notification opt-in prompt */}
+      {showNotifPrompt && (
+        <div style={{
+          position: 'absolute', bottom: 'calc(56px + 16px)', left: '50%', transform: 'translateX(-50%)',
+          width: 'min(360px, 92vw)', zIndex: 60,
+          background: 'linear-gradient(135deg, rgba(20,5,40,0.97), rgba(40,10,80,0.97))',
+          border: '2px solid #a259ff', borderRadius: '16px', padding: '16px 18px',
+          boxShadow: '0 12px 40px rgba(162,89,255,0.5), 0 0 80px rgba(162,89,255,0.3)',
+          color: '#fff', animation: 'slideDown 0.35s ease-out',
+        }}>
+          <div style={{
+            fontFamily: "'Press Start 2P', monospace", fontSize: '9px',
+            color: '#a259ff', letterSpacing: '2px', marginBottom: '8px',
+          }}>🔔 NEVER MISS A LIVE EVENT</div>
+          <div style={{ fontFamily: "'Bangers', cursive", fontSize: '17px', lineHeight: 1.3, marginBottom: '12px' }}>
+            Get a ping when Timur runs an Admin Abuse, gifts you coins, or sends a broadcast.
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={async () => {
+              await requestPermission();
+              setShowNotifPrompt(false);
+            }} style={{
+              flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+              background: 'linear-gradient(135deg, #a259ff, #6a0dad)', color: '#fff',
+              fontFamily: "'Bangers', cursive", fontSize: '15px', letterSpacing: '1px',
+            }}>🔔 TURN ON</button>
+            <button onClick={() => { rememberOptInDismissed(); setShowNotifPrompt(false); }} style={{
+              padding: '10px 14px', borderRadius: '10px',
+              border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer',
+              background: 'transparent', color: 'rgba(255,255,255,0.7)',
+              fontFamily: "'Bangers', cursive", fontSize: '14px',
+            }}>Not now</button>
+          </div>
+        </div>
+      )}
+
+      {/* First-run onboarding tutorial — 3 steps */}
+      {tutorialStep !== null && (
+        <TutorialOverlay
+          step={tutorialStep}
+          onNext={() => setTutorialStep((s) => {
+            if (s === 2) {
+              localStorage.setItem('brainrot_tutorial_done', '1');
+              return null;
+            }
+            return (s ?? 0) + 1;
+          })}
+          onSkip={() => { setTutorialStep(null); localStorage.setItem('brainrot_tutorial_done', '1'); }}
+        />
       )}
 
       {/* Story popup */}
