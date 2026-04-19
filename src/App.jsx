@@ -397,7 +397,7 @@ class SoundEngine {
     };
     t.fireworks.intervalMs = 2400;
 
-    // POOP — wet farty bass blip
+    // POOP — wet farty bass blip + occasional SPLAT when one lands
     t.poop = function() {
       const ctx = ctxOf(); const now = ctx.currentTime;
       const o = ctx.createOscillator(); const g = ctx.createGain();
@@ -412,35 +412,56 @@ class SoundEngine {
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
       lfo.start(now); o.start(now);
       lfo.stop(now + 0.22); o.stop(now + 0.22);
+      // Sploosh splat ~1.5-2s later (when poop hits the bottom of the screen)
+      if (Math.random() < 0.4) {
+        setTimeout(() => {
+          noiseHit(0.18, v() * 0.4, 0, 800); // wet low-pass thud
+          tone(80, 'sine', 0.12, v() * 0.3, 30);
+        }, 1400 + Math.random() * 600);
+      }
     };
     t.poop.intervalMs = 350;
 
-    // ROCKET — continuous engine rumble (sustained noise + low pitch)
+    // ROCKET — sustained engine rumble + WHOOSH on each launch (every 0.4s = 5 staggered rockets)
     t.rocket = function(sustain) {
-      // Only schedule on first tick — sustained nodes
-      if (sustain.length) return;
       const ctx = ctxOf(); const now = ctx.currentTime;
-      const noise = ctx.createBufferSource();
-      noise.buffer = this.makeNoiseBuffer(2);
-      noise.loop = true;
-      const lp = ctx.createBiquadFilter();
-      lp.type = 'lowpass'; lp.frequency.value = 600;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(v() * 0.7, now + 0.3);
-      noise.connect(lp); lp.connect(g); g.connect(ctx.destination);
-      noise.start(now);
-      // Low rumble oscillator
-      const o = ctx.createOscillator();
-      o.type = 'sawtooth'; o.frequency.value = 60;
-      const og = ctx.createGain();
-      og.gain.setValueAtTime(0, now);
-      og.gain.linearRampToValueAtTime(v() * 0.4, now + 0.3);
-      o.connect(og); og.connect(ctx.destination);
-      o.start(now);
-      sustain.push(noise, o);
+      // First tick: start sustained engine
+      if (sustain.length === 0) {
+        const noise = ctx.createBufferSource();
+        noise.buffer = this.makeNoiseBuffer(2);
+        noise.loop = true;
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass'; lp.frequency.value = 600;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(v() * 0.5, now + 0.3);
+        noise.connect(lp); lp.connect(g); g.connect(ctx.destination);
+        noise.start(now);
+        // Low rumble oscillator
+        const o = ctx.createOscillator();
+        o.type = 'sawtooth'; o.frequency.value = 60;
+        const og = ctx.createGain();
+        og.gain.setValueAtTime(0, now);
+        og.gain.linearRampToValueAtTime(v() * 0.3, now + 0.3);
+        o.connect(og); og.connect(ctx.destination);
+        o.start(now);
+        sustain.push(noise, o);
+      }
+      // Every tick: WHOOSH for one rocket launch (high → low pitched sweep)
+      const w = ctx.createOscillator(); const wg = ctx.createGain();
+      w.type = 'sawtooth';
+      w.frequency.setValueAtTime(900, now);
+      w.frequency.exponentialRampToValueAtTime(80, now + 0.45);
+      const wlp = ctx.createBiquadFilter();
+      wlp.type = 'lowpass'; wlp.frequency.value = 1500;
+      w.connect(wlp); wlp.connect(wg); wg.connect(ctx.destination);
+      wg.gain.setValueAtTime(v() * 0.45, now);
+      wg.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      w.start(now); w.stop(now + 0.55);
+      // Add noise burst for engine ignition
+      noiseHit(0.18, v() * 0.5, 200, 2000);
     };
-    t.rocket.intervalMs = 99999; // run only on activation
+    t.rocket.intervalMs = 400; // each rocket launch (matches visual stagger)
 
     // CATS — random meow chirps
     t.cats = function() {
@@ -1146,10 +1167,31 @@ function AdminEffectDisco() {
   </>);
 }
 
-function AdminEffectFireworks() {
-  // Big shell bursts: glowing fireballs trailing up, exploding into 20-spark
-  // radial bursts that travel ~30-40% of the viewport and fade with sparkle tails
+function AdminEffectFireworks({ setGame }) {
+  // Big shell bursts + catchable falling coin pickups (250 each)
   const colors = ['#ff3060','#ffd900','#00f0ff','#ff00ff','#33ff66','#ff7a00','#ffffff','#ff5599','#ffa500','#88ff00'];
+  const [pickups, setPickups] = useState([]);
+  const pickupIdRef = useRef(0);
+
+  useEffect(() => {
+    const spawn = () => {
+      const newPickups = [...Array(3)].map(() => ({
+        id: pickupIdRef.current++,
+        x: 12 + Math.random() * 76,
+        startTop: 25 + Math.random() * 30,
+        born: Date.now(),
+      }));
+      setPickups(prev => [...prev.filter(p => Date.now() - p.born < 4500), ...newPickups]);
+    };
+    spawn();
+    const i = setInterval(spawn, 2200);
+    return () => clearInterval(i);
+  }, []);
+
+  const grab = (id) => {
+    setGame(prev => ({ ...prev, points: prev.points + 250, lifetimePoints: prev.lifetimePoints + 250 }));
+    setPickups(prev => prev.filter(p => p.id !== id));
+  };
   // 8 burst sites — each gets a launching shell + bigger explosion
   const shells = [...Array(8)].map((_, i) => ({
     x: 10 + (i * 11) % 80,
@@ -1226,6 +1268,17 @@ function AdminEffectFireworks() {
         animation: `fwTrail 2.4s ease-in ${s.delay + 1.7}s infinite`,
       }} />
     )))}
+    {/* Catchable coin pickups — drift down, tap to claim +250 */}
+    {pickups.map(p => (
+      <div key={p.id} onClick={() => grab(p.id)} style={{
+        position: 'absolute', top: `${p.startTop}%`, left: `${p.x}%`,
+        fontSize: 44, zIndex: 19,
+        pointerEvents: 'auto', cursor: 'pointer',
+        animation: 'pickupFall 4.5s ease-in forwards',
+        filter: 'drop-shadow(0 0 18px #ffd700) drop-shadow(0 0 32px #ff9500)',
+        transform: 'translate(-50%, 0)',
+      }}>🪙</div>
+    ))}
     {/* Banner */}
     <div style={{
       position: 'absolute', top: '11%', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
@@ -1256,6 +1309,12 @@ function AdminEffectFireworks() {
         100% { opacity: 0; transform: translate(-50%, calc(50% + 220px)); }
       }
       @keyframes fwBannerPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.08); } }
+      @keyframes pickupFall {
+        0% { opacity: 0; transform: translate(-50%, 0) scale(0.6) rotate(0deg); }
+        15% { opacity: 1; transform: translate(-50%, 20px) scale(1) rotate(60deg); }
+        90% { opacity: 1; transform: translate(-50%, 60vh) scale(1) rotate(720deg); }
+        100% { opacity: 0; transform: translate(-50%, 70vh) scale(0.5) rotate(800deg); }
+      }
     `}</style>
   </>);
 }
@@ -1366,24 +1425,54 @@ function AdminEffectRocket() {
   </>);
 }
 
-function AdminEffectCats() {
-  // Cats in waves, varying sizes, bouncing, MEOW bubbles, hue rave
+function AdminEffectCats({ setGame }) {
+  // Cats in waves, varying sizes, bouncing — TAP to catch for +500 coins
+  const [caught, setCaught] = useState(new Set());
+  const [popups, setPopups] = useState([]);
+  const popupIdRef = useRef(0);
+
+  const catchCat = (e, i) => {
+    e.stopPropagation();
+    if (caught.has(i)) return;
+    setGame(prev => ({ ...prev, points: prev.points + 500, lifetimePoints: prev.lifetimePoints + 500 }));
+    setCaught(s => new Set([...s, i]));
+    // +500 popup at click point
+    const pid = popupIdRef.current++;
+    const r = e.currentTarget.getBoundingClientRect();
+    setPopups(prev => [...prev, { id: pid, x: r.left + r.width / 2, y: r.top }]);
+    setTimeout(() => setPopups(prev => prev.filter(p => p.id !== pid)), 900);
+    // Cat respawns after 1.5s so the rave keeps moving
+    setTimeout(() => setCaught(s => { const n = new Set(s); n.delete(i); return n; }), 1500);
+  };
+
   return (<>
     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent, rgba(255,105,180,0.2))', animation: 'discoWash 2s linear infinite', backgroundSize: '400% 400%', zIndex: 13, pointerEvents: 'none' }} />
     {[...Array(16)].map((_, i) => {
+      if (caught.has(i)) return null;
       const tier = i % 3;
       const size = tier === 2 ? 80 : tier === 1 ? 56 : 38;
       const top = 6 + ((i * 7) % 80);
       const dir = i % 2; // 0 left→right, 1 right→left
       return (
-        <div key={i} style={{
+        <div key={i} onClick={(e) => catchCat(e, i)} style={{
           position: 'absolute', top: `${top}%`, left: dir ? 'auto' : '-80px', right: dir ? '-80px' : 'auto',
           fontSize: `${size}px`, zIndex: 15,
           animation: `${dir ? 'catZoomR' : 'catZoomL'} ${2.5 + (i % 3) * 0.7}s linear ${i * 0.2}s infinite, catBounce 0.4s ease-in-out infinite`,
-          filter: `hue-rotate(${i * 30}deg)`,
+          filter: `hue-rotate(${i * 30}deg) drop-shadow(0 0 8px rgba(255,105,180,0.6))`,
+          pointerEvents: 'auto', cursor: 'pointer',
         }}>🐱</div>
       );
     })}
+    {/* +500 popups when cats are caught — fixed position so they appear wherever clicked */}
+    {popups.map(p => (
+      <div key={p.id} style={{
+        position: 'fixed', top: p.y, left: p.x, zIndex: 30,
+        fontFamily: "'Bungee Shade', cursive", fontSize: '24px', color: '#ffd700',
+        textShadow: '0 0 12px #ff69b4, 2px 2px 0 #000', pointerEvents: 'none',
+        animation: 'catCatchPop 0.9s ease-out forwards',
+        transform: 'translate(-50%, -50%)',
+      }}>+500</div>
+    ))}
     {/* MEOW bubbles */}
     {[...Array(8)].map((_, i) => (
       <div key={'m'+i} style={{
@@ -1405,6 +1494,7 @@ function AdminEffectCats() {
       @keyframes catZoomR { 0% { right: -80px; } 100% { right: calc(100% + 80px); } }
       @keyframes catBounce { 0%, 100% { margin-top: 0; } 50% { margin-top: -16px; } }
       @keyframes meowBubble { 0% { opacity: 0; transform: scale(0.5); } 30% { opacity: 1; transform: scale(1.2); } 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.8) translateY(-30px); } }
+      @keyframes catCatchPop { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); } 30% { opacity: 1; transform: translate(-50%, -80%) scale(1.4); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(1); } }
     `}</style>
   </>);
 }
@@ -1513,8 +1603,14 @@ function AdminEffectLightning() {
   </>);
 }
 
-function AdminEffectBomb() {
-  // Big explosion ring + character shrapnel + repeating
+function AdminEffectBomb({ setGame }) {
+  // Big explosion ring + character shrapnel + repeating — each boom gives +1000 coins
+  useEffect(() => {
+    const give = () => setGame(prev => ({ ...prev, points: prev.points + 1000, lifetimePoints: prev.lifetimePoints + 1000 }));
+    give(); // first boom on activation
+    const i = setInterval(give, 2400); // matches visual loop
+    return () => clearInterval(i);
+  }, [setGame]);
   const chars = ['01_noobini_lovini','02_la_romantic_grande','03_lovini_lovini_lovini','04_teddy_and_rosie','05_noobini_partini','06_cakini_and_presintini','07_lovin_rose','08_heartini_smilekur','09_dragon_partyini'];
   return (<>
     {/* Sky darken */}
@@ -1640,6 +1736,7 @@ export default function App() {
   const [cloudLeaderboard, setCloudLeaderboard] = useState([]);
   const [adminEvent, setAdminEvent] = useState({ active: false, name: '' });
   const [adminEffects, setAdminEffects] = useState({}); // { effectId: bool }
+  const adminEffectsRef = useRef({});
   const [adminMessage, setAdminMessage] = useState(null); // { text, id }
   const [adminSchedule, setAdminSchedule] = useState(null); // { event_name, scheduled_for }
   const [adminVote, setAdminVote] = useState(null); // { id, question, ends_at }
@@ -1712,6 +1809,8 @@ export default function App() {
     // Skin multiplier
     const skin = CHARACTERS[g.equippedSkin] || CHARACTERS[0];
     cps *= skin.mult;
+    // Admin DJ effect: rocket = 3× CPS while active
+    if (adminEffectsRef.current?.rocket) cps *= 3;
     return cps;
   }, []);
 
@@ -1811,6 +1910,7 @@ export default function App() {
 
   // DJ effect sounds — start/stop sound loop alongside each visual effect
   useEffect(() => {
+    adminEffectsRef.current = adminEffects;
     const ids = ['disco', 'fireworks', 'poop', 'rocket', 'cats', 'tsunami', 'lightning', 'bomb', 'crowd'];
     soundEngine.init();
     for (const id of ids) {
@@ -2030,11 +2130,15 @@ export default function App() {
     else if (tps >= 8) comboMult = 3;
     else if (tps >= 5) comboMult = 2;
 
+    const ae = adminEffectsRef.current || {};
     if (comboMult > 1) {
       setCombo(comboMult);
       soundEngine.play('combo');
       if (comboTimer) clearTimeout(comboTimer);
-      setComboTimer(setTimeout(() => setCombo(0), 1200));
+      // Crowd effect locks combo — no decay while active
+      if (!ae.crowd) {
+        setComboTimer(setTimeout(() => setCombo(0), 1200));
+      }
     }
 
     lastTapRef.current = now;
@@ -2043,6 +2147,9 @@ export default function App() {
     let effectMult = 1;
     if (activeEffect?.type === 'frenzy') effectMult = 7;
     if (activeEffect?.type === 'tapstorm') effectMult = 20;
+    // Admin DJ effects: disco doubles tap, lightning crits 10×
+    if (ae.disco) effectMult *= 2;
+    if (ae.lightning) effectMult *= 10;
     const earned = tp * comboMult * effectMult;
 
     soundEngine.play('tap');
@@ -2954,16 +3061,17 @@ export default function App() {
       )}
 
       {/* Admin: Effect renderers */}
-      {/* Wrapper makes all DJ effects non-interactive so clicks pass through to the character */}
+      {/* Wrapper makes all DJ effects non-interactive so clicks pass through to the character.
+          Individual elements inside (catchable cats, coin pickups) re-enable pointer-events. */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         {adminEffects.disco && <AdminEffectDisco />}
-        {adminEffects.fireworks && <AdminEffectFireworks />}
+        {adminEffects.fireworks && <AdminEffectFireworks setGame={setGame} />}
         {adminEffects.poop && <AdminEffectPoop />}
         {adminEffects.rocket && <AdminEffectRocket />}
-        {adminEffects.cats && <AdminEffectCats />}
+        {adminEffects.cats && <AdminEffectCats setGame={setGame} />}
         {adminEffects.tsunami && <AdminEffectTsunami setGame={setGame} />}
         {adminEffects.lightning && <AdminEffectLightning />}
-        {adminEffects.bomb && <AdminEffectBomb />}
+        {adminEffects.bomb && <AdminEffectBomb setGame={setGame} />}
         {adminEffects.crowd && <AdminEffectCrowd />}
       </div>
 
