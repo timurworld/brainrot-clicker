@@ -337,6 +337,47 @@ class SoundEngine {
         if (s === 4 || s === 12) clap(vol);
         if (s === 8) zap(vol);
       },
+      // 10 — Funk swagger (Uptown-style): punchy kick-snare, syncopated bass, horn stabs
+      (vol, s) => {
+        if (s === 0 || s === 8) kick(vol);
+        if (s === 4 || s === 12) snare(vol);
+        const funkBass = [65, 0, 0, 73, 65, 0, 82, 0];
+        if (funkBass[s % 8]) bass(vol, funkBass[s % 8]);
+        if (s === 2 || s === 10) lead(vol, 523); // horn stab
+        if (s === 6 || s === 14) lead(vol * 0.7, 659); // higher horn
+        if (s % 2 === 1) hat(vol * 0.6);
+      },
+      // 11 — French house filter: 4-on-floor, alternating bass, claps on 2/4
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        if (s === 4 || s === 12) clap(vol);
+        bass(vol * 0.55, s % 8 < 4 ? 55 : 82);
+        if (s % 4 === 2) openHat(vol * 0.55);
+      },
+      // 12 — Latin disco: tumbao bass, clave, cowbell
+      (vol, s) => {
+        if (s === 0 || s === 6 || s === 10) kick(vol);
+        if (s === 3 || s === 8 || s === 14) cowbell(vol);
+        const tumbao = [73, 0, 82, 0, 98, 0, 82, 0];
+        if (tumbao[s % 8]) bass(vol, tumbao[s % 8]);
+        if (s % 2 === 1) hat(vol * 0.55);
+      },
+      // 13 — 80s synthpop: snappy snare, bright arp, pulsing bass
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        if (s === 4 || s === 12) snare(vol);
+        const synthArp = [392, 523, 659, 784, 659, 523];
+        arp(vol * 0.75, synthArp[s % synthArp.length]);
+        if (s % 2 === 1) hat(vol * 0.4);
+      },
+      // 14 — Deep house rolling sub: slow kick, deep sub, shimmer hats
+      (vol, s) => {
+        if (s % 4 === 0) subKick(vol);
+        bass(vol * 0.4, 41);
+        if (s === 4 || s === 12) clap(vol * 0.6);
+        if (s % 2 === 1) hat(vol * 0.3);
+        if (s === 7 || s === 15) openHat(vol * 0.4);
+      },
     ];
 
     let discoStep = 0; let discoTrackIdx = 0;
