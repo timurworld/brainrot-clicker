@@ -221,6 +221,14 @@ class SoundEngine {
     delete this.loops[effectId];
   }
 
+  // Toggle sound globally. When muted, stop all running DJ loops immediately.
+  setEnabled(on) {
+    this.enabled = !!on;
+    if (!this.enabled) {
+      for (const id of Object.keys(this.loops)) this.stopEffect(id);
+    }
+  }
+
   get _tickers() {
     if (this.__t) return this.__t;
     const v = () => this.sfxVolume * 0.3;
@@ -3221,7 +3229,7 @@ export default function App() {
         top: (adminSchedule && !adminEvent.active) ? 'clamp(80px, 11vh, 95px)' : '10px',
       }} onClick={(e) => {
         e.stopPropagation();
-        soundEngine.enabled = !soundEngine.enabled;
+        soundEngine.setEnabled(!soundEngine.enabled);
         setSettingsOpen(false);
         setGame(prev => ({ ...prev })); // force re-render
       }}>
@@ -3816,19 +3824,6 @@ export default function App() {
                   background: 'rgba(0,0,0,0.5)', color: '#fff', fontFamily: "'Bangers', cursive",
                 }} />
             </div>
-            <button onClick={() => {
-              if (confirm('Reset ALL game data? This cannot be undone!')) {
-                localStorage.removeItem('brainrot_save');
-                setGame(defaultState());
-                setScreen('start');
-                setSettingsOpen(false);
-                setActivePanel(null);
-              }
-            }} style={{
-              width: '100%', padding: '10px', borderRadius: '8px', border: 'none',
-              background: '#e74c3c', color: '#fff', fontFamily: "'Bangers', cursive",
-              fontSize: '16px', cursor: 'pointer', marginTop: '8px',
-            }}>Reset Game</button>
             <button onClick={() => {
               localStorage.removeItem('brainrot_player');
               setPlayer(null);
