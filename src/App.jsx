@@ -2101,6 +2101,16 @@ export default function App() {
     };
   }, [screen, addFloatingEmote]);
 
+  // Admin force-reload channel — lets us push a new build to all players
+  useEffect(() => {
+    const ch = supabase.channel('brainrot:control')
+      .on('broadcast', { event: 'reload' }, () => {
+        try { window.location.reload(); } catch {}
+      });
+    ch.subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
   const sendEmote = useCallback((emote) => {
     const now = Date.now();
     if (now - lastEmoteAt.current < 600) return; // 600ms rate-limit
