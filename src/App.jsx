@@ -227,6 +227,7 @@ class SoundEngine {
     const ctxOf = () => this.ctx;
 
     const tone = (freq, type, dur, peakGain, freqEnd = null) => {
+      if (!this.enabled) return;
       const ctx = ctxOf(); const now = ctx.currentTime;
       const o = ctx.createOscillator(); const g = ctx.createGain();
       o.type = type; o.frequency.setValueAtTime(freq, now);
@@ -238,6 +239,7 @@ class SoundEngine {
     };
 
     const noiseHit = (dur, peakGain, hpFreq = 0, lpFreq = 0) => {
+      if (!this.enabled) return;
       const ctx = ctxOf(); const now = ctx.currentTime;
       const src = ctx.createBufferSource();
       src.buffer = this.makeNoiseBuffer(dur);
