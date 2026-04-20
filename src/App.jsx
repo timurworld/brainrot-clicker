@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { registerPlayer, loginPlayer, saveGameCloud, loadGameCloud, getLeaderboard } from './supabase.js';
+import { registerPlayer, loginPlayer, saveGameCloud, loadGameCloud, getLeaderboard, supabase } from './supabase.js';
 import { subscribeToAdmin, submitVote, announcePresence } from './adminBridge.js';
 import {
   registerServiceWorker, notify,
@@ -113,6 +113,8 @@ const STORY_MILESTONES = [
   { threshold: 10000000, text: 'Reality bends to your tapping power.', emoji: '🌀' },
   { threshold: 100000000, text: 'You have achieved MAXIMUM BRAINROT.', emoji: '💀' },
 ];
+
+const EMOTES = ['🔥', '❤️', '😂', '💀', '🎉', '🧠'];
 
 const NEWS_LOW = [
   "Local kid discovers tapping. Scientists baffled.",
@@ -1897,6 +1899,7 @@ export default function App() {
   const [reflexGame, setReflexGame] = useState(null);
   const [weatherAnim, setWeatherAnim] = useState(0);
   const [lightningFlash, setLightningFlash] = useState(false);
+  const [floatingEmotes, setFloatingEmotes] = useState([]);
 
   const gameRef = useRef(game);
   const comboRef = useRef(0);
@@ -1905,6 +1908,9 @@ export default function App() {
   const particleIdRef = useRef(0);
   const goldenTimerRef = useRef(null);
   const cpsIntervalRef = useRef(null);
+  const lastEmoteAt = useRef(0);
+  const emoteChannelRef = useRef(null);
+  const emoteIdRef = useRef(0);
 
   useEffect(() => { gameRef.current = game; }, [game]);
   useEffect(() => { comboRef.current = combo; }, [combo]);
@@ -2069,6 +2075,44 @@ export default function App() {
     if (!game.username || screen !== 'game') return;
     return announcePresence(game.username);
   }, [game.username, screen]);
+
+  // Live emote reactions — broadcast channel (ephemeral, no DB writes)
+  const addFloatingEmote = useCallback((username, emote) => {
+    const id = ++emoteIdRef.current;
+    const x = 10 + Math.random() * 80; // 10–90% horizontal
+    setFloatingEmotes(prev => [...prev, { id, username, emote, x }]);
+    setTimeout(() => {
+      setFloatingEmotes(prev => prev.filter(f => f.id !== id));
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    if (screen !== 'game') return;
+    const channel = supabase.channel('brainrot:emotes')
+      .on('broadcast', { event: 'emote' }, ({ payload }) => {
+        if (!payload?.emote || !payload?.username) return;
+        addFloatingEmote(payload.username, payload.emote);
+      });
+    channel.subscribe();
+    emoteChannelRef.current = channel;
+    return () => {
+      supabase.removeChannel(channel);
+      emoteChannelRef.current = null;
+    };
+  }, [screen, addFloatingEmote]);
+
+  const sendEmote = useCallback((emote) => {
+    const now = Date.now();
+    if (now - lastEmoteAt.current < 600) return; // 600ms rate-limit
+    lastEmoteAt.current = now;
+    const username = game.username || 'Player';
+    // Show locally immediately for instant feedback
+    addFloatingEmote(username, emote);
+    // Broadcast to everyone else
+    emoteChannelRef.current?.send({
+      type: 'broadcast', event: 'emote', payload: { username, emote },
+    });
+  }, [game.username, addFloatingEmote]);
 
   // Register service worker once on mount
   useEffect(() => { registerServiceWorker(); }, []);
@@ -2402,41 +2446,53 @@ export default function App() {
   // SHOP ACTIONS
   // ============================================================
   const buyAutoClicker = (ac) => {
-    const owned = game.autoClickers[ac.id] || 0;
-    const cost = getUpgradeCost(ac.baseCost, owned);
-    if (game.points < cost) return;
-    soundEngine.play('purchase');
-    setGame(prev => ({
-      ...prev,
-      points: prev.points - cost,
-      autoClickers: { ...prev.autoClickers, [ac.id]: (prev.autoClickers[ac.id] || 0) + 1 },
-      totalUpgrades: prev.totalUpgrades + 1,
-    }));
+    let bought = false;
+    setGame(prev => {
+      const owned = prev.autoClickers[ac.id] || 0;
+      const cost = getUpgradeCost(ac.baseCost, owned);
+      if (prev.points < cost) return prev;
+      bought = true;
+      return {
+        ...prev,
+        points: prev.points - cost,
+        autoClickers: { ...prev.autoClickers, [ac.id]: owned + 1 },
+        totalUpgrades: prev.totalUpgrades + 1,
+      };
+    });
+    if (bought) soundEngine.play('purchase');
   };
 
   const buyTapUpgrade = (t) => {
-    const owned = game.tapUpgrades[t.id] || 0;
-    const cost = getUpgradeCost(t.baseCost, owned);
-    if (game.points < cost) return;
-    soundEngine.play('purchase');
-    setGame(prev => ({
-      ...prev,
-      points: prev.points - cost,
-      tapUpgrades: { ...prev.tapUpgrades, [t.id]: (prev.tapUpgrades[t.id] || 0) + 1 },
-      totalUpgrades: prev.totalUpgrades + 1,
-    }));
+    let bought = false;
+    setGame(prev => {
+      const owned = prev.tapUpgrades[t.id] || 0;
+      const cost = getUpgradeCost(t.baseCost, owned);
+      if (prev.points < cost) return prev;
+      bought = true;
+      return {
+        ...prev,
+        points: prev.points - cost,
+        tapUpgrades: { ...prev.tapUpgrades, [t.id]: owned + 1 },
+        totalUpgrades: prev.totalUpgrades + 1,
+      };
+    });
+    if (bought) soundEngine.play('purchase');
   };
 
   const buyEfficiency = (eff) => {
-    if (game.efficiencyUpgrades.includes(eff.target)) return;
-    if (game.points < eff.cost) return;
-    soundEngine.play('purchase');
-    setGame(prev => ({
-      ...prev,
-      points: prev.points - eff.cost,
-      efficiencyUpgrades: [...prev.efficiencyUpgrades, eff.target],
-      totalUpgrades: prev.totalUpgrades + 1,
-    }));
+    let bought = false;
+    setGame(prev => {
+      if (prev.efficiencyUpgrades.includes(eff.target)) return prev;
+      if (prev.points < eff.cost) return prev;
+      bought = true;
+      return {
+        ...prev,
+        points: prev.points - eff.cost,
+        efficiencyUpgrades: [...prev.efficiencyUpgrades, eff.target],
+        totalUpgrades: prev.totalUpgrades + 1,
+      };
+    });
+    if (bought) soundEngine.play('purchase');
   };
 
   // ============================================================
@@ -2687,10 +2743,15 @@ export default function App() {
       color: 'rgba(255,255,255,0.7)', fontFamily: "'Bangers', cursive",
     },
     ticker: {
-      background: 'linear-gradient(90deg, rgba(106,13,173,0.7), rgba(0,0,0,0.6), rgba(106,13,173,0.7))',
-      padding: '5px 0', overflow: 'hidden',
-      whiteSpace: 'nowrap', fontSize: '13px', color: '#0ff',
-      borderTop: '1px solid rgba(0,255,255,0.3)', borderBottom: '1px solid rgba(0,255,255,0.3)',
+      background: 'linear-gradient(90deg, rgba(60,10,100,0.95), rgba(15,0,30,0.95), rgba(60,10,100,0.95))',
+      height: '36px', lineHeight: '36px', overflow: 'hidden',
+      whiteSpace: 'nowrap',
+      fontSize: 'clamp(16px, 1.4vw, 22px)',
+      fontFamily: "'Bangers', cursive", letterSpacing: '1.2px',
+      color: '#7afcff',
+      textShadow: '0 0 10px rgba(0,255,255,0.6), 1px 1px 0 #000',
+      borderTop: '1px solid rgba(0,255,255,0.4)', borderBottom: '1px solid rgba(0,255,255,0.4)',
+      boxShadow: '0 -2px 14px rgba(0,255,255,0.15)',
     },
     character: {
       position: 'absolute', top: '46%', left: '50%',
@@ -2732,18 +2793,21 @@ export default function App() {
     },
     bottomNav: {
       position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
+      height: '56px', boxSizing: 'border-box',
       display: 'flex', gap: '2px',
-      padding: '6px 8px 8px',
-      background: 'linear-gradient(180deg, rgba(10,5,30,0.92), rgba(5,0,15,0.98))',
-      borderTop: '1px solid rgba(255,255,255,0.08)',
+      padding: '2px 6px',
+      background: 'linear-gradient(180deg, rgba(18,8,40,0.94), rgba(5,0,15,0.98))',
+      borderTop: '1px solid rgba(162,89,255,0.35)',
+      boxShadow: '0 -4px 20px rgba(106,13,173,0.25)',
       backdropFilter: 'blur(16px)',
     },
     navBtn: {
-      flex: 1, padding: '8px 2px 6px', textAlign: 'center', color: '#fff',
-      fontSize: '10px', cursor: 'pointer', border: 'none', background: 'none',
+      flex: 1, padding: '4px 2px', textAlign: 'center', color: '#fff',
+      cursor: 'pointer', border: 'none', background: 'none',
       fontFamily: "'Bangers', cursive", display: 'flex', flexDirection: 'column',
-      alignItems: 'center', gap: '4px', transition: 'all 0.2s',
-      borderRadius: '12px', position: 'relative',
+      alignItems: 'center', justifyContent: 'center', gap: '2px',
+      transition: 'all 0.18s ease',
+      borderRadius: '10px', position: 'relative',
     },
     panel: {
       position: 'absolute', bottom: '56px', left: 0, right: 0, zIndex: 15,
@@ -3159,11 +3223,55 @@ export default function App() {
       </div>
 
       {/* News ticker */}
-      <div style={{ ...styles.ticker, position: 'absolute', bottom: '56px', left: 0, right: 0, zIndex: 10 }}>
+      <div style={{ ...styles.ticker, position: 'absolute', bottom: '60px', left: 0, right: 0, zIndex: 10 }}>
         <div style={{ animation: 'scroll 15s linear infinite', display: 'inline-block', paddingLeft: '100%' }}>
           📰 {getNews()} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 📰 {getNews()}
         </div>
       </div>
+
+      {/* Emote reaction bar */}
+      <div style={{
+        position: 'absolute', bottom: '108px', left: '50%', transform: 'translateX(-50%)',
+        zIndex: 12, display: 'flex', gap: '6px',
+        padding: '6px 10px', borderRadius: '999px',
+        background: 'linear-gradient(135deg, rgba(20,5,40,0.85), rgba(40,10,80,0.85))',
+        border: '1px solid rgba(162,89,255,0.4)',
+        boxShadow: '0 4px 18px rgba(106,13,173,0.35)',
+        backdropFilter: 'blur(8px)',
+      }} data-nav onClick={e => e.stopPropagation()}>
+        {EMOTES.map(e => (
+          <button key={e} onClick={() => sendEmote(e)} style={{
+            width: '36px', height: '36px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            fontSize: '20px', cursor: 'pointer', padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'transform 0.12s, background 0.12s',
+          }}
+          onMouseDown={ev => { ev.currentTarget.style.transform = 'scale(0.85)'; }}
+          onMouseUp={ev => { ev.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseLeave={ev => { ev.currentTarget.style.transform = 'scale(1)'; }}
+          >{e}</button>
+        ))}
+      </div>
+
+      {/* Floating emote reactions */}
+      {floatingEmotes.map(f => (
+        <div key={f.id} style={{
+          position: 'absolute', left: f.x + '%', bottom: '150px',
+          transform: 'translateX(-50%)',
+          zIndex: 40, pointerEvents: 'none', textAlign: 'center',
+          animation: 'emoteFloat 3s ease-out forwards',
+        }}>
+          <div style={{ fontSize: '46px', filter: 'drop-shadow(0 0 10px rgba(162,89,255,0.8))' }}>{f.emote}</div>
+          <div style={{
+            fontSize: '11px', color: '#fff',
+            fontFamily: "'Bangers', cursive", letterSpacing: '1.2px',
+            textShadow: '0 0 6px rgba(0,0,0,0.9), 1px 1px 0 #000',
+            marginTop: '-4px',
+          }}>{f.username}</div>
+        </div>
+      ))}
 
       {/* Combo display */}
       {combo > 1 && (
@@ -3239,15 +3347,16 @@ export default function App() {
         </div>
       )}
 
-      {/* Admin: Vote popup */}
-      {adminVote && !votedOn[adminVote.id] && (
+      {/* Admin: Vote popup — hidden while a bottom panel (shop/skins/etc) is open
+          so the YES/NO buttons don't block shop buy buttons. */}
+      {adminVote && !votedOn[adminVote.id] && !activePanel && (
         <div style={{
-          position: 'absolute', bottom: '100px', left: '50%', transform: 'translateX(-50%)',
-          zIndex: 45, padding: '16px 20px', borderRadius: '16px',
+          position: 'absolute', top: '90px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 45, padding: '14px 18px', borderRadius: '16px',
           background: 'rgba(15,5,35,0.98)', border: '2px solid #a259ff',
-          boxShadow: '0 0 40px rgba(162,89,255,0.5)', minWidth: '280px',
+          boxShadow: '0 0 40px rgba(162,89,255,0.5)', minWidth: '280px', maxWidth: '90vw',
         }}>
-          <div style={{ fontSize: '16px', color: '#fff', marginBottom: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '15px', color: '#fff', marginBottom: '10px', textAlign: 'center' }}>
             🗳 {adminVote.question}
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -3346,27 +3455,40 @@ export default function App() {
       {/* Bottom Navigation */}
       <div style={styles.bottomNav} data-nav onClick={e => e.stopPropagation()}>
         {[
-          { id: 'shop', label: 'Shop', svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> },
-          { id: 'skins', label: 'Skins', svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-          { id: 'codes', label: 'Codes', svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
-          { id: 'board', label: 'Board', svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15l-2 5l9-13h-5l2-5l-9 13h5z"/></svg> },
-          { id: 'achieve', label: 'Awards', svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
-          { id: 'reflex', label: 'Reflex', svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> },
-          { id: 'ascend', label: 'Ascend', svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/><polyline points="18 9 12 3 6 9"/><line x1="3" y1="21" x2="21" y2="21"/></svg> },
-        ].map(tab => (
-          <button key={tab.id} style={{
-            ...styles.navBtn,
-            color: activePanel === tab.id ? '#ffd700' : 'rgba(255,255,255,0.7)',
-            background: activePanel === tab.id ? 'rgba(106,13,173,0.4)' : 'transparent',
-            borderTop: activePanel === tab.id ? '2px solid #ffd700' : '2px solid transparent',
-          }} onClick={() => {
-            if (tab.id === 'reflex') { startReflex(); return; }
-            setActivePanel(activePanel === tab.id ? null : tab.id);
-          }}>
-            {tab.svg}
-            <span style={{ fontSize: '9px', marginTop: '2px', letterSpacing: '0.5px' }}>{tab.label}</span>
-          </button>
-        ))}
+          { id: 'shop', label: 'Shop', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> },
+          { id: 'skins', label: 'Skins', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+          { id: 'codes', label: 'Codes', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
+          { id: 'board', label: 'Board', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15l-2 5l9-13h-5l2-5l-9 13h5z"/></svg> },
+          { id: 'achieve', label: 'Awards', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
+          { id: 'reflex', label: 'Reflex', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> },
+          { id: 'ascend', label: 'Ascend', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/><polyline points="18 9 12 3 6 9"/><line x1="3" y1="21" x2="21" y2="21"/></svg> },
+        ].map(tab => {
+          const active = activePanel === tab.id;
+          return (
+            <button key={tab.id} style={{
+              ...styles.navBtn,
+              color: active ? '#ffd700' : 'rgba(230,220,255,0.78)',
+              background: active
+                ? 'linear-gradient(180deg, rgba(162,89,255,0.35), rgba(106,13,173,0.45))'
+                : 'transparent',
+              boxShadow: active
+                ? 'inset 0 1px 0 rgba(255,215,0,0.5), 0 0 14px rgba(255,215,0,0.25)'
+                : 'none',
+              filter: active ? 'drop-shadow(0 0 6px rgba(255,215,0,0.6))' : 'none',
+            }} onClick={() => {
+              if (tab.id === 'reflex') { startReflex(); return; }
+              setActivePanel(activePanel === tab.id ? null : tab.id);
+            }}>
+              {tab.svg}
+              <span style={{
+                fontSize: '9px',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                textShadow: active ? '0 0 6px rgba(255,215,0,0.6)' : 'none',
+              }}>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ============ PANELS ============ */}
@@ -4022,6 +4144,12 @@ export default function App() {
           50% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
         }
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @keyframes emoteFloat {
+          0%   { transform: translateX(-50%) translateY(0)    scale(0.5); opacity: 0; }
+          15%  { transform: translateX(-50%) translateY(-30px) scale(1.2); opacity: 1; }
+          40%  { transform: translateX(-50%) translateY(-110px) scale(1); opacity: 1; }
+          100% { transform: translateX(-50%) translateY(-300px) scale(0.8); opacity: 0; }
+        }
         @keyframes bounceIn { from { transform: scale(0) rotate(-10deg); } to { transform: scale(1) rotate(0); } }
         @keyframes confetti {
           from { transform: translateY(0) rotate(0); opacity: 1; }
