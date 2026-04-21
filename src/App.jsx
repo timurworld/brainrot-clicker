@@ -13,7 +13,7 @@ import {
 const CHARACTERS = [
   { id: 1, name: 'Noobini Lovini', file: '01_noobini_lovini.png', bgNum: '01', rarity: 'Common', unlock: 0, emoji: '💖', color: '#ff69b4', mult: 1,
     bg: 'linear-gradient(180deg, #6a11cb 0%, #bc4dff 50%, #6a11cb 100%)' },
-  { id: 2, name: 'Romantini Grandini', file: '02_la_romantic_grande.png', bgNum: '02', rarity: 'Limited', unlock: 500, emoji: '🌹', color: '#e74c3c', mult: 1.5,
+  { id: 2, name: 'Romantini Grandini', file: '02_la_romantic_grande.png', bgNum: '02', rarity: 'Common', unlock: 500, emoji: '🌹', color: '#e74c3c', mult: 1.5,
     bg: 'linear-gradient(180deg, #c0392b 0%, #ff6b6b 40%, #e74c3c 70%, #922b21 100%)' },
   { id: 3, name: 'Lovini Lovini Lovini', file: '03_lovini_lovini_lovini.png', bgNum: '03', rarity: 'Brainrot God', unlock: 2000, emoji: '💕', color: '#ff1493', mult: 2,
     bg: 'linear-gradient(180deg, #ff1493 0%, #ff69b4 35%, #ff1493 65%, #c71585 100%)' },
@@ -36,12 +36,18 @@ const CHARACTERS = [
   { id: 12, name: 'Birthdayini Cardini', file: '12_birthdayini_cardini.png', bgNum: '12', rarity: 'Brainrot God', unlock: 10000000, emoji: '🎈', color: '#ffd700', mult: 6.5,
     bg: 'linear-gradient(180deg, #f9a825 0%, #ffd54f 30%, #ffca28 60%, #f57f17 100%)' },
   // Characters 13, 14, 16, 17 removed — will be re-added with clean art
-  { id: 15, name: 'Noobini Partyini', file: '15_noobini_partyini.png', bgNum: '15', rarity: 'Brainrot God', unlock: 25000000, emoji: '🎊', color: '#2ecc71', mult: 7,
+  { id: 15, name: 'Pizzini Partyini', file: '15_noobini_partyini.png', bgNum: '15', rarity: 'Brainrot God', unlock: 25000000, emoji: '🍕', color: '#2ecc71', mult: 7,
     bg: 'linear-gradient(180deg, #0a5c2a 0%, #1fb85a 30%, #16a04c 60%, #084a22 100%)' },
   { id: 18, name: 'Noo Mio Heartini', file: '18_noo_my_heart.png', bgNum: '18', rarity: 'Rare', unlock: 50000000, emoji: '💔', color: '#8b0000', mult: 8,
     bg: 'linear-gradient(180deg, #1a237e 0%, #5c6bc0 30%, #3f51b5 60%, #0d1453 100%)' },
   { id: 19, name: 'Cupidini Hotspottini', file: '19_cupid_hotspot.png', bgNum: '19', rarity: 'Legendary', unlock: 100000000, emoji: '🔥', color: '#ff4500', mult: 9,
-    bg: 'linear-gradient(180deg, #ff6d00 0%, #ffab00 25%, #ff8f00 50%, #ff6d00 75%, #e65100 100%)' }
+    bg: 'linear-gradient(180deg, #ff6d00 0%, #ffab00 25%, #ff8f00 50%, #ff6d00 75%, #e65100 100%)' },
+  { id: 20, name: 'Stick Stick', file: '20_stick_stick.png', bgNum: '09', rarity: 'Secret', unlock: 250000000, emoji: '🏒', color: '#00d4ff', mult: 9.5,
+    bg: 'linear-gradient(180deg, #0a3d8f 0%, #2196f3 35%, #00d4ff 70%, #0a2e6b 100%)' },
+  { id: 21, name: 'No My Pucks', file: '21_no_my_pucks.png', bgNum: '17', rarity: 'Secret', unlock: 1000000000, emoji: '🥅', color: '#30d158', mult: 12,
+    bg: 'linear-gradient(180deg, #0d4a1f 0%, #30d158 35%, #16a34a 70%, #0a3515 100%)' },
+  { id: 22, name: 'Hockey Bros', file: '22_hockey_bros.png', bgNum: '09', rarity: 'Limited', unlock: 10000000000, emoji: '🏆', color: '#ffe23d', mult: 22,
+    bg: 'linear-gradient(180deg, #7f6000 0%, #ffe23d 35%, #ffc107 70%, #5d4500 100%)' }
 ];
 
 const AUTO_CLICKERS = [
