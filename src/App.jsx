@@ -35,7 +35,9 @@ const CHARACTERS = [
     bg: 'linear-gradient(180deg, #4a148c 0%, #9c27b0 30%, #7b1fa2 60%, #38006b 100%)' },
   { id: 12, name: 'Birthdayini Cardini', file: '12_birthdayini_cardini.png', bgNum: '12', rarity: 'Brainrot God', unlock: 10000000, emoji: '🎈', color: '#ffd700', mult: 6.5,
     bg: 'linear-gradient(180deg, #f9a825 0%, #ffd54f 30%, #ffca28 60%, #f57f17 100%)' },
-  // Characters 13, 14, 16, 17 removed — will be re-added with clean art
+  { id: 13, name: 'Cakini Elephantini', file: '13_cakini_elephantini.png', bgNum: '13', rarity: 'OG', unlock: 15000000, emoji: '🐘', color: '#9b8ec4', mult: 6.75,
+    bg: 'linear-gradient(180deg, #4a148c 0%, #9575cd 30%, #7e57c2 60%, #311b92 100%)' },
+  // Characters 14, 16, 17 removed — will be re-added with clean art
   { id: 15, name: 'Pizzini Partyini', file: '15_noobini_partyini.png', bgNum: '15', rarity: 'Brainrot God', unlock: 25000000, emoji: '🍕', color: '#2ecc71', mult: 7,
     bg: 'linear-gradient(180deg, #0a5c2a 0%, #1fb85a 30%, #16a04c 60%, #084a22 100%)' },
   { id: 18, name: 'Noo Mio Heartini', file: '18_noo_my_heart.png', bgNum: '18', rarity: 'Rare', unlock: 50000000, emoji: '💔', color: '#8b0000', mult: 8,
