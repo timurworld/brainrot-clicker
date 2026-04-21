@@ -1951,6 +1951,8 @@ export default function App() {
   const [weatherAnim, setWeatherAnim] = useState(0);
   const [lightningFlash, setLightningFlash] = useState(false);
   const [floatingEmotes, setFloatingEmotes] = useState([]);
+  // Most-recent purchase — drives a brief flash on the shop row
+  const [purchaseFlash, setPurchaseFlash] = useState({ id: null, cost: 0, time: 0 });
 
   const gameRef = useRef(game);
   const comboRef = useRef(0);
@@ -2508,11 +2510,13 @@ export default function App() {
   // ============================================================
   const buyAutoClicker = (ac) => {
     let bought = false;
+    let chargedCost = 0;
     setGame(prev => {
       const owned = prev.autoClickers[ac.id] || 0;
       const cost = getUpgradeCost(ac.baseCost, owned);
       if (prev.points < cost) return prev;
       bought = true;
+      chargedCost = cost;
       return {
         ...prev,
         points: prev.points - cost,
@@ -2520,16 +2524,23 @@ export default function App() {
         totalUpgrades: prev.totalUpgrades + 1,
       };
     });
-    if (bought) soundEngine.play('purchase');
+    if (bought) {
+      soundEngine.play('purchase');
+      setPurchaseFlash({ id: ac.id, cost: chargedCost, time: Date.now() });
+      setTimeout(() => setPurchaseFlash(f => f.id === ac.id && f.time <= Date.now() ? { id: null, cost: 0, time: 0 } : f), 600);
+      navigator.vibrate?.(15);
+    }
   };
 
   const buyTapUpgrade = (t) => {
     let bought = false;
+    let chargedCost = 0;
     setGame(prev => {
       const owned = prev.tapUpgrades[t.id] || 0;
       const cost = getUpgradeCost(t.baseCost, owned);
       if (prev.points < cost) return prev;
       bought = true;
+      chargedCost = cost;
       return {
         ...prev,
         points: prev.points - cost,
@@ -2537,7 +2548,12 @@ export default function App() {
         totalUpgrades: prev.totalUpgrades + 1,
       };
     });
-    if (bought) soundEngine.play('purchase');
+    if (bought) {
+      soundEngine.play('purchase');
+      setPurchaseFlash({ id: t.id, cost: chargedCost, time: Date.now() });
+      setTimeout(() => setPurchaseFlash(f => f.id === t.id && f.time <= Date.now() ? { id: null, cost: 0, time: 0 } : f), 600);
+      navigator.vibrate?.(15);
+    }
   };
 
   const buyEfficiency = (eff) => {
@@ -2553,7 +2569,12 @@ export default function App() {
         totalUpgrades: prev.totalUpgrades + 1,
       };
     });
-    if (bought) soundEngine.play('purchase');
+    if (bought) {
+      soundEngine.play('purchase');
+      setPurchaseFlash({ id: eff.id, cost: eff.cost, time: Date.now() });
+      setTimeout(() => setPurchaseFlash(f => f.id === eff.id && f.time <= Date.now() ? { id: null, cost: 0, time: 0 } : f), 600);
+      navigator.vibrate?.(15);
+    }
   };
 
   // ============================================================
@@ -2892,13 +2913,15 @@ export default function App() {
       transition: 'all 0.15s',
     },
     buyBtn: (canBuy) => ({
-      padding: '8px 18px', borderRadius: '10px', border: 'none', cursor: canBuy ? 'pointer' : 'default',
+      padding: '8px 16px', borderRadius: '10px', border: 'none', cursor: canBuy ? 'pointer' : 'default',
       background: canBuy ? 'linear-gradient(135deg, #ff3366, #ff6600)' : 'rgba(255,255,255,0.08)',
-      color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '15px',
+      color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '14px',
       opacity: canBuy ? 1 : 0.4,
       boxShadow: canBuy ? '0 0 15px rgba(255,51,102,0.4), 0 4px 0 rgba(0,0,0,0.3)' : 'none',
-      transition: 'all 0.1s',
+      transition: 'transform 0.08s ease-out, box-shadow 0.1s',
       letterSpacing: '1px',
+      display: 'inline-flex', alignItems: 'center', gap: '6px',
+      userSelect: 'none',
     }),
     overlay: {
       position: 'absolute', inset: 0, zIndex: 50,
@@ -3573,8 +3596,13 @@ export default function App() {
             const cost = getUpgradeCost(ac.baseCost, owned);
             const canBuy = game.points >= cost;
             const hasEff = game.efficiencyUpgrades.includes(ac.id);
+            const flashing = purchaseFlash.id === ac.id;
             return (
-              <div key={ac.id} style={styles.shopItem}>
+              <div key={ac.id} style={{
+                ...styles.shopItem, position: 'relative',
+                ...(flashing ? { boxShadow: '0 0 0 2px #ffd700, 0 0 24px rgba(255,215,0,0.45)', background: 'linear-gradient(135deg, rgba(255,215,0,0.18), rgba(106,13,173,0.18))' } : {}),
+                transition: 'box-shadow 0.25s, background 0.25s',
+              }}>
                 <div>
                   <div style={{ color: '#fff', fontSize: '15px' }}>
                     {ac.name} {hasEff && '⭐'} <span style={{ color: '#aaa', fontSize: '12px' }}>x{owned}</span>
@@ -3582,8 +3610,17 @@ export default function App() {
                   <div style={{ color: '#aaa', fontSize: '11px' }}>+{formatNumber(ac.cps * (hasEff ? 2 : 1))}/sec</div>
                 </div>
                 <button style={styles.buyBtn(canBuy)} onClick={() => buyAutoClicker(ac)}>
-                  {formatNumber(cost)}
+                  <span style={{ fontSize: '11px', opacity: 0.85 }}>BUY</span> 🪙 {formatNumber(cost)}
                 </button>
+                {flashing && (
+                  <div style={{
+                    position: 'absolute', right: '24px', top: '-4px', zIndex: 10,
+                    color: '#ffd700', fontSize: '18px', fontFamily: "'Bangers', cursive",
+                    animation: 'floatUpFade 650ms ease-out forwards',
+                    pointerEvents: 'none',
+                    textShadow: '0 0 10px rgba(255,215,0,0.9), 1px 1px 0 #000',
+                  }}>-{formatNumber(purchaseFlash.cost)}</div>
+                )}
               </div>
             );
           })}
@@ -3592,15 +3629,29 @@ export default function App() {
             const owned = game.tapUpgrades[t.id] || 0;
             const cost = getUpgradeCost(t.baseCost, owned);
             const canBuy = game.points >= cost;
+            const flashing = purchaseFlash.id === t.id;
             return (
-              <div key={t.id} style={styles.shopItem}>
+              <div key={t.id} style={{
+                ...styles.shopItem, position: 'relative',
+                ...(flashing ? { boxShadow: '0 0 0 2px #ffd700, 0 0 24px rgba(255,215,0,0.45)', background: 'linear-gradient(135deg, rgba(255,215,0,0.18), rgba(106,13,173,0.18))' } : {}),
+                transition: 'box-shadow 0.25s, background 0.25s',
+              }}>
                 <div>
                   <div style={{ color: '#fff', fontSize: '15px' }}>{t.name} <span style={{ color: '#aaa', fontSize: '12px' }}>x{owned}</span></div>
                   <div style={{ color: '#aaa', fontSize: '11px' }}>+{t.power}/tap</div>
                 </div>
                 <button style={styles.buyBtn(canBuy)} onClick={() => buyTapUpgrade(t)}>
-                  {formatNumber(cost)}
+                  <span style={{ fontSize: '11px', opacity: 0.85 }}>BUY</span> 🪙 {formatNumber(cost)}
                 </button>
+                {flashing && (
+                  <div style={{
+                    position: 'absolute', right: '24px', top: '-4px', zIndex: 10,
+                    color: '#ffd700', fontSize: '18px', fontFamily: "'Bangers', cursive",
+                    animation: 'floatUpFade 650ms ease-out forwards',
+                    pointerEvents: 'none',
+                    textShadow: '0 0 10px rgba(255,215,0,0.9), 1px 1px 0 #000',
+                  }}>-{formatNumber(purchaseFlash.cost)}</div>
+                )}
               </div>
             );
           })}
@@ -3608,15 +3659,29 @@ export default function App() {
           {shopTab === 'efficiency' && EFFICIENCY_UPGRADES.map(eff => {
             const bought = game.efficiencyUpgrades.includes(eff.target);
             const canBuy = !bought && game.points >= eff.cost;
+            const flashing = purchaseFlash.id === eff.id;
             return (
-              <div key={eff.id} style={styles.shopItem}>
+              <div key={eff.id} style={{
+                ...styles.shopItem, position: 'relative',
+                ...(flashing ? { boxShadow: '0 0 0 2px #ffd700, 0 0 24px rgba(255,215,0,0.45)', background: 'linear-gradient(135deg, rgba(255,215,0,0.18), rgba(106,13,173,0.18))' } : {}),
+                transition: 'box-shadow 0.25s, background 0.25s',
+              }}>
                 <div>
                   <div style={{ color: '#fff', fontSize: '15px' }}>{eff.name}</div>
                   <div style={{ color: '#aaa', fontSize: '11px' }}>Doubles {AUTO_CLICKERS.find(a => a.id === eff.target)?.name} output</div>
                 </div>
                 <button style={styles.buyBtn(canBuy)} onClick={() => buyEfficiency(eff)}>
-                  {bought ? '✅' : formatNumber(eff.cost)}
+                  {bought ? '✅' : <><span style={{ fontSize: '11px', opacity: 0.85 }}>BUY</span> 🪙 {formatNumber(eff.cost)}</>}
                 </button>
+                {flashing && (
+                  <div style={{
+                    position: 'absolute', right: '24px', top: '-4px', zIndex: 10,
+                    color: '#ffd700', fontSize: '18px', fontFamily: "'Bangers', cursive",
+                    animation: 'floatUpFade 650ms ease-out forwards',
+                    pointerEvents: 'none',
+                    textShadow: '0 0 10px rgba(255,215,0,0.9), 1px 1px 0 #000',
+                  }}>-{formatNumber(purchaseFlash.cost)}</div>
+                )}
               </div>
             );
           })}
@@ -4197,6 +4262,11 @@ export default function App() {
           15%  { transform: translateX(-50%) translateY(-30px) scale(1.2); opacity: 1; }
           40%  { transform: translateX(-50%) translateY(-110px) scale(1); opacity: 1; }
           100% { transform: translateX(-50%) translateY(-300px) scale(0.8); opacity: 0; }
+        }
+        @keyframes floatUpFade {
+          0%   { transform: translateY(0) scale(0.8); opacity: 0; }
+          20%  { transform: translateY(-8px) scale(1.15); opacity: 1; }
+          100% { transform: translateY(-38px) scale(1); opacity: 0; }
         }
         @keyframes bounceIn { from { transform: scale(0) rotate(-10deg); } to { transform: scale(1) rotate(0); } }
         @keyframes confetti {
