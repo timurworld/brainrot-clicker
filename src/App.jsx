@@ -60,15 +60,15 @@ const CHARACTERS = [
   //   prestigeUnlock = number of ascensions required.
   //   obtain: 'prestige' tells the framework these go through the ascend ladder
   //   (auto-unlocks via skin checker, lands in unlockedSkins[]).
-  { id: 23, name: 'Sushiro & Soyaro', file: '23_sushiro_soyaro.png', bgNum: '01',
+  { id: 23, name: 'Sushiro & Soyaro', file: '23_sushiro_soyaro.png', bgNum: '23',
     rarity: 'Prestige', unlock: 0, emoji: '🍣', color: '#ff6f61', mult: 12,
     obtain: 'prestige', prestigeUnlock: 1,
     bg: 'linear-gradient(180deg, #2a0a4a 0%, #ff6f61 40%, #c0392b 70%, #1a0530 100%)' },
-  { id: 24, name: 'Kingurini Orangini', file: '24_kinguru_orange.png', bgNum: '02',
+  { id: 24, name: 'Kingurini Orangini', file: '24_kinguru_orange.png', bgNum: '21',
     rarity: 'Prestige', unlock: 0, emoji: '🍊', color: '#ff8c00', mult: 18,
     obtain: 'prestige', prestigeUnlock: 3,
     bg: 'linear-gradient(180deg, #2a0a4a 0%, #ff8c00 40%, #ffd700 70%, #1a0530 100%)' },
-  { id: 25, name: 'Auraberry', file: '25_auraberry.png', bgNum: '03',
+  { id: 25, name: 'Auraberry', file: '25_auraberry.png', bgNum: '22',
     rarity: 'Prestige', unlock: 0, emoji: '🫐', color: '#a259ff', mult: 20,
     obtain: 'prestige', prestigeUnlock: 5,
     bg: 'linear-gradient(180deg, #1a0530 0%, #6a0dad 40%, #a259ff 70%, #2a0a4a 100%)' },
