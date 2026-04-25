@@ -3234,7 +3234,11 @@ export default function App() {
         const res = await registerPlayer(loginUsername, loginPin);
         if (res.error) { setLoginError(res.error); return; }
         setPlayer(res.player);
-        setGame(prev => ({ ...prev, username: res.player.username }));
+        // Reset in-memory game state so a fresh account doesn't inherit the
+        // previous session's unlocks/points. Clear local save too — it's not
+        // keyed per-player and would otherwise leak across accounts.
+        localStorage.removeItem('brainrot_save');
+        setGame({ ...defaultState(), username: res.player.username });
         localStorage.setItem('brainrot_player', JSON.stringify(res.player));
         setScreen('start');
       } else {
@@ -3246,7 +3250,10 @@ export default function App() {
         if (cloudSave.save) {
           setGame({ ...defaultState(), ...cloudSave.save, username: res.player.username });
         } else {
-          setGame(prev => ({ ...prev, username: res.player.username }));
+          // No cloud save for this account → treat as fresh. Reset state +
+          // wipe local save so we don't carry over a previous user's progress.
+          localStorage.removeItem('brainrot_save');
+          setGame({ ...defaultState(), username: res.player.username });
         }
         localStorage.setItem('brainrot_player', JSON.stringify(res.player));
         setScreen('start');
@@ -3339,11 +3346,23 @@ export default function App() {
   // START SCREEN
   // ============================================================
   if (screen === 'start') {
-    // Hero character: featured equipped skin if any, else cycle the latest art.
-    const heroChar = CHARACTERS[game.equippedSkin] || CHARACTERS[CHARACTERS.length - 1] || CHARACTERS[0];
     // Live-event teaser — reuses the existing dropEvent / locker state.
     const liveLocker = locker && locker.status === 'active' && (!locker.admin_only || (player?.username || '').toLowerCase() === 'tmoney');
     const liveDrop   = dropEvent && dropEvent.status === 'active' && (!dropEvent.admin_only || (player?.username || '').toLowerCase() === 'tmoney');
+
+    // Hero character — context-aware:
+    //   1. Active locker → show its output skin (Hockey Bros etc.) — direct FOMO
+    //   2. Active drop event → show first ingredient from the pool
+    //   3. Otherwise → rotate through the "wow" pool (Limited / Prestige / Legendary)
+    //      based on a 4-second cycle so each page load picks a different one.
+    const wowIds = [22, 25, 24, 23, 19, 12, 5]; // Hockey Bros, Auraberry, Kingurini, Sushiro, Cupidini Hotspottini, Birthdayini, Noobini Partini
+    const wowPool = wowIds.map(id => CHARACTERS.find(c => c.id === id)).filter(Boolean);
+    const wowPick = wowPool[Math.floor(Date.now() / 4000) % wowPool.length] || CHARACTERS[CHARACTERS.length - 1];
+    const heroChar = liveLocker
+      ? (CHARACTERS.find(c => c.id === locker.output_skin_id) || wowPick)
+      : liveDrop && dropEvent.drop_pool?.[0]
+        ? (CHARACTERS.find(c => c.id === dropEvent.drop_pool[0].skin_id) || wowPick)
+        : wowPick;
     const teaser = liveLocker
       ? { icon: '🔐', label: 'LOCKER LIVE', sub: locker.name, color: '#ffd700' }
       : liveDrop
@@ -3663,6 +3682,30 @@ export default function App() {
         setSettingsOpen(!settingsOpen);
         setActivePanel(null);
       }}>⚙️</button>
+
+      {/* Username chip — top-left, always visible during gameplay */}
+      {player?.username && (
+        <div style={{
+          position: 'absolute',
+          left: '10px',
+          top: (adminSchedule && !adminEvent.active) ? 'clamp(80px, 11vh, 95px)' : '10px',
+          zIndex: 30,
+          padding: '5px 12px',
+          borderRadius: '999px',
+          background: 'linear-gradient(135deg, rgba(0,212,255,0.18), rgba(106,13,173,0.25))',
+          border: '1px solid rgba(0,212,255,0.4)',
+          color: '#fff',
+          fontFamily: "'Bangers', cursive",
+          fontSize: '12px',
+          letterSpacing: '1px',
+          maxWidth: '50vw',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          boxShadow: '0 0 12px rgba(0,212,255,0.2)',
+          pointerEvents: 'none',
+        }}>👤 {player.username}</div>
+      )}
 
       {/* HUD — push down when admin countdown banner is overhead */}
       <div style={{
