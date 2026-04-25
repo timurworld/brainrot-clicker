@@ -26,7 +26,12 @@ const ALL_BOTS = [
 
 // Per-bot jitter inside a wave — so arrivals trickle in over 30s–5min instead
 // of all appearing together (harder for Timur to spot the pattern).
-const ARRIVAL_JITTER_MS = 300_000;     // 5 minutes
+// BOT_FAST=1 collapses jitter to ~5s so the bots come up almost immediately
+// (useful for previewing in the admin Hub before the actual event).
+const ARRIVAL_JITTER_MS = process.env.BOT_FAST === '1' ? 5_000 : 300_000;
+// Cap how many bots can come up. BOT_LIMIT=3 → only first 3 will spawn.
+// 0 (default) = no cap, full roster fires per the WAVES schedule.
+const BOT_LIMIT = parseInt(process.env.BOT_LIMIT || '0', 10);
 
 // Deterministic shuffle seeded by day-of-year — the roster order rotates daily
 // so Sat shows a different cast than Sun without us doing anything manual.
@@ -184,11 +189,19 @@ async function applyAdminState(active) {
   adminIsLive = active;
   console.log(`\n=== admin abuse ${active ? 'LIVE — staggered bot arrivals starting' : 'OFFLINE — bots going dark'} ===\n`);
   cancelPendingWaves();
+  let spawnedSoFar = 0;
   if (active) {
     for (const wave of WAVES) {
       const fire = async () => {
         if (!adminIsLive) return; // event may have ended before timeout fires
-        const waveBots = bots.filter(b => wave.names.includes(b.name));
+        let waveBots = bots.filter(b => wave.names.includes(b.name));
+        // Apply global BOT_LIMIT cap if set.
+        if (BOT_LIMIT > 0) {
+          const remaining = Math.max(0, BOT_LIMIT - spawnedSoFar);
+          if (remaining === 0) return;
+          waveBots = waveBots.slice(0, remaining);
+        }
+        spawnedSoFar += waveBots.length;
         console.log(`-- wave +${Math.round(wave.delayMs / 60000)}min (staggered): ${waveBots.map(b => b.name).join(', ')}`);
         // Trickle each bot online with an individual random delay so the
         // arrivals don't all hit the same second.
