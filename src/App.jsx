@@ -3339,74 +3339,178 @@ export default function App() {
   // START SCREEN
   // ============================================================
   if (screen === 'start') {
-    const floatingEmoji = ['🧠', '💀', '🔥', '⭐', '💎', '🎮', '👾', '🚀', '💥', '🌈'];
+    // Hero character: featured equipped skin if any, else cycle the latest art.
+    const heroChar = CHARACTERS[game.equippedSkin] || CHARACTERS[CHARACTERS.length - 1] || CHARACTERS[0];
+    // Live-event teaser — reuses the existing dropEvent / locker state.
+    const liveLocker = locker && locker.status === 'active' && (!locker.admin_only || (player?.username || '').toLowerCase() === 'tmoney');
+    const liveDrop   = dropEvent && dropEvent.status === 'active' && (!dropEvent.admin_only || (player?.username || '').toLowerCase() === 'tmoney');
+    const teaser = liveLocker
+      ? { icon: '🔐', label: 'LOCKER LIVE', sub: locker.name, color: '#ffd700' }
+      : liveDrop
+        ? { icon: '🎁', label: 'DROP EVENT LIVE', sub: dropEvent.name, color: '#ff8c00' }
+        : null;
+
     return (
-      <div style={{ ...styles.container, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '16px' }}>
+      <div style={{
+        ...styles.container,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '14px',
+        background: 'radial-gradient(ellipse at center, #2a0a4a 0%, #15052e 50%, #0a0218 100%)',
+        position: 'relative', overflow: 'hidden',
+      }}>
         <BackToSiteLink />
-        {floatingEmoji.map((e, i) => (
+
+        {/* Animated stage spotlight beams */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{
+              position: 'absolute', top: '-30%', left: '50%',
+              width: '60%', height: '120%',
+              background: `linear-gradient(180deg, ${['rgba(255,77,166,0.15)', 'rgba(255,215,0,0.12)', 'rgba(0,212,255,0.13)'][i]}, transparent 70%)`,
+              transform: `translateX(-50%) rotate(${(i - 1) * 18}deg)`,
+              transformOrigin: 'top center',
+              animation: `spotlightSweep ${10 + i * 2}s ease-in-out infinite alternate`,
+              animationDelay: `${i * -3}s`,
+              filter: 'blur(20px)',
+            }} />
+          ))}
+        </div>
+
+        {/* Sparkle drift */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          {Array.from({ length: 22 }).map((_, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              left: `${(i * 13) % 100}%`,
+              top: `${(i * 17) % 100}%`,
+              fontSize: ['10px', '14px', '18px'][i % 3],
+              opacity: 0.6,
+              animation: `sparkleDrift ${5 + (i % 4)}s ease-in-out ${i * 0.25}s infinite`,
+            }}>{['✨', '⭐', '💫', '🪩'][i % 4]}</div>
+          ))}
+        </div>
+
+        {/* Floating decorative emoji (fewer, bigger, dimmer) */}
+        {['🧠', '🔥', '💎', '👑'].map((e, i) => (
           <div key={i} style={{
             position: 'absolute',
-            left: (10 + i * 9) + '%',
-            top: (15 + Math.sin(Date.now() / 1000 + i * 0.7) * 5 + i * 7) + '%',
-            fontSize: '28px', opacity: 0.4, pointerEvents: 'none',
-            animation: `bob ${2 + i * 0.3}s ease-in-out infinite alternate`,
+            left: ['8%', '88%', '12%', '85%'][i],
+            top: ['25%', '20%', '70%', '72%'][i],
+            fontSize: '36px', opacity: 0.18, pointerEvents: 'none',
+            animation: `bob ${2.5 + i * 0.4}s ease-in-out infinite alternate`,
           }}>{e}</div>
         ))}
 
         {getSeasonName() && (
-          <div style={{ position: 'absolute', top: '20px', background: 'rgba(255,215,0,0.2)', padding: '6px 20px', borderRadius: '20px', color: '#ffd700', fontSize: '14px', border: '1px solid #ffd700' }}>
-            {getSeasonName()}
-          </div>
+          <div style={{
+            position: 'absolute', top: '20px', zIndex: 5,
+            background: 'rgba(255,215,0,0.18)', padding: '6px 20px', borderRadius: '999px',
+            color: '#ffd700', fontSize: '13px', border: '1px solid rgba(255,215,0,0.5)',
+            fontFamily: "'Bangers', cursive", letterSpacing: '2px',
+            boxShadow: '0 0 20px rgba(255,215,0,0.3)',
+          }}>{getSeasonName()}</div>
         )}
 
+        {/* TITLE — bigger, with gradient + neon stroke + slight breath */}
         <div style={{
-          fontSize: 'clamp(36px, 10vw, 64px)', fontFamily: "'Bungee Shade', cursive", color: '#fff',
-          textShadow: '4px 4px 0 #f00, -2px -2px 0 #0ff, 0 0 40px #ff0',
-          textAlign: 'center', lineHeight: 1.1,
+          fontSize: 'clamp(44px, 12vw, 88px)',
+          fontFamily: "'Bungee Shade', cursive",
+          background: 'linear-gradient(180deg, #ffffff 0%, #ffd700 50%, #ff4dff 100%)',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          color: 'transparent',
+          textAlign: 'center', lineHeight: 1.0,
+          filter: 'drop-shadow(0 0 18px rgba(255,77,255,0.55)) drop-shadow(0 0 40px rgba(255,215,0,0.35))',
+          letterSpacing: '2px',
+          animation: 'titleGlow 3.5s ease-in-out infinite',
+          position: 'relative', zIndex: 4,
         }}>
           BRAINROT<br/>CLICKER
         </div>
 
-        <div style={{
-          width: 'min(200px, 45vw)', height: 'min(200px, 45vw)', overflow: 'hidden',
-          filter: 'drop-shadow(0 0 25px rgba(255,200,0,0.6))', animation: 'pulse 2s ease-in-out infinite',
-        }}>
-          <img src="/characters/09_dragon_partyini.png" alt="Dragini Partini"
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-        </div>
-
-        <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '10px', color: '#aaa', letterSpacing: '2px' }}>
-          tap tap tap tap tap
-        </div>
-
-        {player && (
-          <div style={{ color: '#00d4ff', fontSize: '16px', marginBottom: '4px' }}>
-            👤 {player.username}
+        {/* Live event teaser — only renders when something is active */}
+        {teaser && (
+          <div onClick={() => { soundEngine.init(); setScreen('game'); }} style={{
+            position: 'relative', zIndex: 5, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '8px 16px', borderRadius: '999px',
+            background: `linear-gradient(135deg, ${teaser.color}33, rgba(0,0,0,0.5))`,
+            border: `2px solid ${teaser.color}`,
+            boxShadow: `0 0 24px ${teaser.color}88`,
+            color: '#fff', fontFamily: "'Bangers', cursive",
+            animation: 'fuseButtonPulse 1.6s ease-in-out infinite',
+          }}>
+            <span style={{ fontSize: '24px' }}>{teaser.icon}</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '14px', color: teaser.color, letterSpacing: '2px' }}>🔴 {teaser.label}</span>
+              <span style={{ fontSize: '11px', opacity: 0.85 }}>{teaser.sub} · TAP TO JOIN</span>
+            </div>
           </div>
         )}
 
-        {game.brainCells > 0 && (
-          <div style={{ color: '#ff69b4', fontSize: '18px' }}>
-            🧬 {game.brainCells} Brain Cells (+{game.brainCells * 5}% boost)
+        {/* HERO CHARACTER on glowing platform */}
+        <div style={{ position: 'relative', zIndex: 3 }}>
+          {/* Platform glow */}
+          <div style={{
+            position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)',
+            width: '70%', height: '32px',
+            background: `radial-gradient(ellipse, ${heroChar.color || '#ffd700'}aa 0%, transparent 70%)`,
+            filter: 'blur(8px)', animation: 'pulse 2.6s ease-in-out infinite',
+          }} />
+          <div style={{
+            width: 'min(240px, 52vw)', height: 'min(240px, 52vw)', overflow: 'hidden',
+            filter: `drop-shadow(0 0 30px ${heroChar.color || '#ffd700'}99) drop-shadow(0 0 60px ${heroChar.color || '#ffd700'}44)`,
+            animation: 'characterFloat 3.5s ease-in-out infinite',
+          }}>
+            <img src={`/characters/${heroChar.file}`} alt={heroChar.name}
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
-        )}
+          {/* Character name flag */}
+          <div style={{
+            textAlign: 'center', marginTop: '4px',
+            color: '#fff', fontSize: '13px', fontFamily: "'Bangers', cursive",
+            textShadow: '0 0 10px rgba(0,0,0,0.7)', letterSpacing: '1.5px',
+          }}>{heroChar.name}</div>
+        </div>
 
-        <button onClick={() => {
-          soundEngine.init();
-          setScreen('game');
-        }} style={{
-          padding: '18px 64px', fontSize: '32px', fontFamily: "'Bungee Shade', cursive",
-          background: 'linear-gradient(135deg, #ff3366, #ff6600)', color: '#fff',
-          border: 'none', borderRadius: '20px', cursor: 'pointer',
-          boxShadow: '0 8px 0 rgba(150,0,50,0.8), 0 0 40px rgba(255,51,102,0.5), 0 0 80px rgba(255,51,102,0.2)',
+        <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '9px', color: '#888', letterSpacing: '3px', position: 'relative', zIndex: 3 }}>
+          tap · tap · tap
+        </div>
+
+        {/* Player + brain cells row */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', position: 'relative', zIndex: 3 }}>
+          {player && (
+            <div style={{
+              padding: '4px 14px', borderRadius: '999px',
+              background: 'rgba(0,212,255,0.12)', border: '1px solid rgba(0,212,255,0.35)',
+              color: '#00d4ff', fontSize: '14px', fontFamily: "'Bangers', cursive", letterSpacing: '1.5px',
+            }}>👤 {player.username}</div>
+          )}
+          {game.brainCells > 0 && (
+            <div style={{
+              padding: '3px 12px', borderRadius: '999px',
+              background: 'rgba(255,105,180,0.15)', border: '1px solid rgba(255,105,180,0.35)',
+              color: '#ff69b4', fontSize: '13px', fontFamily: "'Bangers', cursive",
+              boxShadow: '0 0 12px rgba(255,105,180,0.3)',
+            }}>🧬 {game.brainCells} Brain Cells · +{game.brainCells * 5}% boost</div>
+          )}
+        </div>
+
+        <button onClick={() => { soundEngine.init(); setScreen('game'); }} style={{
+          padding: '20px 80px', fontSize: 'clamp(28px, 6vw, 38px)',
+          fontFamily: "'Bungee Shade', cursive",
+          background: 'linear-gradient(135deg, #ff3366 0%, #ff6600 60%, #ffd700 100%)',
+          color: '#fff', border: 'none', borderRadius: '24px', cursor: 'pointer',
+          boxShadow: '0 10px 0 rgba(120,0,40,0.85), 0 0 60px rgba(255,77,166,0.65), 0 0 120px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.6)',
           transform: 'translateY(0)', transition: 'all 0.1s',
-          letterSpacing: '4px',
-          animation: 'pulse 2s ease-in-out infinite',
+          letterSpacing: '6px',
+          animation: 'pulse 1.8s ease-in-out infinite',
+          textShadow: '0 2px 0 rgba(0,0,0,0.3)',
+          position: 'relative', zIndex: 4,
         }}
-          onMouseDown={e => e.target.style.transform = 'translateY(6px)'}
-          onMouseUp={e => e.target.style.transform = 'translateY(0)'}
+          onMouseDown={e => e.currentTarget.style.transform = 'translateY(6px)'}
+          onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          START
+          ▶ START
         </button>
 
         {/* Offline reward popup */}
@@ -3434,6 +3538,28 @@ export default function App() {
         <style>{`
           @keyframes bob { from { transform: translateY(-8px); } to { transform: translateY(8px); } }
           @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+          @keyframes spotlightSweep {
+            0%, 100% { transform: translateX(-50%) rotate(-12deg); opacity: 0.8; }
+            50%      { transform: translateX(-50%) rotate(12deg);  opacity: 1; }
+          }
+          @keyframes characterFloat {
+            0%, 100% { transform: translateY(0)    scale(1); }
+            50%      { transform: translateY(-12px) scale(1.04); }
+          }
+          @keyframes titleGlow {
+            0%, 100% { filter: drop-shadow(0 0 18px rgba(255,77,255,0.55)) drop-shadow(0 0 40px rgba(255,215,0,0.35)); }
+            50%      { filter: drop-shadow(0 0 30px rgba(255,77,255,0.85)) drop-shadow(0 0 60px rgba(255,215,0,0.6)); }
+          }
+          @keyframes sparkleDrift {
+            0%   { transform: translateY(0)    scale(0.6); opacity: 0; }
+            25%  { opacity: 1; }
+            75%  { opacity: 0.6; }
+            100% { transform: translateY(-30px) scale(1.2); opacity: 0; }
+          }
+          @keyframes fuseButtonPulse {
+            0%, 100% { transform: scale(1);    box-shadow: 0 0 24px rgba(255,215,0,0.5); }
+            50%      { transform: scale(1.03); box-shadow: 0 0 38px rgba(255,215,0,0.85); }
+          }
         `}</style>
       </div>
     );
