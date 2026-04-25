@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { registerPlayer, loginPlayer, saveGameCloud, loadGameCloud, getLeaderboard, supabase } from './supabase.js';
 import { subscribeToAdmin, submitVote, announcePresence } from './adminBridge.js';
+import { fetchInventory, subscribeInventory, groupByTier, isTradeLocked, formatLockCountdown, indexOfSkinId, migrateLegacyInventory } from './inventory.js';
+import { fetchActiveListings, fetchMyListings, fetchMyTradeHistory, subscribeListings, tradeList, tradeCancel, tradeAccept, tradeErrorMessage } from './trade.js';
+import { fetchActiveDropEvent, subscribeDropEvents, dropRoll, isWaveActive, waveSecondsLeft, totalRemaining, makeRollThrottle } from './drops.js';
+import { fetchActiveLocker, subscribeLockers, subscribeFusionTicker, lockerFuse, fuseErrorMessage, checkRecipe, lockerCountdown } from './locker.js';
 import {
   registerServiceWorker, notify,
   shouldOfferOptIn, requestPermission, rememberOptInDismissed,
@@ -43,9 +47,31 @@ const CHARACTERS = [
   { id: 18, name: 'Noo Mio Heartini', file: '18_noo_my_heart.png', bgNum: '18', rarity: 'Rare', unlock: 50000000, emoji: '💔', color: '#8b0000', mult: 8,
     bg: 'linear-gradient(180deg, #1a237e 0%, #5c6bc0 30%, #3f51b5 60%, #0d1453 100%)' },
   { id: 19, name: 'Cupidini Hotspottini', file: '19_cupid_hotspot.png', bgNum: '19', rarity: 'Legendary', unlock: 100000000, emoji: '🔥', color: '#ff4500', mult: 9,
-    bg: 'linear-gradient(180deg, #ff6d00 0%, #ffab00 25%, #ff8f00 50%, #ff6d00 75%, #e65100 100%)' }
-  // Sportini drops (Stick Stick, No My Pucks, Hockey Bros) are intentionally
-  // NOT in the playable roster yet — they're preview-only on timur.world.
+    bg: 'linear-gradient(180deg, #ff6d00 0%, #ffab00 25%, #ff8f00 50%, #ff6d00 75%, #e65100 100%)' },
+  // Sportini event skins — earned via drops (ingredients) or locker fusion (output).
+  // obtain !== 'points' hides them from the standard skins shop.
+  { id: 20, name: 'Stick Stick',  file: '20_stick_stick.png',  bgNum: '20', rarity: 'Common',    unlock: 0, emoji: '🏒', color: '#8b4513', mult: 1.2, tag: 'Sportini', obtain: 'drop',
+    bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
+  { id: 21, name: 'No My Pucks',  file: '21_no_my_pucks.png',  bgNum: '20', rarity: 'Common',    unlock: 0, emoji: '🥅', color: '#1a1a1a', mult: 1.2, tag: 'Sportini', obtain: 'drop',
+    bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
+  { id: 22, name: 'Hockey Bros',  file: '22_hockey_bros.png',  bgNum: '20', rarity: 'Mythic',    unlock: 0, emoji: '🏆', color: '#c0392b', mult: 12,  tag: 'Sportini', obtain: 'fusion',
+    bg: 'linear-gradient(180deg, #c0392b 0%, #ff6b6b 35%, #e74c3c 65%, #922b21 100%)' },
+  // ▼ PRESTIGE SKINS — unlocked by ascending N times.
+  //   prestigeUnlock = number of ascensions required.
+  //   obtain: 'prestige' tells the framework these go through the ascend ladder
+  //   (auto-unlocks via skin checker, lands in unlockedSkins[]).
+  { id: 23, name: 'Sushiro & Soyaro', file: '23_sushiro_soyaro.png', bgNum: '01',
+    rarity: 'Prestige', unlock: 0, emoji: '🍣', color: '#ff6f61', mult: 12,
+    obtain: 'prestige', prestigeUnlock: 1,
+    bg: 'linear-gradient(180deg, #2a0a4a 0%, #ff6f61 40%, #c0392b 70%, #1a0530 100%)' },
+  { id: 24, name: 'Kingurini Orangini', file: '24_kinguru_orange.png', bgNum: '02',
+    rarity: 'Prestige', unlock: 0, emoji: '🍊', color: '#ff8c00', mult: 18,
+    obtain: 'prestige', prestigeUnlock: 3,
+    bg: 'linear-gradient(180deg, #2a0a4a 0%, #ff8c00 40%, #ffd700 70%, #1a0530 100%)' },
+  { id: 25, name: 'Auraberry', file: '25_auraberry.png', bgNum: '03',
+    rarity: 'Prestige', unlock: 0, emoji: '🫐', color: '#a259ff', mult: 25,
+    obtain: 'prestige', prestigeUnlock: 5,
+    bg: 'linear-gradient(180deg, #1a0530 0%, #6a0dad 40%, #a259ff 70%, #2a0a4a 100%)' },
 ];
 
 const AUTO_CLICKERS = [
@@ -1912,6 +1938,74 @@ function AdminEffectCrowd() {
   </>);
 }
 
+// One row in the Trade Board. Same component renders for Browse and Mine tabs;
+// the action buttons swap based on whether the viewer owns the listing.
+function TradeListingRow({ listing, offerSkin, wantSkin, isMine, onAccept, onCancel }) {
+  const ago = useRelativeTime(listing.created_at);
+  const offerImg = offerSkin ? `/characters/${offerSkin.file}` : null;
+  const wantImg  = wantSkin  ? `/characters/${wantSkin.file}`  : null;
+  const isActive = listing.status === 'active';
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '8px',
+      padding: '10px', marginBottom: '8px',
+      borderRadius: '12px',
+      background: isActive ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+      border: '1px solid ' + (isActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)'),
+      opacity: isActive ? 1 : 0.6,
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '70px' }}>
+        {offerImg && <img src={offerImg} alt={offerSkin.name} style={{ width: '50px', height: '50px', objectFit: 'contain' }} />}
+        <div style={{ color: '#fff', fontSize: '11px', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.1 }}>{offerSkin?.name || `#${listing.offer_skin_id}`}</div>
+        {listing.offer_serial_number != null && <div style={{ color: '#ffd700', fontSize: '10px' }}>#{listing.offer_serial_number}</div>}
+        {listing.offer_quantity > 1 && <div style={{ color: '#9be7ff', fontSize: '10px' }}>x{listing.offer_quantity}</div>}
+      </div>
+      <div style={{ color: '#aaa', fontSize: '18px', flexShrink: 0 }}>→</div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '70px' }}>
+        {wantImg && <img src={wantImg} alt={wantSkin.name} style={{ width: '50px', height: '50px', objectFit: 'contain' }} />}
+        <div style={{ color: '#fff', fontSize: '11px', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.1 }}>{wantSkin?.name || `#${listing.want_skin_id}`}</div>
+        {listing.want_quantity > 1 && <div style={{ color: '#9be7ff', fontSize: '10px' }}>x{listing.want_quantity}</div>}
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+        <div style={{ color: '#aaa', fontSize: '10px' }}>{listing.seller_username} · {ago}</div>
+        {!isActive && <div style={{ color: '#888', fontSize: '11px', fontStyle: 'italic' }}>{listing.status}</div>}
+        {isActive && isMine && onCancel && (
+          <button onClick={onCancel} style={{
+            padding: '4px 10px', borderRadius: '6px', border: '1px solid #aa5555',
+            background: 'transparent', color: '#ff8888', fontFamily: "'Bangers', cursive",
+            fontSize: '11px', cursor: 'pointer',
+          }}>CANCEL</button>
+        )}
+        {isActive && !isMine && onAccept && (
+          <button onClick={onAccept} style={{
+            padding: '4px 12px', borderRadius: '6px', border: 'none',
+            background: 'linear-gradient(135deg, #2ecc71, #27ae60)', color: '#fff',
+            fontFamily: "'Bangers', cursive", fontSize: '11px', cursor: 'pointer',
+            boxShadow: '0 0 10px rgba(46,204,113,0.4)',
+          }}>ACCEPT</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Tiny relative-time hook ("3m ago", "2h ago"). Re-renders every 30s while mounted.
+function useRelativeTime(iso) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick(x => x + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60000) return 'just now';
+  const m = Math.floor(ms / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState('login'); // login, start, game, reflex
@@ -1957,10 +2051,46 @@ export default function App() {
   const [floatingEmotes, setFloatingEmotes] = useState([]);
   // Most-recent purchase — drives a brief flash on the shop row
   const [purchaseFlash, setPurchaseFlash] = useState({ id: null, cost: 0, time: 0 });
+  // V2 inventory — server-authoritative list of owned skin instances. Updates
+  // live via Supabase realtime as drops/fusions/trades land.
+  const [inventory, setInventory] = useState([]);
+  // V2 trade board state
+  const [tradeListings, setTradeListings] = useState([]);
+  const [myListings, setMyListings] = useState([]);
+  const [myTradeHistory, setMyTradeHistory] = useState([]);
+  const [tradeTab, setTradeTab] = useState('browse'); // browse | mine | history
+  const [listForm, setListForm] = useState(null);     // { invRow } or null
+  const [tradeMessage, setTradeMessage] = useState(null); // { kind: 'ok'|'err', text }
+  // V2 wave drops state
+  const [dropEvent, setDropEvent] = useState(null);              // current active event
+  const [dropToast, setDropToast] = useState(null);              // { skinId, t }
+  const [waveBanner, setWaveBanner] = useState(null);            // { skinId, t } — full-screen 5s
+  const [soldOutBanner, setSoldOutBanner] = useState(null);      // { skinId, allOut, t }
+  // V2 locker state
+  const [locker, setLocker] = useState(null);
+  const [fuseConfirm, setFuseConfirm] = useState(false);          // open confirm modal
+  const [fusionToast, setFusionToast] = useState(null);           // { username, skinId, serial }
+  const [fuseMessage, setFuseMessage] = useState(null);           // { kind, text }
+  // Player can collapse the locker card to a small pill so they can see the character.
+  const [lockerMinimized, setLockerMinimized] = useState(() => {
+    try { return localStorage.getItem('locker_minimized') === '1'; } catch { return false; }
+  });
+  const toggleLockerMinimized = useCallback(() => {
+    setLockerMinimized(v => {
+      const next = !v;
+      try { localStorage.setItem('locker_minimized', next ? '1' : '0'); } catch {}
+      return next;
+    });
+  }, []);
 
   const gameRef = useRef(game);
   const comboRef = useRef(0);
   const lastTapRef = useRef(0);
+  // Throttle drop rolls: at most one outstanding RPC and ≥1s between calls.
+  // Stored in a ref so re-renders don't reset the throttle window.
+  const dropThrottleRef = useRef(makeRollThrottle(1000));
+  // Snapshot of last-seen wave / status so we can detect transitions.
+  const lastDropSnapshotRef = useRef({ waveSkinId: null, waveEndsAt: null, status: null });
   const tapsInWindowRef = useRef([]);
   const particleIdRef = useRef(0);
   const goldenTimerRef = useRef(null);
@@ -2132,6 +2262,118 @@ export default function App() {
     if (!game.username || screen !== 'game') return;
     return announcePresence(game.username);
   }, [game.username, screen]);
+
+  // V2 inventory — fetch on player change + live-subscribe for drops/fusions/trades.
+  // Also runs an idempotent legacy migration so existing unlockedSkins[] gets
+  // mirrored into the inventory table on first login.
+  useEffect(() => {
+    if (!player?.id) { setInventory([]); return; }
+    let cancelled = false;
+    (async () => {
+      await migrateLegacyInventory(player.id, CHARACTERS);
+      if (cancelled) return;
+      const rows = await fetchInventory(player.id);
+      if (!cancelled) setInventory(rows);
+    })();
+    const unsub = subscribeInventory(player.id, (rows) => { if (!cancelled) setInventory(rows); });
+    return () => { cancelled = true; unsub(); };
+  }, [player?.id]);
+
+  // V2 trade board — keep listings/history fresh + live.
+  useEffect(() => {
+    if (!player?.id) { setTradeListings([]); setMyListings([]); setMyTradeHistory([]); return; }
+    let cancelled = false;
+    const refresh = async () => {
+      const [active, mine, hist] = await Promise.all([
+        fetchActiveListings(),
+        fetchMyListings(player.id),
+        fetchMyTradeHistory(player.id),
+      ]);
+      if (cancelled) return;
+      setTradeListings(active);
+      setMyListings(mine);
+      setMyTradeHistory(hist);
+    };
+    refresh();
+    const unsub = subscribeListings(refresh);
+    return () => { cancelled = true; unsub(); };
+  }, [player?.id]);
+
+  // V2 wave drops — subscribe to drop_events, maintain currentEvent, detect
+  // wave starts and sold-out transitions for full-screen announcements.
+  useEffect(() => {
+    const isAdmin = (player?.username || '').toLowerCase() === 'tmoney';
+    let cancelled = false;
+    const refresh = async () => {
+      const ev = await fetchActiveDropEvent({ isAdmin });
+      if (cancelled) return;
+      const prev = lastDropSnapshotRef.current;
+      // Wave-start: a new wave_ends_at appeared OR wave_skin changed.
+      const waveActive = ev && ev.current_wave_skin_id != null
+        && ev.current_wave_ends_at && new Date(ev.current_wave_ends_at).getTime() > Date.now();
+      const prevWaveActive = prev.waveSkinId != null
+        && prev.waveEndsAt && new Date(prev.waveEndsAt).getTime() > Date.now();
+      if (waveActive && (!prevWaveActive
+          || prev.waveSkinId !== ev.current_wave_skin_id
+          || prev.waveEndsAt !== ev.current_wave_ends_at)) {
+        setWaveBanner({ skinId: ev.current_wave_skin_id, t: Date.now() });
+        soundEngine.play('combo');
+        setTimeout(() => setWaveBanner(null), 5000);
+      }
+      // Sold-out: status flipped to 'sold_out' (or pool fully drained).
+      if (prev.status !== 'sold_out' && ev?.status === 'sold_out') {
+        setSoldOutBanner({ allOut: true, t: Date.now() });
+        soundEngine.play('unlock');
+        setTimeout(() => setSoldOutBanner(null), 4500);
+      }
+      lastDropSnapshotRef.current = {
+        waveSkinId: ev?.current_wave_skin_id ?? null,
+        waveEndsAt: ev?.current_wave_ends_at ?? null,
+        status: ev?.status ?? null,
+      };
+      setDropEvent(ev);
+    };
+    refresh();
+    const unsub = subscribeDropEvents(refresh);
+    // Also check periodically in case a wave's local-only end transition needs UI update.
+    const tick = setInterval(() => {
+      // Re-render to update wave countdown without refetching.
+      setDropEvent(curr => curr ? { ...curr } : curr);
+    }, 1000);
+    return () => { cancelled = true; unsub(); clearInterval(tick); };
+  }, [player?.username]);
+
+  // V2 locker — fetch + subscribe; show sold-out banner on transition.
+  useEffect(() => {
+    const isAdmin = (player?.username || '').toLowerCase() === 'tmoney';
+    let cancelled = false;
+    let lastStatus = null;
+    const refresh = async () => {
+      const lk = await fetchActiveLocker({ isAdmin });
+      if (cancelled) return;
+      if (lastStatus === 'active' && lk?.status === 'sold_out') {
+        setSoldOutBanner({ allOut: false, t: Date.now() });
+        soundEngine.play('unlock');
+        setTimeout(() => setSoldOutBanner(null), 4500);
+      }
+      lastStatus = lk?.status ?? null;
+      setLocker(lk);
+    };
+    refresh();
+    const unsub = subscribeLockers(refresh);
+    const tick = setInterval(() => setLocker(c => c ? { ...c } : c), 1000);
+    return () => { cancelled = true; unsub(); clearInterval(tick); };
+  }, [player?.username]);
+
+  // V2 fusion ticker — pop a top-of-screen banner when anyone fuses.
+  useEffect(() => {
+    const unsub = subscribeFusionTicker((row) => {
+      setFusionToast({ username: row.player_username, skinId: row.output_skin_id, serial: row.serial_number, t: Date.now() });
+      soundEngine.play('combo');
+      setTimeout(() => setFusionToast(null), 5000);
+    });
+    return unsub;
+  }, []);
 
   // Live emote reactions — broadcast channel (ephemeral, no DB writes)
   const addFloatingEmote = useCallback((username, emote) => {
@@ -2371,17 +2613,24 @@ export default function App() {
     });
   }, [game.totalClicks, game.lifetimePoints, game.totalUpgrades, game.unlockedSkins.length, game.usedCodes.length, cps, game.prestigeCount, screen]);
 
-  // Skin unlock checker
+  // Skin unlock checker — handles points-unlock (legacy) AND prestige-unlock (V2).
+  // Sportini event skins (obtain: 'drop' | 'fusion') are NOT auto-unlocked here;
+  // they land in inventory only after the player actually earns them in events.
   useEffect(() => {
     CHARACTERS.forEach((ch, idx) => {
-      if (!game.unlockedSkins.includes(idx) && game.lifetimePoints >= ch.unlock) {
+      if (game.unlockedSkins.includes(idx)) return;
+      const obtain = ch.obtain || 'points';
+      let earned = false;
+      if (obtain === 'points' && game.lifetimePoints >= ch.unlock) earned = true;
+      if (obtain === 'prestige' && (ch.prestigeUnlock != null) && game.prestigeCount >= ch.prestigeUnlock) earned = true;
+      if (earned) {
         setGame(prev => ({ ...prev, unlockedSkins: [...prev.unlockedSkins, idx] }));
         setSkinCelebration(ch);
         soundEngine.play('unlock');
         setTimeout(() => setSkinCelebration(null), 3000);
       }
     });
-  }, [game.lifetimePoints]);
+  }, [game.lifetimePoints, game.prestigeCount]);
 
   // Story milestone checker
   useEffect(() => {
@@ -2487,7 +2736,19 @@ export default function App() {
         highestCombo: newHighCombo,
       };
     });
-  }, [calcTapPower, activeEffect, comboTimer]);
+
+    // V2 — Wave Drops: server-authoritative roll, throttled to 1/sec.
+    if (dropEvent && player?.id && player?.pin) {
+      dropThrottleRef.current(async () => {
+        const res = await dropRoll({ playerId: player.id, pin: player.pin, eventId: dropEvent.id });
+        if (res?.granted) {
+          setDropToast({ skinId: res.granted, t: Date.now() });
+          soundEngine.play('purchase');
+          setTimeout(() => setDropToast(null), 3000);
+        }
+      });
+    }
+  }, [calcTapPower, activeEffect, comboTimer, dropEvent, player?.id, player?.pin]);
 
   // ============================================================
   // GOLDEN BRAIN TAP
@@ -3435,6 +3696,436 @@ export default function App() {
         </div>
       )}
 
+      {/* V2: LOCKER CARD — prominent "event" card with FOMO drama */}
+      {locker && !activePanel && (() => {
+        const outputSkin = CHARACTERS.find(c => c.id === locker.output_skin_id);
+        const ingredients = (locker.recipe || []).map(r => ({ ...r, skin: CHARACTERS.find(c => c.id === r.skin_id) }));
+        const recipeCheck = checkRecipe(locker.recipe, inventory);
+        const isSoldOut = locker.status === 'sold_out' || locker.remaining_stock <= 0;
+        const isExpired = locker.status === 'expired'
+          || (locker.expires_at && new Date(locker.expires_at) < new Date());
+        const canFuse = !isSoldOut && !isExpired && recipeCheck.hasAll && !!player?.id;
+        const pct = locker.remaining_stock / Math.max(locker.total_stock, 1);
+        const stockColor = isSoldOut ? '#ff4500' : pct > 0.5 ? '#ffd700' : pct > 0.2 ? '#ff9500' : '#ff4444';
+
+        // MINIMIZED PILL — small badge at top, click to expand or fuse
+        if (lockerMinimized) {
+          return (
+            <div style={{
+              position: 'absolute', top: '54px', left: '50%', transform: 'translateX(-50%)',
+              zIndex: 23, display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '5px 6px 5px 12px', borderRadius: '999px',
+              background: isSoldOut
+                ? 'linear-gradient(135deg, rgba(80,20,20,0.95), rgba(40,5,5,0.95))'
+                : 'linear-gradient(135deg, rgba(60,20,110,0.95), rgba(20,5,50,0.97))',
+              border: '1px solid ' + (isSoldOut ? '#ff4500' : '#ffd700'),
+              boxShadow: '0 0 16px ' + (isSoldOut ? 'rgba(255,69,0,0.4)' : 'rgba(255,215,0,0.4)'),
+              color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '12px',
+              maxWidth: '92vw',
+            }}>
+              <span style={{ fontSize: '14px' }}>🔐</span>
+              <span style={{ letterSpacing: '0.5px' }}>LOCKER · {locker.name}</span>
+              <span style={{ color: stockColor, fontWeight: 'bold' }}>{locker.remaining_stock}/{locker.total_stock}</span>
+              {!isSoldOut && !isExpired && (
+                <button
+                  disabled={!canFuse}
+                  onClick={(e) => { e.stopPropagation(); if (canFuse) setFuseConfirm(true); }}
+                  style={{
+                    padding: '3px 10px', borderRadius: '999px', border: 'none',
+                    background: canFuse ? 'linear-gradient(135deg,#ffd700,#ff8c00)' : 'rgba(255,255,255,0.1)',
+                    color: canFuse ? '#000' : '#888', fontSize: '11px', letterSpacing: '1.5px',
+                    fontFamily: "'Bangers', cursive", cursor: canFuse ? 'pointer' : 'not-allowed',
+                  }}
+                >FUSE</button>
+              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleLockerMinimized(); }}
+                title="Expand locker"
+                style={{
+                  width: '22px', height: '22px', borderRadius: '50%', border: 'none',
+                  background: 'rgba(255,255,255,0.12)', color: '#fff',
+                  cursor: 'pointer', fontSize: '14px', lineHeight: '20px', padding: 0,
+                }}
+              >▢</button>
+            </div>
+          );
+        }
+
+        return (
+          <div style={{
+            position: 'absolute', top: '64px', left: '50%', transform: 'translateX(-50%)',
+            zIndex: 23, width: 'min(96vw, 560px)',
+            padding: '14px 18px 16px',
+            borderRadius: '18px',
+            background: isSoldOut
+              ? 'linear-gradient(135deg, rgba(80,20,20,0.96), rgba(40,5,5,0.98))'
+              : 'linear-gradient(135deg, rgba(60,20,110,0.96), rgba(20,5,50,0.98))',
+            border: '2px solid ' + (isSoldOut ? '#ff4500' : '#ffd700'),
+            boxShadow: isSoldOut
+              ? '0 0 40px rgba(255,69,0,0.55), inset 0 0 20px rgba(255,69,0,0.15)'
+              : '0 0 60px rgba(255,215,0,0.45), inset 0 0 24px rgba(255,215,0,0.12)',
+            color: '#fff', fontFamily: "'Bangers', cursive",
+            animation: isSoldOut ? 'none' : 'lockerGlow 2.4s ease-in-out infinite',
+            overflow: 'hidden',
+          }}>
+            {/* Sparkle drift layer (decorative — pointer-events none) */}
+            {!isSoldOut && (
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} style={{
+                    position: 'absolute',
+                    left: `${(i * 13) % 100}%`,
+                    top: `${(i * 17) % 100}%`,
+                    fontSize: '11px',
+                    color: 'rgba(255,215,0,0.55)',
+                    animation: `sparkleDrift ${4 + (i % 3)}s ease-in-out ${i * 0.3}s infinite`,
+                  }}>✨</div>
+                ))}
+              </div>
+            )}
+
+            {/* Title — banner with side accents + minimize */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              marginBottom: '4px', position: 'relative',
+            }}>
+              <div style={{ flex: 1, height: '2px', background: 'linear-gradient(90deg, transparent, #ffd700)' }} />
+              <div style={{
+                fontSize: '22px', color: '#ffd700', letterSpacing: '4px',
+                textShadow: '0 0 12px rgba(255,215,0,0.7)', whiteSpace: 'nowrap',
+              }}>🔐 LOCKER 🔐</div>
+              <div style={{ flex: 1, height: '2px', background: 'linear-gradient(90deg, #ffd700, transparent)' }} />
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleLockerMinimized(); }}
+                title="Minimize"
+                style={{
+                  position: 'absolute', top: '-4px', right: '-4px',
+                  width: '24px', height: '24px', borderRadius: '50%', border: 'none',
+                  background: 'rgba(255,255,255,0.12)', color: '#fff',
+                  cursor: 'pointer', fontSize: '18px', lineHeight: '20px', padding: 0,
+                }}
+              >−</button>
+            </div>
+            <div style={{
+              textAlign: 'center', fontSize: '13px', color: '#fff', opacity: 0.85,
+              letterSpacing: '1px', marginBottom: '10px',
+            }}>{locker.name}</div>
+
+            {isSoldOut ? (
+              <>
+                <div style={{ textAlign: 'center', fontSize: '34px', color: '#ff4500',
+                  textShadow: '0 0 20px #ff4500, 0 0 40px #ff0000', letterSpacing: '4px',
+                }}>🔥 SOLD OUT 🔥</div>
+                <div style={{ textAlign: 'center', fontSize: '13px', opacity: 0.9, marginTop: '6px' }}>
+                  All {outputSkin?.name || 'output'} claimed — trade for one!
+                </div>
+              </>
+            ) : isExpired ? (
+              <div style={{ textAlign: 'center', fontSize: '24px', color: '#aaa' }}>⏰ EVENT ENDED</div>
+            ) : (
+              <>
+                {/* Recipe → output row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '10px', position: 'relative', zIndex: 1 }}>
+                  {ingredients.map((ing, i) => (
+                    <React.Fragment key={i}>
+                      {i > 0 && <span style={{ fontSize: '22px', color: '#ffd700' }}>+</span>}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '70px' }}>
+                        {ing.skin && (
+                          <div style={{
+                            background: 'rgba(0,0,0,0.35)', borderRadius: '12px', padding: '6px',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                          }}>
+                            <img src={`/characters/${ing.skin.file}`} alt={ing.skin.name}
+                              style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                          </div>
+                        )}
+                        <div style={{ fontSize: '12px', color: '#fff', marginTop: '4px', textAlign: 'center', lineHeight: 1.1 }}>
+                          {ing.skin?.name?.split(' ')[0] || `#${ing.skin_id}`}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#9be7ff' }}>×{ing.qty}</div>
+                      </div>
+                    </React.Fragment>
+                  ))}
+                  <span style={{ fontSize: '32px', color: '#ffd700', margin: '0 4px',
+                    textShadow: '0 0 12px #ffd700' }}>→</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '90px' }}>
+                    <div style={{
+                      background: 'radial-gradient(circle, rgba(255,215,0,0.3), rgba(0,0,0,0.4))',
+                      borderRadius: '14px', padding: '8px',
+                      border: '2px solid #ffd700',
+                      boxShadow: '0 0 24px rgba(255,215,0,0.6)',
+                      animation: 'outputPulse 2s ease-in-out infinite',
+                    }}>
+                      {outputSkin && <img src={`/characters/${outputSkin.file}`} alt={outputSkin.name}
+                        style={{ width: '78px', height: '78px', objectFit: 'contain' }} />}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#ffd700', marginTop: '4px', textShadow: '0 0 6px rgba(255,215,0,0.5)' }}>
+                      {outputSkin?.name || 'output'}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#ffd700', opacity: 0.85, letterSpacing: '1px' }}>LIMITED</div>
+                  </div>
+                </div>
+
+                {/* Big stock counter — the FOMO engine */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+                  background: 'rgba(0,0,0,0.35)', borderRadius: '12px',
+                  padding: '8px 12px', marginBottom: '10px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      fontSize: '32px', color: stockColor, lineHeight: 1,
+                      textShadow: `0 0 14px ${stockColor}`, fontWeight: 'bold',
+                    }}>{locker.remaining_stock}<span style={{ fontSize: '18px', opacity: 0.6 }}>/{locker.total_stock}</span></div>
+                    <div style={{ fontSize: '10px', letterSpacing: '2px', color: stockColor, opacity: 0.85 }}>REMAINING</div>
+                  </div>
+                  <div style={{ width: '1px', height: '32px', background: 'rgba(255,255,255,0.15)' }} />
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', color: '#9be7ff', lineHeight: 1 }}>⏰ {lockerCountdown(locker.expires_at)}</div>
+                    <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#9be7ff', opacity: 0.7 }}>CLOSES IN</div>
+                  </div>
+                </div>
+
+                <button
+                  disabled={!canFuse}
+                  onClick={() => setFuseConfirm(true)}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: '12px',
+                    border: 'none', cursor: canFuse ? 'pointer' : 'not-allowed',
+                    background: canFuse
+                      ? 'linear-gradient(135deg, #ffd700, #ff8c00 60%, #ff5500)'
+                      : 'rgba(255,255,255,0.08)',
+                    color: canFuse ? '#000' : '#888',
+                    fontFamily: "'Bangers', cursive", fontSize: '22px', letterSpacing: '4px',
+                    textShadow: canFuse ? '0 1px 0 rgba(255,255,255,0.3)' : 'none',
+                    boxShadow: canFuse
+                      ? '0 0 30px rgba(255,215,0,0.7), inset 0 -3px 0 rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.4)'
+                      : 'none',
+                    animation: canFuse ? 'fuseButtonPulse 1.4s ease-in-out infinite' : 'none',
+                  }}
+                >FUSE NOW</button>
+                {!canFuse && recipeCheck.missing.length > 0 && (
+                  <div style={{ textAlign: 'center', fontSize: '12px', color: '#ff9500', marginTop: '8px', letterSpacing: '0.5px' }}>
+                    Missing: {recipeCheck.missing.map(m => {
+                      const sk = CHARACTERS.find(c => c.id === m.skin_id);
+                      return `${m.need - m.have}× ${sk?.name || `#${m.skin_id}`}`;
+                    }).join(', ')}
+                  </div>
+                )}
+                {!canFuse && !recipeCheck.hasAll && (
+                  <div style={{ textAlign: 'center', fontSize: '11px', color: '#aaa', marginTop: '4px', opacity: 0.85 }}>
+                    Get ingredients during the event or trade with players!
+                  </div>
+                )}
+                {locker.admin_only && (
+                  <div style={{ textAlign: 'center', fontSize: '10px', color: '#ff9500', marginTop: '6px', letterSpacing: '2px' }}>
+                    🛠 DRY-RUN · admin only
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* V2: Fusion confirm modal */}
+      {fuseConfirm && locker && (() => {
+        const outputSkin = CHARACTERS.find(c => c.id === locker.output_skin_id);
+        const ingredients = (locker.recipe || []).map(r => ({ ...r, skin: CHARACTERS.find(c => c.id === r.skin_id) }));
+        return (
+          <div onClick={() => setFuseConfirm(false)} style={{
+            position: 'absolute', inset: 0, zIndex: 80,
+            background: 'rgba(0,0,0,0.8)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+          }}>
+            <div onClick={e => e.stopPropagation()} style={{
+              background: 'linear-gradient(180deg, #1a0a3a, #0a0420)',
+              border: '2px solid #ffd700', borderRadius: '16px',
+              padding: '20px', width: '100%', maxWidth: '320px',
+              boxShadow: '0 0 50px rgba(255,215,0,0.5)',
+            }}>
+              <div style={{ color: '#ffd700', fontSize: '20px', textAlign: 'center', marginBottom: '12px' }}>FUSE?</div>
+              <div style={{ color: '#fff', fontSize: '13px', textAlign: 'center', marginBottom: '14px' }}>
+                Fuse <strong>{ingredients.map(i => `${i.qty} ${i.skin?.name || `#${i.skin_id}`}`).join(' + ')}</strong> into <strong style={{ color: '#ffd700' }}>{outputSkin?.name || 'output'}</strong>?
+              </div>
+              <div style={{ color: '#aaa', fontSize: '11px', textAlign: 'center', marginBottom: '14px' }}>
+                Ingredients are consumed. Output is locked from trading for 24h.
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setFuseConfirm(false)} style={{
+                  flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #555',
+                  background: 'transparent', color: '#aaa', fontFamily: "'Bangers', cursive", fontSize: '14px', cursor: 'pointer',
+                }}>CANCEL</button>
+                <button onClick={async () => {
+                  setFuseConfirm(false);
+                  if (!player?.id) return;
+                  const res = await lockerFuse({ playerId: player.id, pin: player.pin, lockerId: locker.id });
+                  if (res.error) {
+                    setFuseMessage({ kind: 'err', text: fuseErrorMessage(res.error) });
+                  } else {
+                    setFuseMessage({ kind: 'ok', text: `🎉 ${outputSkin?.name || 'Skin'} #${res.serial} is yours!` });
+                    soundEngine.play('unlock');
+                  }
+                  setTimeout(() => setFuseMessage(null), 4000);
+                }} style={{
+                  flex: 1.5, padding: '10px', borderRadius: '8px', border: 'none',
+                  background: 'linear-gradient(135deg, #ffd700, #ff8c00)',
+                  color: '#000', fontFamily: "'Bangers', cursive", fontSize: '14px',
+                  cursor: 'pointer', boxShadow: '0 0 20px rgba(255,215,0,0.5)',
+                }}>FUSE NOW</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* V2: Fusion ticker — top banner when anyone fuses */}
+      {fusionToast && (() => {
+        const skin = CHARACTERS.find(c => c.id === fusionToast.skinId);
+        return (
+          <div style={{
+            position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)',
+            zIndex: 90, padding: '6px 14px', borderRadius: '999px',
+            background: 'linear-gradient(135deg, rgba(255,215,0,0.95), rgba(255,140,0,0.95))',
+            color: '#000', fontFamily: "'Bangers', cursive", fontSize: '12px',
+            boxShadow: '0 0 20px rgba(255,215,0,0.7)',
+            letterSpacing: '0.5px', maxWidth: '90%', textAlign: 'center',
+            animation: 'fadeIn 0.3s ease-out',
+            pointerEvents: 'none',
+          }}>
+            🏒 {fusionToast.username} just fused {skin?.name || 'a skin'} #{fusionToast.serial}!
+          </div>
+        );
+      })()}
+
+      {/* V2: Fuse message toast */}
+      {fuseMessage && (
+        <div style={{
+          position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 95, padding: '14px 22px', borderRadius: '14px',
+          background: fuseMessage.kind === 'ok' ? 'rgba(20,80,30,0.95)' : 'rgba(120,30,30,0.95)',
+          border: '2px solid ' + (fuseMessage.kind === 'ok' ? '#ffd700' : '#ff4444'),
+          color: '#fff', fontSize: '15px', fontFamily: "'Bangers', cursive",
+          boxShadow: '0 0 40px ' + (fuseMessage.kind === 'ok' ? 'rgba(255,215,0,0.6)' : 'rgba(255,68,68,0.5)'),
+          maxWidth: '85%', textAlign: 'center',
+        }}>{fuseMessage.text}</div>
+      )}
+
+      {/* V2: Drop event stock indicator — small pill, top-right under header */}
+      {dropEvent && dropEvent.status === 'active' && !activePanel && (
+        <div style={{
+          position: 'absolute', top: '64px', right: '12px', zIndex: 24,
+          padding: '6px 10px', borderRadius: '10px',
+          background: 'rgba(15,5,35,0.92)', border: '1px solid rgba(255,215,0,0.4)',
+          boxShadow: '0 0 14px rgba(255,215,0,0.2)',
+          color: '#fff', fontSize: '10px', fontFamily: "'Bangers', cursive",
+          letterSpacing: '0.5px', maxWidth: '180px',
+        }}>
+          <div style={{ color: '#ffd700', fontSize: '11px', marginBottom: '2px' }}>🎁 DROP EVENT</div>
+          {dropEvent.drop_pool.map(p => {
+            const skin = CHARACTERS.find(c => c.id === p.skin_id);
+            const out = p.remaining <= 0;
+            return (
+              <div key={p.skin_id} style={{
+                display: 'flex', justifyContent: 'space-between', gap: '8px',
+                color: out ? '#ff8888' : '#fff', opacity: out ? 0.7 : 1,
+              }}>
+                <span>{skin?.emoji || '•'} {skin?.name || `#${p.skin_id}`}</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px' }}>
+                  {out ? 'SOLD OUT' : `${p.remaining}/${p.total}`}
+                </span>
+              </div>
+            );
+          })}
+          {isWaveActive(dropEvent) && (() => {
+            const waveSkin = CHARACTERS.find(c => c.id === dropEvent.current_wave_skin_id);
+            return (
+              <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,215,0,0.2)', color: '#ffd700' }}>
+                ⚡ {waveSkin?.name?.toUpperCase() || 'WAVE'} STORM: {waveSecondsLeft(dropEvent)}s
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* V2: Wave banner — full-screen 5s announcement when admin triggers a wave */}
+      {waveBanner && (() => {
+        const skin = CHARACTERS.find(c => c.id === waveBanner.skinId);
+        return (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 250,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            pointerEvents: 'none',
+            background: 'radial-gradient(ellipse at center, rgba(255,215,0,0.25), rgba(0,0,0,0.6) 70%)',
+            animation: 'fadeIn 0.3s ease-out',
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                fontSize: '36px', color: '#ffd700', fontFamily: "'Bangers', cursive",
+                textShadow: '0 0 30px #ffd700, 0 0 60px #ff8c00', letterSpacing: '4px',
+              }}>🚨 {(skin?.name || 'WAVE').toUpperCase()} STORM! 🚨</div>
+              <div style={{
+                fontSize: '20px', color: '#fff', marginTop: '12px',
+                textShadow: '0 0 12px #000',
+              }}>Next 60 seconds = {dropEvent?.wave_multiplier || 10}× drop rate!</div>
+              {skin && (
+                <img src={`/characters/${skin.file}`} alt={skin.name} style={{
+                  width: '120px', height: '120px', objectFit: 'contain', marginTop: '12px',
+                  filter: 'drop-shadow(0 0 30px #ffd700)',
+                }} />
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* V2: Sold-out banner — full-screen when stock hits zero */}
+      {soldOutBanner && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 250,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none',
+          background: 'radial-gradient(ellipse at center, rgba(255,69,0,0.3), rgba(0,0,0,0.7) 70%)',
+          animation: 'fadeIn 0.3s ease-out',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              fontSize: '40px', color: '#ff4500', fontFamily: "'Bangers', cursive",
+              textShadow: '0 0 30px #ff4500, 0 0 60px #ff0000', letterSpacing: '4px',
+            }}>🔥 ALL CLAIMED! 🔥</div>
+            <div style={{
+              fontSize: '18px', color: '#fff', marginTop: '12px',
+              textShadow: '0 0 12px #000', maxWidth: '80%', margin: '12px auto 0',
+            }}>Trade with friends to complete recipes!</div>
+          </div>
+        </div>
+      )}
+
+      {/* V2: Drop toast — small corner notification on personal drop */}
+      {dropToast && (() => {
+        const skin = CHARACTERS.find(c => c.id === dropToast.skinId);
+        return (
+          <div onClick={() => { setActivePanel('inv'); setDropToast(null); }} style={{
+            position: 'absolute', bottom: '70px', right: '12px', zIndex: 60,
+            padding: '8px 12px', borderRadius: '12px',
+            background: 'linear-gradient(135deg, rgba(20,80,30,0.95), rgba(15,60,20,0.95))',
+            border: '1px solid #2ecc71',
+            boxShadow: '0 0 24px rgba(46,204,113,0.5)',
+            color: '#fff', fontSize: '13px', fontFamily: "'Bangers', cursive",
+            display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
+            animation: 'fadeIn 0.3s ease-out',
+            maxWidth: '220px',
+          }}>
+            {skin && <img src={`/characters/${skin.file}`} alt={skin.name} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />}
+            <div>
+              <div style={{ color: '#9be77e' }}>🎉 You got</div>
+              <div style={{ color: '#fff', fontSize: '14px' }}>{skin?.name || `#${dropToast.skinId}`}!</div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Admin: Vote popup — hidden while a bottom panel (shop/skins/etc) is open
           so the YES/NO buttons don't block shop buy buttons. */}
       {adminVote && !votedOn[adminVote.id] && !activePanel && (
@@ -3545,6 +4236,8 @@ export default function App() {
         {[
           { id: 'shop', label: 'Shop', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> },
           { id: 'skins', label: 'Skins', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+          { id: 'inv', label: 'Vault', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> },
+          { id: 'trade', label: 'Trade', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg> },
           { id: 'codes', label: 'Codes', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
           { id: 'board', label: 'Board', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15l-2 5l9-13h-5l2-5l-9 13h5z"/></svg> },
           { id: 'achieve', label: 'Awards', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
@@ -3710,8 +4403,21 @@ export default function App() {
           <div style={styles.panelTitle}>SKINS</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             {CHARACTERS.map((ch, idx) => {
-              const unlocked = game.unlockedSkins.includes(idx);
+              // Ownership: legacy point-unlock + prestige-unlock skins live in
+              // unlockedSkins[]; Sportini event skins live in the inventory table.
+              const isPointSkin = !ch.obtain || ch.obtain === 'points';
+              const isPrestigeSkin = ch.obtain === 'prestige';
+              const unlocked = (isPointSkin || isPrestigeSkin)
+                ? game.unlockedSkins.includes(idx)
+                : inventory.some(inv => inv.skin_id === ch.id);
               const equipped = game.equippedSkin === idx;
+              const unlockHint = isPointSkin
+                ? `${formatNumber(ch.unlock)} pts`
+                : ch.obtain === 'fusion'
+                  ? 'Fuse in Locker'
+                  : ch.obtain === 'prestige'
+                    ? `Ascend ${ch.prestigeUnlock || 1}×`
+                    : 'Earn from drop';
               return (
                 <div key={idx} onClick={() => unlocked && setGame(prev => ({ ...prev, equippedSkin: idx }))} style={{
                   padding: '8px', borderRadius: '12px', textAlign: 'center', cursor: unlocked ? 'pointer' : 'default',
@@ -3727,16 +4433,293 @@ export default function App() {
                     )}
                   </div>
                   <div style={{ color: '#fff', fontSize: '13px', lineHeight: 1.3, textShadow: '1px 1px 2px #000', fontWeight: 'bold' }}>{ch.name}</div>
-                  <div style={{ color: ch.rarity === 'Legendary' ? '#ffd700' : ch.rarity === 'Brainrot God' ? '#ff00ff' : ch.rarity === 'OG' ? '#00ff00' : ch.rarity === 'Secret' ? '#ff4500' : '#aaa', fontSize: '10px', marginTop: '2px' }}>
+                  <div style={{ color: ch.rarity === 'Mythic' ? '#ff44ff' : ch.rarity === 'Legendary' ? '#ffd700' : ch.rarity === 'Brainrot God' ? '#ff00ff' : ch.rarity === 'OG' ? '#00ff00' : ch.rarity === 'Secret' ? '#ff4500' : '#aaa', fontSize: '10px', marginTop: '2px' }}>
                     {ch.rarity} | {ch.mult}x
                   </div>
-                  {!unlocked && <div style={{ color: '#aaa', fontSize: '10px' }}>{formatNumber(ch.unlock)} pts</div>}
+                  {!unlocked && <div style={{ color: '#aaa', fontSize: '10px' }}>{unlockHint}</div>}
                   {equipped && <div style={{ color: '#ffd700', fontSize: '11px', fontWeight: 'bold' }}>EQUIPPED</div>}
                 </div>
               );
             })}
           </div>
         </div>
+      )}
+
+      {/* VAULT (INVENTORY) PANEL — V2 */}
+      {activePanel === 'inv' && (
+        <div style={styles.panel} data-panel onClick={e => e.stopPropagation()}>
+          <div style={styles.panelTitle}>VAULT</div>
+          {inventory.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#aaa', fontSize: '14px' }}>
+              Your vault is empty.<br />
+              <span style={{ fontSize: '12px', opacity: 0.7 }}>Earn skins from drops, fusions, and trades!</span>
+            </div>
+          ) : (
+            groupByTier(inventory, CHARACTERS).map(group => (
+              <div key={group.tier} style={{ marginBottom: '14px' }}>
+                <div style={{
+                  fontSize: '12px', letterSpacing: '1.5px', textTransform: 'uppercase',
+                  color: group.tier === 'Mythic' || group.tier === 'Mythic Limited' ? '#ff44ff'
+                       : group.tier === 'Brainrot God' ? '#ff00ff'
+                       : group.tier === 'Legendary' ? '#ffd700'
+                       : group.tier === 'OG' ? '#00ff00'
+                       : group.tier === 'Secret' ? '#ff4500'
+                       : group.tier === 'Rare' ? '#4db8db'
+                       : '#aaa',
+                  marginBottom: '6px', fontWeight: 'bold', opacity: 0.85,
+                }}>{group.tier}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                  {group.items.map(({ inv, skin }) => {
+                    const charIdx = indexOfSkinId(CHARACTERS, skin.id);
+                    const equipped = game.equippedSkin === charIdx;
+                    const locked = isTradeLocked(inv);
+                    const reserved = !!inv.reserved_by_listing;
+                    const canList = !locked && !reserved && !!player?.id;
+                    return (
+                      <div key={inv.id}
+                        onClick={() => charIdx >= 0 && setGame(prev => ({ ...prev, equippedSkin: charIdx }))}
+                        style={{
+                          padding: '8px', borderRadius: '12px', textAlign: 'center', cursor: 'pointer',
+                          background: equipped ? 'rgba(106,13,173,0.4)' : 'rgba(255,255,255,0.05)',
+                          border: equipped ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                          position: 'relative',
+                        }}>
+                        <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <img src={`/characters/${skin.file}`} alt={skin.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        </div>
+                        <div style={{ color: '#fff', fontSize: '12px', lineHeight: 1.3, textShadow: '1px 1px 2px #000', fontWeight: 'bold' }}>{skin.name}</div>
+                        {inv.serial_number != null ? (
+                          <div style={{ color: '#ffd700', fontSize: '10px', marginTop: '2px', fontWeight: 'bold' }}>#{inv.serial_number}</div>
+                        ) : inv.quantity > 1 ? (
+                          <div style={{ color: '#9be7ff', fontSize: '11px', marginTop: '2px' }}>x{inv.quantity}</div>
+                        ) : null}
+                        {equipped && <div style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold' }}>EQUIPPED</div>}
+                        {locked && (
+                          <div title="Trade-locked for 24h after fusion" style={{
+                            position: 'absolute', top: '6px', right: '6px',
+                            background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
+                            padding: '2px 5px', fontSize: '10px', color: '#ffb347',
+                            display: 'flex', alignItems: 'center', gap: '3px',
+                          }}>🔒 {formatLockCountdown(inv.trade_lock_until)}</div>
+                        )}
+                        {reserved && (
+                          <div style={{
+                            position: 'absolute', top: '6px', right: '6px',
+                            background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
+                            padding: '2px 5px', fontSize: '10px', color: '#9be7ff',
+                          }}>📋 Listed</div>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if (canList) setListForm({ invRow: inv, skin }); }}
+                          disabled={!canList}
+                          style={{
+                            marginTop: '6px', width: '100%', padding: '4px 6px',
+                            borderRadius: '6px', border: 'none',
+                            background: canList ? 'linear-gradient(135deg,#6a0dad,#9b59b6)' : 'rgba(255,255,255,0.08)',
+                            color: canList ? '#fff' : '#888',
+                            fontFamily: "'Bangers', cursive", fontSize: '11px',
+                            cursor: canList ? 'pointer' : 'not-allowed', letterSpacing: '0.5px',
+                          }}
+                        >{reserved ? 'LISTED' : 'TRADE'}</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* TRADE BOARD PANEL — V2 */}
+      {activePanel === 'trade' && (
+        <div style={styles.panel} data-panel onClick={e => e.stopPropagation()}>
+          <div style={styles.panelTitle}>TRADE BOARD</div>
+          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '10px' }}>
+            {[
+              { id: 'browse', label: `Browse (${tradeListings.length})` },
+              { id: 'mine',   label: `Mine (${myListings.filter(l => l.status === 'active').length})` },
+              { id: 'history', label: 'History' },
+            ].map(t => (
+              <button key={t.id} onClick={() => setTradeTab(t.id)} style={{
+                padding: '5px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                background: tradeTab === t.id ? '#6a0dad' : 'rgba(255,255,255,0.1)',
+                color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '12px',
+              }}>{t.label}</button>
+            ))}
+          </div>
+          {/* BROWSE */}
+          {tradeTab === 'browse' && (
+            tradeListings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px', color: '#aaa', fontSize: '13px' }}>
+                No active trades. Be the first — list a skin from your Vault!
+              </div>
+            ) : tradeListings.map(l => {
+              const offerSkin = CHARACTERS.find(c => c.id === l.offer_skin_id);
+              const wantSkin  = CHARACTERS.find(c => c.id === l.want_skin_id);
+              const isMine = l.seller_player_id === player?.id;
+              return (
+                <TradeListingRow key={l.id}
+                  listing={l} offerSkin={offerSkin} wantSkin={wantSkin}
+                  isMine={isMine}
+                  onAccept={async () => {
+                    if (!player?.id) return;
+                    const res = await tradeAccept({ playerId: player.id, pin: player.pin, listingId: l.id });
+                    if (res.error) {
+                      setTradeMessage({ kind: 'err', text: tradeErrorMessage(res.error) });
+                    } else {
+                      setTradeMessage({ kind: 'ok', text: '✅ Trade complete!' });
+                      soundEngine.play('unlock');
+                    }
+                    setTimeout(() => setTradeMessage(null), 3500);
+                  }}
+                />
+              );
+            })
+          )}
+          {/* MINE */}
+          {tradeTab === 'mine' && (
+            myListings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px', color: '#aaa', fontSize: '13px' }}>
+                You haven't listed any trades yet.
+              </div>
+            ) : myListings.map(l => {
+              const offerSkin = CHARACTERS.find(c => c.id === l.offer_skin_id);
+              const wantSkin  = CHARACTERS.find(c => c.id === l.want_skin_id);
+              return (
+                <TradeListingRow key={l.id}
+                  listing={l} offerSkin={offerSkin} wantSkin={wantSkin}
+                  isMine={true}
+                  onCancel={l.status === 'active' ? async () => {
+                    const res = await tradeCancel({ playerId: player.id, pin: player.pin, listingId: l.id });
+                    if (res.error) setTradeMessage({ kind: 'err', text: tradeErrorMessage(res.error) });
+                    else setTradeMessage({ kind: 'ok', text: 'Listing cancelled.' });
+                    setTimeout(() => setTradeMessage(null), 2500);
+                  } : null}
+                />
+              );
+            })
+          )}
+          {/* HISTORY */}
+          {tradeTab === 'history' && (
+            myTradeHistory.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px', color: '#aaa', fontSize: '13px' }}>
+                No completed trades yet.
+              </div>
+            ) : myTradeHistory.map(h => {
+              const youAreSeller = h.seller_player_id === player?.id;
+              const gave = youAreSeller ? h.seller_gave : h.seller_got;
+              const got  = youAreSeller ? h.seller_got  : h.seller_gave;
+              const gaveSkin = CHARACTERS.find(c => c.id === gave?.skin_id);
+              const gotSkin  = CHARACTERS.find(c => c.id === got?.skin_id);
+              const otherUser = youAreSeller ? h.buyer_username : h.seller_username;
+              return (
+                <div key={h.id} style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '8px', marginBottom: '6px',
+                  borderRadius: '8px', background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  fontSize: '12px', color: '#fff',
+                }}>
+                  <span style={{ flex: 1 }}>
+                    Gave <strong>{gaveSkin?.name || `#${gave?.skin_id}`}</strong>
+                    {gave?.quantity > 1 && <> x{gave.quantity}</>}
+                    {' → '}
+                    Got <strong>{gotSkin?.name || `#${got?.skin_id}`}</strong>
+                    {got?.quantity > 1 && <> x{got.quantity}</>}
+                  </span>
+                  <span style={{ opacity: 0.7, fontSize: '10px' }}>w/ {otherUser}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* TRADE — LIST FORM MODAL */}
+      {listForm && (
+        <div onClick={() => setListForm(null)} style={{
+          position: 'absolute', inset: 0, zIndex: 60,
+          background: 'rgba(0,0,0,0.75)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '20px',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'linear-gradient(180deg, #1a0a3a, #0a0420)',
+            border: '2px solid #6a0dad', borderRadius: '16px',
+            padding: '20px', width: '100%', maxWidth: '320px',
+            boxShadow: '0 0 40px rgba(106,13,173,0.5)',
+          }}>
+            <div style={{ color: '#ffd700', fontSize: '18px', fontFamily: "'Bangers', cursive", textAlign: 'center', marginBottom: '12px' }}>LIST FOR TRADE</div>
+            <div style={{ color: '#fff', fontSize: '13px', textAlign: 'center', marginBottom: '14px' }}>
+              You're offering: <strong>{listForm.skin.name}</strong>
+              {listForm.invRow.serial_number != null && <span style={{ color: '#ffd700' }}> #{listForm.invRow.serial_number}</span>}
+            </div>
+            <div style={{ color: '#aaa', fontSize: '12px', marginBottom: '4px' }}>You want…</div>
+            <select
+              value={listForm.wantSkinId || ''}
+              onChange={e => setListForm({ ...listForm, wantSkinId: e.target.value ? parseInt(e.target.value) : null })}
+              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #6a0dad', background: '#0a0420', color: '#fff', fontSize: '13px', marginBottom: '8px' }}
+            >
+              <option value="">— pick a skin —</option>
+              {CHARACTERS.filter(c => c.id !== listForm.skin.id).map(c => (
+                <option key={c.id} value={c.id}>{c.name} ({c.rarity})</option>
+              ))}
+            </select>
+            <div style={{ color: '#aaa', fontSize: '12px', marginBottom: '4px' }}>Quantity wanted</div>
+            <input type="number" min="1" max="99"
+              value={listForm.wantQty || 1}
+              onChange={e => setListForm({ ...listForm, wantQty: Math.max(1, parseInt(e.target.value) || 1) })}
+              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #6a0dad', background: '#0a0420', color: '#fff', fontSize: '13px', marginBottom: '14px' }}
+            />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setListForm(null)} style={{
+                flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #555',
+                background: 'transparent', color: '#aaa', fontFamily: "'Bangers', cursive", fontSize: '14px', cursor: 'pointer',
+              }}>CANCEL</button>
+              <button
+                disabled={!listForm.wantSkinId}
+                onClick={async () => {
+                  if (!listForm.wantSkinId || !player?.id) return;
+                  const res = await tradeList({
+                    playerId: player.id, pin: player.pin,
+                    inventoryId: listForm.invRow.id,
+                    wantSkinId: listForm.wantSkinId,
+                    wantQty: listForm.wantQty || 1,
+                  });
+                  if (res.error) {
+                    setTradeMessage({ kind: 'err', text: tradeErrorMessage(res.error) });
+                  } else {
+                    setTradeMessage({ kind: 'ok', text: '📋 Listed on Trade Board!' });
+                    setListForm(null);
+                    setActivePanel('trade');
+                    setTradeTab('mine');
+                  }
+                  setTimeout(() => setTradeMessage(null), 3000);
+                }}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
+                  background: listForm.wantSkinId ? 'linear-gradient(135deg, #6a0dad, #9b59b6)' : 'rgba(255,255,255,0.1)',
+                  color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '14px',
+                  cursor: listForm.wantSkinId ? 'pointer' : 'not-allowed',
+                }}
+              >LIST</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TRADE MESSAGE TOAST */}
+      {tradeMessage && (
+        <div style={{
+          position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 70, padding: '12px 20px', borderRadius: '12px',
+          background: tradeMessage.kind === 'ok' ? 'rgba(20, 80, 30, 0.95)' : 'rgba(120, 30, 30, 0.95)',
+          border: '1px solid ' + (tradeMessage.kind === 'ok' ? '#0f0' : '#f00'),
+          color: '#fff', fontSize: '14px', fontFamily: "'Bangers', cursive",
+          boxShadow: '0 0 30px ' + (tradeMessage.kind === 'ok' ? 'rgba(0,255,0,0.4)' : 'rgba(255,0,0,0.4)'),
+          maxWidth: '80%', textAlign: 'center',
+        }}>{tradeMessage.text}</div>
       )}
 
       {/* CODES PANEL */}
@@ -4353,6 +5336,26 @@ export default function App() {
         @keyframes skinSpin {
           0%, 100% { transform: scale(1) rotate(0deg); }
           50% { transform: scale(1.08) rotate(5deg); }
+        }
+        /* V2 — locker / drops / fusion animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes lockerGlow {
+          0%, 100% { box-shadow: 0 0 40px rgba(255,215,0,0.35), inset 0 0 24px rgba(255,215,0,0.1); }
+          50%      { box-shadow: 0 0 70px rgba(255,215,0,0.65), inset 0 0 30px rgba(255,215,0,0.2); }
+        }
+        @keyframes outputPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 24px rgba(255,215,0,0.6); }
+          50%      { transform: scale(1.06); box-shadow: 0 0 36px rgba(255,215,0,0.85); }
+        }
+        @keyframes fuseButtonPulse {
+          0%, 100% { transform: scale(1);    box-shadow: 0 0 30px rgba(255,215,0,0.7), inset 0 -3px 0 rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.4); }
+          50%      { transform: scale(1.025); box-shadow: 0 0 50px rgba(255,215,0,1),   inset 0 -3px 0 rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5); }
+        }
+        @keyframes sparkleDrift {
+          0%   { transform: translateY(0)    scale(0.6); opacity: 0; }
+          25%  { opacity: 1; }
+          75%  { opacity: 0.6; }
+          100% { transform: translateY(-30px) scale(1.2); opacity: 0; }
         }
 
         ::-webkit-scrollbar { width: 6px; }
