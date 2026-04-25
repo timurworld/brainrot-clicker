@@ -172,7 +172,52 @@ class Bot {
     };
     scheduleAmbient();
 
+    // Bot trade listings — every 3–6 min, post a fresh listing for a random
+    // legacy skin from this bot's inventory (must be seeded via SQL first).
+    // If a real kid accepts, the trade RPC handles the swap atomically.
+    const scheduleTrade = () => {
+      if (!this.isLive) return;
+      const delay = 180_000 + Math.random() * 180_000;     // 3–6 min
+      this.tradeTimer = setTimeout(async () => {
+        if (!this.isLive) return;
+        try { await this.postRandomListing(); } catch {}
+        scheduleTrade();
+      }, delay);
+    };
+    // First listing fires sooner so the board doesn't look dead at event start.
+    setTimeout(() => { if (this.isLive) this.postRandomListing().catch(() => {}); }, 30_000 + Math.random() * 60_000);
+    scheduleTrade();
+
     console.log(`[${this.name}] online`);
+  }
+
+  // Post a trade listing offering a random legacy skin we own, asking for a
+  // different random legacy skin. Caps at 5 active listings (server-enforced).
+  async postRandomListing() {
+    // Find this bot's player_id + an inventory row to offer
+    const { data: pl } = await this.client.from('players')
+      .select('id, pin').ilike('username', this.name).maybeSingle();
+    if (!pl) return;
+    const { data: rows } = await this.client.from('inventory')
+      .select('id, skin_id')
+      .eq('player_id', pl.id)
+      .is('serial_number', null)
+      .is('reserved_by_listing', null)
+      .lt('skin_id', 20);                                  // legacy skins only (1–19)
+    if (!rows || rows.length === 0) return;
+    const offer = rows[Math.floor(Math.random() * rows.length)];
+    // Want a different legacy skin (id 1–19, excluding the offered one)
+    let want = 0;
+    while (!want || want === offer.skin_id) {
+      want = 1 + Math.floor(Math.random() * 19);
+    }
+    await this.client.rpc('trade_list', {
+      p_player_id: pl.id,
+      p_pin: pl.pin || '0000',
+      p_inventory_id: offer.id,
+      p_want_skin_id: want,
+      p_want_quantity: 1,
+    });
   }
 
   async goOffline() {
@@ -181,6 +226,7 @@ class Bot {
     clearInterval(this.presenceKeepalive); this.presenceKeepalive = null;
     clearInterval(this.tickTimer); this.tickTimer = null;
     if (this.ambientTimer) { clearTimeout(this.ambientTimer); this.ambientTimer = null; }
+    if (this.tradeTimer) { clearTimeout(this.tradeTimer); this.tradeTimer = null; }
     if (this.emoteChannel) {
       await this.client.removeChannel(this.emoteChannel).catch(() => {});
       this.emoteChannel = null;
