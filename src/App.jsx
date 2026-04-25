@@ -69,7 +69,7 @@ const CHARACTERS = [
     obtain: 'prestige', prestigeUnlock: 3,
     bg: 'linear-gradient(180deg, #2a0a4a 0%, #ff8c00 40%, #ffd700 70%, #1a0530 100%)' },
   { id: 25, name: 'Auraberry', file: '25_auraberry.png', bgNum: '03',
-    rarity: 'Prestige', unlock: 0, emoji: '🫐', color: '#a259ff', mult: 25,
+    rarity: 'Prestige', unlock: 0, emoji: '🫐', color: '#a259ff', mult: 20,
     obtain: 'prestige', prestigeUnlock: 5,
     bg: 'linear-gradient(180deg, #1a0530 0%, #6a0dad 40%, #a259ff 70%, #2a0a4a 100%)' },
 ];
