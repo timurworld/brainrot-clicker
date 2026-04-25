@@ -4313,27 +4313,27 @@ export default function App() {
             position: 'absolute',
             top: (adminSchedule && !adminEvent.active) ? 'clamp(125px, 18vh, 150px)' : '60px',
             right: '10px', zIndex: 24,
-            padding: '5px 9px', borderRadius: '9px',
+            padding: '7px 11px', borderRadius: '10px',
             background: 'rgba(15,5,35,0.92)', border: '1px solid rgba(255,215,0,0.4)',
-            boxShadow: '0 0 12px rgba(255,215,0,0.18)',
-            color: '#fff', fontSize: '9px', fontFamily: "'Bangers', cursive",
-            letterSpacing: '0.4px', maxWidth: '160px', lineHeight: 1.25,
+            boxShadow: '0 0 14px rgba(255,215,0,0.2)',
+            color: '#fff', fontSize: '11px', fontFamily: "'Bangers', cursive",
+            letterSpacing: '0.5px', maxWidth: '190px', lineHeight: 1.3,
           }}
         >
-          <div style={{ color: '#ffd700', fontSize: '10px', marginBottom: '1px' }}>🎁 DROP EVENT</div>
-          <div style={{ color: '#aaa', fontSize: '8px', marginBottom: '3px', letterSpacing: '0.5px' }}>LEFT IN POOL</div>
+          <div style={{ color: '#ffd700', fontSize: '12px', marginBottom: '1px' }}>🎁 DROP EVENT</div>
+          <div style={{ color: '#aaa', fontSize: '9px', marginBottom: '4px', letterSpacing: '0.5px' }}>LEFT IN POOL</div>
           {dropEvent.drop_pool.map(p => {
             const skin = CHARACTERS.find(c => c.id === p.skin_id);
             const out = p.remaining <= 0;
             return (
               <div key={p.skin_id} style={{
-                display: 'flex', justifyContent: 'space-between', gap: '8px',
-                color: out ? '#ff8888' : '#fff', opacity: out ? 0.7 : 1,
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px',
+                color: out ? '#ff8888' : '#fff', opacity: out ? 0.7 : 1, marginTop: '1px',
               }}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {skin?.emoji || '•'} {skin?.name?.split(' ')[0] || `#${p.skin_id}`}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                  {skin?.emoji || '•'} {skin?.name || `#${p.skin_id}`}
                 </span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: out ? '#ff8888' : '#9be7ff' }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', color: out ? '#ff8888' : '#9be7ff', whiteSpace: 'nowrap' }}>
                   {out ? 'OUT' : `${p.remaining} left`}
                 </span>
               </div>
@@ -4342,7 +4342,7 @@ export default function App() {
           {isWaveActive(dropEvent) && (() => {
             const waveSkin = CHARACTERS.find(c => c.id === dropEvent.current_wave_skin_id);
             return (
-              <div style={{ marginTop: '3px', paddingTop: '3px', borderTop: '1px solid rgba(255,215,0,0.2)', color: '#ffd700', fontSize: '9px' }}>
+              <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,215,0,0.2)', color: '#ffd700', fontSize: '10px' }}>
                 ⚡ {waveSkin?.name?.toUpperCase() || 'WAVE'}: {waveSecondsLeft(dropEvent)}s
               </div>
             );
