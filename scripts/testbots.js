@@ -118,20 +118,59 @@ class Bot {
       this.presence?.track({ username: this.key, online_at: new Date().toISOString() }).catch(() => {});
     }, 30_000);
 
+    // Per-bot personality: each bot has a unique tick interval (3-9s) and a
+    // 1-in-12 chance of "burst mode" where they tick 5x faster for 30s. Makes
+    // the leaderboard climb feel organic, not machined.
+    const personalTickMs = 3000 + Math.random() * 6000;
+    let burstUntil = 0;
     this.tickTimer = setInterval(async () => {
+      const inBurst = Date.now() < burstUntil;
+      if (!inBurst && Math.random() < 1 / 12) {
+        burstUntil = Date.now() + 30_000; // 30s burst
+      }
       const { data: row } = await this.client.from('leaderboard')
-        .select('player_id, lifetime_points')
+        .select('player_id, lifetime_points, equipped_skin')
         .ilike('username', this.name).maybeSingle();
       if (!row) return;
-      const gain = TICK_MIN + Math.floor(Math.random() * (TICK_MAX - TICK_MIN));
+      let gain = TICK_MIN + Math.floor(Math.random() * (TICK_MAX - TICK_MIN));
+      if (inBurst) gain *= 5;
       await this.client.from('leaderboard')
         .update({ lifetime_points: (row.lifetime_points || 0) + gain })
         .eq('player_id', row.player_id);
-    }, TICK_MS + Math.random() * 2000);
+    }, personalTickMs);
 
-    // Emote broadcast channel (bot sends via .reactWith — no timer)
+    // Random equipped skin so leaderboard shows variety. Picks once on join
+    // from a pool of "wow" skins (Limited / Prestige / Legendary indices).
+    const skinPool = [3, 4, 5, 9, 11, 15, 18];   // tasty wow indices
+    const pickedSkin = skinPool[Math.floor(Math.random() * skinPool.length)];
+    this.client.from('leaderboard')
+      .update({ equipped_skin: pickedSkin })
+      .ilike('username', this.name).then(() => {});
+
+    // Emote broadcast channel (bot sends via .reactWith for reactions, AND
+    // periodic ambient chatter via the timer below).
     this.emoteChannel = this.client.channel('brainrot:emotes');
     this.emoteChannel.subscribe();
+
+    // Ambient emote chatter — every 40–120s send a random emote. Makes the
+    // room feel alive between admin events.
+    const ambientPool = ['🔥', '❤️', '😂', '💀', '🎉', '🧠', '✨', '👀', '🚀'];
+    const scheduleAmbient = () => {
+      if (!this.isLive) return;
+      const delay = 40_000 + Math.random() * 80_000;
+      this.ambientTimer = setTimeout(async () => {
+        if (!this.isLive) return;
+        const emote = ambientPool[Math.floor(Math.random() * ambientPool.length)];
+        try {
+          await this.emoteChannel?.send({
+            type: 'broadcast', event: 'emote',
+            payload: { username: this.name, emote },
+          });
+        } catch {}
+        scheduleAmbient();
+      }, delay);
+    };
+    scheduleAmbient();
 
     console.log(`[${this.name}] online`);
   }
@@ -141,6 +180,7 @@ class Bot {
     this.isLive = false;
     clearInterval(this.presenceKeepalive); this.presenceKeepalive = null;
     clearInterval(this.tickTimer); this.tickTimer = null;
+    if (this.ambientTimer) { clearTimeout(this.ambientTimer); this.ambientTimer = null; }
     if (this.emoteChannel) {
       await this.client.removeChannel(this.emoteChannel).catch(() => {});
       this.emoteChannel = null;
