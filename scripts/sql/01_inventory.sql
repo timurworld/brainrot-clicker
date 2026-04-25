@@ -272,6 +272,14 @@ BEGIN
     BEGIN
       skin_id := (p_char_ids->>idx)::int;
       IF skin_id IS NULL THEN CONTINUE; END IF;
+      -- Skip non-points skins: Sportini drops/fusions and Prestige unlocks
+      -- should NEVER come through legacy migration. They have to be earned
+      -- through their proper mechanic (drop event, locker fusion, ascension).
+      IF EXISTS (
+        SELECT 1 FROM public.skin_meta
+         WHERE skin_meta.skin_id = skin_id
+           AND obtain IN ('drop', 'fusion', 'prestige')
+      ) THEN CONTINUE; END IF;
       INSERT INTO public.inventory (player_id, skin_id, quantity, acquired_method)
       VALUES (p_player_id, skin_id, 1, 'legacy')
       ON CONFLICT DO NOTHING;
