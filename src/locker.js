@@ -49,7 +49,7 @@ export function subscribeFusionTicker(onTick) {
 // Attempt fusion. Returns { granted, serial, inventoryId } on success, or
 // { error: code }.
 //   error codes: unauthorized, NOT_FOUND, NOT_ACTIVE, EXPIRED, SOLD_OUT,
-//                MISSING_INGREDIENTS, RACE_LOST
+//                MISSING_INGREDIENTS, RACE_LOST, ALREADY_FUSED
 export async function lockerFuse({ playerId, pin, lockerId }) {
   const { data, error } = await supabase.rpc('locker_fuse', {
     p_player_id: playerId,
@@ -67,7 +67,8 @@ export async function lockerFuse({ playerId, pin, lockerId }) {
 function parseError(err) {
   const m = err?.message || '';
   for (const code of ['unauthorized', 'NOT_FOUND', 'NOT_ACTIVE', 'EXPIRED',
-       'SOLD_OUT', 'MISSING_INGREDIENTS', 'RACE_LOST', 'OWN_CAP_REACHED']) {
+       'SOLD_OUT', 'MISSING_INGREDIENTS', 'RACE_LOST', 'OWN_CAP_REACHED',
+       'ALREADY_FUSED']) {
     if (m.includes(code)) return code;
   }
   return m || 'UNKNOWN';
@@ -83,6 +84,7 @@ export function fuseErrorMessage(code) {
     case 'MISSING_INGREDIENTS':  return "You don't have the ingredients yet.";
     case 'RACE_LOST':            return 'Someone got the last one!';
     case 'OWN_CAP_REACHED':      return 'You already own one — limit is 1 per player.';
+    case 'ALREADY_FUSED':        return '👑 You already fused this one — limit is 1 per player. Trade for more!';
     default:                     return 'Fusion failed. Try again.';
   }
 }

@@ -50,9 +50,9 @@ const CHARACTERS = [
     bg: 'linear-gradient(180deg, #ff6d00 0%, #ffab00 25%, #ff8f00 50%, #ff6d00 75%, #e65100 100%)' },
   // Sportini event skins — earned via drops (ingredients) or locker fusion (output).
   // obtain !== 'points' hides them from the standard skins shop.
-  { id: 20, name: 'Stick Stick',  file: '20_stick_stick.png',  bgNum: '20', rarity: 'Common',    unlock: 0, emoji: '🏒', color: '#8b4513', mult: 1.2, tag: 'Sportini', obtain: 'drop',
+  { id: 20, name: 'Stick Stick',  file: '20_stick_stick.png',  bgNum: '20', rarity: 'Rare',    unlock: 0, emoji: '🏒', color: '#8b4513', mult: 1.2, tag: 'Sportini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
-  { id: 21, name: 'No My Pucks',  file: '21_no_my_pucks.png',  bgNum: '20', rarity: 'Common',    unlock: 0, emoji: '🥅', color: '#1a1a1a', mult: 1.2, tag: 'Sportini', obtain: 'drop',
+  { id: 21, name: 'No My Pucks',  file: '21_no_my_pucks.png',  bgNum: '20', rarity: 'Rare',    unlock: 0, emoji: '🥅', color: '#1a1a1a', mult: 1.2, tag: 'Sportini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
   { id: 22, name: 'Hockey Bros',  file: '22_hockey_bros.png',  bgNum: '20', rarity: 'Limited',   unlock: 0, emoji: '🏆', color: '#c0392b', mult: 12,  tag: 'Sportini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #c0392b 0%, #ff6b6b 35%, #e74c3c 65%, #922b21 100%)' },
@@ -301,7 +301,7 @@ class SoundEngine {
 
     const t = {};
 
-    // DISCO — 10 rotating "tracks" so it sounds like a real DJ set
+    // DISCO — top-40 leaning DJ rotation with hooky melodic tracks
     const kick = (vol) => tone(120, 'sine', 0.18, vol * 0.6, 40);
     const subKick = (vol) => tone(80, 'sine', 0.25, vol * 0.7, 28);
     const snare = (vol) => { noiseHit(0.08, vol * 0.5, 1500, 5000); tone(220, 'triangle', 0.06, vol * 0.3, 180); };
@@ -314,103 +314,189 @@ class SoundEngine {
     const zap = (vol) => tone(800, 'sawtooth', 0.12, vol * 0.4, 80);
     const cowbell = (vol) => { tone(800, 'square', 0.08, vol * 0.25); tone(540, 'square', 0.08, vol * 0.2); };
 
-    // 16-step patterns. Each function takes (vol, step) where step is 0..15 (16th notes)
+    // ----- Top-40 / pop-EDM synth voices -----
+    // Supersaw chord stab — 3 detuned saws + lowpass = the big festival drop sound
+    // (Calvin Harris / Avicii / Marshmello). Pass an array of freqs for a chord.
+    const superSaw = (vol, freqs, dur = 0.28) => {
+      if (!this.enabled) return;
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 2400;
+      const g = ctx.createGain();
+      lp.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(vol * 0.22, now + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      for (const f of freqs) {
+        for (const det of [-9, 0, 9]) {
+          const o = ctx.createOscillator();
+          o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+          o.connect(lp);
+          o.start(now); o.stop(now + dur + 0.03);
+        }
+      }
+    };
+    // Pluck (Kygo / tropical house): triangle through bandpass with snappy decay
+    const pluck = (vol, freq) => {
+      if (!this.enabled) return;
+      const ctx = ctxOf(); const now = ctx.currentTime; const dur = 0.22;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = freq * 2; bp.Q.value = 2.5;
+      o.type = 'triangle'; o.frequency.value = freq;
+      o.connect(bp); bp.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol * 0.3, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      o.start(now); o.stop(now + dur + 0.02);
+    };
+    // 808 sub bass with pitch glide — trap / drill rolling sub
+    const sub808 = (vol, freq) => {
+      if (!this.enabled) return;
+      const ctx = ctxOf(); const now = ctx.currentTime; const dur = 0.32;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(freq * 1.5, now);
+      o.frequency.exponentialRampToValueAtTime(freq, now + 0.05);
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol * 0.55, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      o.start(now); o.stop(now + dur + 0.02);
+    };
+    // Trap-style fast hi-hat — quieter & shorter than house hat
+    const trapHat = (vol) => noiseHit(0.025, vol * 0.22, 9000);
+    // Vox-stab adlib — a quick filtered noise + tone burst (the "yeah!" hook)
+    const voxStab = (vol) => { noiseHit(0.06, vol * 0.32, 800, 3000); tone(440, 'triangle', 0.05, vol * 0.18); };
+    // Reggaeton dembow rim-click
+    const rim = (vol) => { tone(900, 'square', 0.025, vol * 0.28); noiseHit(0.02, vol * 0.18, 2000); };
+
+    // 16-step patterns. Each function takes (vol, step) where step is 0..15 (16th notes).
+    // Top-40 leaning rotation: festival EDM, future bass, tropical, trap pop, dembow,
+    // synthwave, nu-disco, plus a handful of classic disco/house staples for variety.
+    // Chords use I-V-vi-IV in C major: C / G / Am / F (the "pop" progression).
+    const C_MAJ = [523, 659, 784];   // C5 E5 G5
+    const G_MAJ = [392, 494, 587];   // G4 B4 D5
+    const A_MIN = [440, 523, 659];   // A4 C5 E5
+    const F_MAJ = [349, 440, 523];   // F4 A4 C5
+    const POP_CHORDS = [C_MAJ, G_MAJ, A_MIN, F_MAJ]; // 1 chord per beat × 4 beats
+    const POP_BASS   = [65, 49, 55, 44];             // C2 G1 A1 F1 — bass roots
+
     const discoTracks = [
-      // 0 — Classic house: 4-on-floor kick + offbeat hat
-      (vol, s) => { if (s % 4 === 0) kick(vol); if (s % 4 === 2) hat(vol); if (s % 8 === 4) clap(vol); },
-      // 1 — Disco bass walk
+      // 0 — Festival EDM drop (Calvin Harris vibe): 4-on-floor + supersaw chord stabs on every beat
       (vol, s) => {
         if (s % 4 === 0) kick(vol);
-        const walk = [55, 55, 65, 73];
-        if (s % 2 === 0) bass(vol, walk[(s / 2) % 4]);
-        if (s % 4 === 2) hat(vol);
+        if (s % 4 === 0) superSaw(vol, POP_CHORDS[(s / 4) % 4], 0.22);
+        if (s % 4 === 2) clap(vol * 0.85);
+        if (s % 2 === 1) hat(vol * 0.7);
+        if (s % 8 === 0) sub808(vol * 0.55, POP_BASS[(s / 8) % 4]);
       },
-      // 2 — Techno pulse
-      (vol, s) => {
-        if (s % 4 === 0) subKick(vol);
-        bass(vol * 0.6, 55); // constant pulse
-        if (s % 2 === 1) hat(vol);
-      },
-      // 3 — Funk groove
-      (vol, s) => {
-        if (s === 0 || s === 6 || s === 8 || s === 14) kick(vol);
-        if (s === 4 || s === 12) snare(vol);
-        if (s % 2 === 1) hat(vol);
-      },
-      // 4 — Synthwave arp
+      // 1 — Future bass (Marshmello vibe): pumping chord on offbeats, gated feel
       (vol, s) => {
         if (s % 4 === 0) kick(vol);
-        const arpNotes = [261, 329, 392, 523, 392, 329];
-        arp(vol, arpNotes[s % arpNotes.length]);
-        if (s % 4 === 2) hat(vol);
-      },
-      // 5 — Hip-hop boom-bap
-      (vol, s) => {
-        if (s === 0 || s === 10) subKick(vol);
-        if (s === 4 || s === 12) snare(vol);
-        if (s % 2 === 1) hat(vol);
-      },
-      // 6 — Trance lead melody
-      (vol, s) => {
-        if (s % 4 === 0) kick(vol);
-        const mel = [440, 0, 523, 0, 587, 0, 523, 0, 440, 0, 392, 0, 349, 0, 392, 0];
-        if (mel[s]) lead(vol, mel[s]);
-        if (s % 4 === 2) openHat(vol);
-      },
-      // 7 — Acid house with squelchy bass
-      (vol, s) => {
-        if (s % 4 === 0) kick(vol);
-        const bassPat = [55, 55, 0, 110, 55, 0, 73, 0];
-        if (bassPat[s % 8]) bass(vol, bassPat[s % 8]);
-        if (s % 2 === 1) hat(vol);
-      },
-      // 8 — Drum & bass breakbeat
-      (vol, s) => {
-        if (s === 0 || s === 6 || s === 10) kick(vol);
-        if (s === 4 || s === 12) snare(vol);
-        hat(vol * 0.6);
-      },
-      // 9 — Electro / cowbell party
-      (vol, s) => {
-        if (s % 4 === 0) kick(vol);
-        if (s % 2 === 0) cowbell(vol);
         if (s === 4 || s === 12) clap(vol);
-        if (s === 8) zap(vol);
+        const ch = POP_CHORDS[(s / 4 | 0) % 4];
+        if (s % 2 === 1) superSaw(vol * 0.7, ch, 0.18);          // sidechain-pumped feel
+        if (s % 4 === 2) trapHat(vol);
+        if (s === 14) snare(vol * 0.45);                          // half-bar fill tease
       },
-      // 10 — Funk swagger (Uptown-style): punchy kick-snare, syncopated bass, horn stabs
+      // 2 — Tropical house (Kygo vibe): pluck melody hook + soft kick + shaker
       (vol, s) => {
-        if (s === 0 || s === 8) kick(vol);
-        if (s === 4 || s === 12) snare(vol);
-        const funkBass = [65, 0, 0, 73, 65, 0, 82, 0];
-        if (funkBass[s % 8]) bass(vol, funkBass[s % 8]);
-        if (s === 2 || s === 10) lead(vol, 523); // horn stab
-        if (s === 6 || s === 14) lead(vol * 0.7, 659); // higher horn
+        if (s % 4 === 0) kick(vol * 0.85);
+        // Pluck riff: 8-note hook, repeats every 2 beats
+        const hook = [659, 0, 784, 0, 880, 0, 784, 659];
+        if (hook[s % 8]) pluck(vol, hook[s % 8]);
+        if (s % 2 === 1) trapHat(vol * 0.7);                      // shaker-y
+        if (s % 8 === 0) sub808(vol * 0.4, POP_BASS[(s / 8) % 4]);
+      },
+      // 3 — Nu-disco bounce (Dua Lipa "Levitating" vibe): walking bass + plucks + claps
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        if (s === 4 || s === 12) clap(vol);
+        const walk = [65, 73, 82, 87];
+        if (s % 2 === 0) bass(vol * 0.85, walk[(s / 2) % 4]);
+        // Plucked melody on the upbeats
+        const mel = [0, 0, 523, 0, 0, 0, 587, 0, 0, 0, 659, 0, 0, 0, 523, 0];
+        if (mel[s]) pluck(vol * 0.85, mel[s]);
         if (s % 2 === 1) hat(vol * 0.6);
       },
-      // 11 — French house filter: 4-on-floor, alternating bass, claps on 2/4
+      // 4 — Trap pop (Drake / Travis vibe): rolling 808, snare on 3, fast triplet hats
+      (vol, s) => {
+        if (s === 0 || s === 6 || s === 10) subKick(vol);
+        if (s === 4 || s === 12) snare(vol);
+        // Rolling 808 sub: stays on root with note rolls
+        const subPat = [65, 0, 0, 65, 0, 73, 65, 0];
+        if (subPat[s % 8]) sub808(vol * 0.7, subPat[s % 8]);
+        // Fast hat triplets
+        trapHat(vol);
+        if (s % 8 === 7) trapHat(vol * 0.85);                     // 32nd-note flutter
+        if (s === 14) voxStab(vol * 0.6);                          // adlib tease
+      },
+      // 5 — Reggaeton dembow (Bad Bunny vibe): boom-ka-boom-ka groove + rim
+      (vol, s) => {
+        // Dembow pattern: K . . S . . K S (per 8-step half-bar)
+        if (s % 8 === 0) kick(vol);
+        if (s % 8 === 3 || s % 8 === 6) snare(vol * 0.85);
+        if (s % 8 === 6) kick(vol * 0.6);
+        if (s === 2 || s === 10) rim(vol);
+        if (s % 8 === 0) sub808(vol * 0.7, POP_BASS[(s / 8) % 4]);
+        if (s % 2 === 1) trapHat(vol * 0.75);
+      },
+      // 6 — Synthwave 80s revival ("Blinding Lights" vibe): pulsing arp + retro kick
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        if (s === 4 || s === 12) clap(vol * 0.75);
+        // Iconic 8-note arp (A minor outline, pop-friendly)
+        const arpNotes = [440, 523, 659, 880, 659, 523, 440, 392];
+        arp(vol * 1.1, arpNotes[s % 8]);
+        if (s === 2 || s === 10) lead(vol * 0.85, 880);            // top-line hook
+        if (s % 4 === 3) openHat(vol * 0.5);
+      },
+      // 7 — Pop-EDM hook (Avicii "Wake Me Up" vibe): big-room drums + pluck melody
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        if (s === 4 || s === 12) clap(vol);
+        // Folky pluck melody — riff hook
+        const mel = [523, 0, 659, 0, 784, 0, 659, 587, 523, 0, 587, 0, 659, 0, 523, 0];
+        if (mel[s]) pluck(vol * 1.05, mel[s]);
+        if (s % 8 === 0) sub808(vol * 0.55, POP_BASS[(s / 8) % 4]);
+        if (s % 2 === 1) hat(vol * 0.55);
+      },
+      // 8 — Hyperpop drill (PinkPantheress vibe): fast hats, snappy rim, glassy plucks
+      (vol, s) => {
+        if (s === 0 || s === 8) kick(vol);
+        if (s === 4 || s === 12) snare(vol * 0.9);
+        rim(vol * 0.6);
+        // Glassy 16th pluck pattern
+        const glass = [880, 0, 1047, 880, 0, 988, 0, 880];
+        if (glass[s % 8]) pluck(vol * 0.7, glass[s % 8]);
+        trapHat(vol * 0.6);
+      },
+      // 9 — Classic French-touch house (Daft Punk vibe): filter sweep feel
       (vol, s) => {
         if (s % 4 === 0) kick(vol);
         if (s === 4 || s === 12) clap(vol);
         bass(vol * 0.55, s % 8 < 4 ? 55 : 82);
         if (s % 4 === 2) openHat(vol * 0.55);
+        if (s % 4 === 0) superSaw(vol * 0.55, POP_CHORDS[(s / 4) % 4], 0.18);
       },
-      // 12 — Latin disco: tumbao bass, clave, cowbell
-      (vol, s) => {
-        if (s === 0 || s === 6 || s === 10) kick(vol);
-        if (s === 3 || s === 8 || s === 14) cowbell(vol);
-        const tumbao = [73, 0, 82, 0, 98, 0, 82, 0];
-        if (tumbao[s % 8]) bass(vol, tumbao[s % 8]);
-        if (s % 2 === 1) hat(vol * 0.55);
-      },
-      // 13 — 80s synthpop: snappy snare, bright arp, pulsing bass
+      // 10 — 80s synthpop (Weeknd "Save Your Tears" vibe): bright arp + pulsing bass
       (vol, s) => {
         if (s % 4 === 0) kick(vol);
         if (s === 4 || s === 12) snare(vol);
         const synthArp = [392, 523, 659, 784, 659, 523];
-        arp(vol * 0.75, synthArp[s % synthArp.length]);
+        arp(vol * 0.85, synthArp[s % synthArp.length]);
         if (s % 2 === 1) hat(vol * 0.4);
+        if (s % 8 === 0) sub808(vol * 0.5, POP_BASS[(s / 8) % 4]);
       },
-      // 14 — Deep house rolling sub: slow kick, deep sub, shimmer hats
+      // 11 — Latin pop (J Balvin vibe): tumbao bass + cowbell + dembow snare
+      (vol, s) => {
+        if (s === 0 || s === 6 || s === 10) kick(vol);
+        if (s === 3 || s === 8 || s === 14) cowbell(vol * 0.9);
+        const tumbao = [73, 0, 82, 0, 98, 0, 82, 0];
+        if (tumbao[s % 8]) bass(vol, tumbao[s % 8]);
+        if (s % 2 === 1) hat(vol * 0.55);
+        if (s === 4 || s === 12) clap(vol * 0.7);
+      },
+      // 12 — Deep house rolling sub: slow kick, deep sub, shimmer hats
       (vol, s) => {
         if (s % 4 === 0) subKick(vol);
         bass(vol * 0.4, 41);
@@ -3382,7 +3468,7 @@ export default function App() {
         ? (CHARACTERS.find(c => c.id === dropEvent.drop_pool[0].skin_id) || wowPick)
         : wowPick;
     const teaser = liveLocker
-      ? { icon: '🔐', label: 'LOCKER LIVE', sub: locker.name, color: '#ffd700' }
+      ? { icon: '🗄️', label: 'LOCKER LIVE', sub: locker.name, color: '#ffd700' }
       : liveDrop
         ? { icon: '🎁', label: 'DROP EVENT LIVE', sub: dropEvent.name, color: '#ff8c00' }
         : null;
@@ -3923,7 +4009,7 @@ export default function App() {
                 fontSize: '34px',
               }}
             >
-              🔐
+              🗄️
               {/* Stock pip — top-right corner of the icon */}
               <span style={{
                 position: 'absolute', top: '-4px', right: '-4px',
@@ -3993,7 +4079,7 @@ export default function App() {
               <div style={{
                 fontSize: '22px', color: '#ffd700', letterSpacing: '4px',
                 textShadow: '0 0 12px rgba(255,215,0,0.7)', whiteSpace: 'nowrap',
-              }}>🔐 LOCKER 🔐</div>
+              }}>🗄️ LOCKER 🗄️</div>
               <div style={{ flex: 1, height: '2px', background: 'linear-gradient(90deg, #ffd700, transparent)' }} />
               <button
                 onClick={(e) => { e.stopPropagation(); toggleLockerMinimized(); }}
@@ -4217,17 +4303,25 @@ export default function App() {
         }}>{fuseMessage.text}</div>
       )}
 
-      {/* V2: Drop event stock indicator — small pill, top-right under header */}
+      {/* V2: Drop event stock indicator — compact pill, top-right under header.
+          Pushes down when admin schedule banner is showing so it doesn't collide
+          with the gear/sound buttons (which also shift). */}
       {dropEvent && dropEvent.status === 'active' && !activePanel && (
-        <div style={{
-          position: 'absolute', top: '64px', right: '12px', zIndex: 24,
-          padding: '6px 10px', borderRadius: '10px',
-          background: 'rgba(15,5,35,0.92)', border: '1px solid rgba(255,215,0,0.4)',
-          boxShadow: '0 0 14px rgba(255,215,0,0.2)',
-          color: '#fff', fontSize: '10px', fontFamily: "'Bangers', cursive",
-          letterSpacing: '0.5px', maxWidth: '180px',
-        }}>
-          <div style={{ color: '#ffd700', fontSize: '11px', marginBottom: '2px' }}>🎁 DROP EVENT</div>
+        <div
+          title="Items left in the drop pool — tap to roll for them"
+          style={{
+            position: 'absolute',
+            top: (adminSchedule && !adminEvent.active) ? 'clamp(125px, 18vh, 150px)' : '60px',
+            right: '10px', zIndex: 24,
+            padding: '5px 9px', borderRadius: '9px',
+            background: 'rgba(15,5,35,0.92)', border: '1px solid rgba(255,215,0,0.4)',
+            boxShadow: '0 0 12px rgba(255,215,0,0.18)',
+            color: '#fff', fontSize: '9px', fontFamily: "'Bangers', cursive",
+            letterSpacing: '0.4px', maxWidth: '160px', lineHeight: 1.25,
+          }}
+        >
+          <div style={{ color: '#ffd700', fontSize: '10px', marginBottom: '1px' }}>🎁 DROP EVENT</div>
+          <div style={{ color: '#aaa', fontSize: '8px', marginBottom: '3px', letterSpacing: '0.5px' }}>LEFT IN POOL</div>
           {dropEvent.drop_pool.map(p => {
             const skin = CHARACTERS.find(c => c.id === p.skin_id);
             const out = p.remaining <= 0;
@@ -4236,9 +4330,11 @@ export default function App() {
                 display: 'flex', justifyContent: 'space-between', gap: '8px',
                 color: out ? '#ff8888' : '#fff', opacity: out ? 0.7 : 1,
               }}>
-                <span>{skin?.emoji || '•'} {skin?.name || `#${p.skin_id}`}</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px' }}>
-                  {out ? 'SOLD OUT' : `${p.remaining}/${p.total}`}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {skin?.emoji || '•'} {skin?.name?.split(' ')[0] || `#${p.skin_id}`}
+                </span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: out ? '#ff8888' : '#9be7ff' }}>
+                  {out ? 'OUT' : `${p.remaining} left`}
                 </span>
               </div>
             );
@@ -4246,8 +4342,8 @@ export default function App() {
           {isWaveActive(dropEvent) && (() => {
             const waveSkin = CHARACTERS.find(c => c.id === dropEvent.current_wave_skin_id);
             return (
-              <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,215,0,0.2)', color: '#ffd700' }}>
-                ⚡ {waveSkin?.name?.toUpperCase() || 'WAVE'} STORM: {waveSecondsLeft(dropEvent)}s
+              <div style={{ marginTop: '3px', paddingTop: '3px', borderTop: '1px solid rgba(255,215,0,0.2)', color: '#ffd700', fontSize: '9px' }}>
+                ⚡ {waveSkin?.name?.toUpperCase() || 'WAVE'}: {waveSecondsLeft(dropEvent)}s
               </div>
             );
           })()}
