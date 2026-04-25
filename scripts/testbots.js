@@ -22,9 +22,9 @@ const ALL_BOTS = [
   'ToiletSkibidi', 'MaxFanumTax', 'GyattLord420', 'BrainBlast99', 'SigmaRizzler',
 ];
 
-// Per-bot jitter inside a wave — so arrivals trickle in over 30–300s instead
+// Per-bot jitter inside a wave — so arrivals trickle in over 30s–5min instead
 // of all appearing together (harder for Timur to spot the pattern).
-const ARRIVAL_JITTER_MS = 300_000;
+const ARRIVAL_JITTER_MS = 300_000;     // 5 minutes
 
 // Deterministic shuffle seeded by day-of-year — the roster order rotates daily
 // so Sat shows a different cast than Sun without us doing anything manual.
@@ -45,16 +45,14 @@ function seededShuffle(arr, seed) {
 }
 const todaysRoster = seededShuffle(ALL_BOTS, daySeed());
 
-// Full 20-bot rollout for live events — spread across ~30 min so the room
-// fills gradually and feels organic, not like a stampede.
-//   Wave 1: 6 bots at minute 0      (combined w/ jitter → arrive 0–5min)
-//   Wave 2: 7 bots at minute 10     (arrive 10–15min)
-//   Wave 3: 7 bots at minute 20     (arrive 20–25min)
-// Adjust the wave count or per-wave size to taste.
+// Compressed 20-bot rollout — fills the room in ~10 min total.
+//   Wave 1: 10 bots at minute 0  (jitter 0–5 min → arrive 0–5min)
+//   Wave 2: 10 bots at minute 5  (jitter 0–5 min → arrive 5–10min)
+// Net: bots distribute roughly evenly across the first 10 minutes of the
+// event, climbing 0 → 10 → 20 with organic noise.
 const WAVES = [
-  { delayMs:  0 * 60 * 1000, names: todaysRoster.slice(0, 6) },
-  { delayMs: 10 * 60 * 1000, names: todaysRoster.slice(6, 13) },
-  { delayMs: 20 * 60 * 1000, names: todaysRoster.slice(13, 20) },
+  { delayMs: 0 * 60 * 1000, names: todaysRoster.slice(0, 10) },
+  { delayMs: 5 * 60 * 1000, names: todaysRoster.slice(10, 20) },
 ];
 const BOTS = ALL_BOTS;
 const YES_BIAS = 0.8; // mostly yes — still positive but with some noes for realism
