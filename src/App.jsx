@@ -4,7 +4,7 @@ import { subscribeToAdmin, submitVote, announcePresence } from './adminBridge.js
 import { fetchInventory, subscribeInventory, groupByTier, isTradeLocked, formatLockCountdown, indexOfSkinId, migrateLegacyInventory } from './inventory.js';
 import { fetchActiveListings, fetchMyListings, fetchMyTradeHistory, subscribeListings, tradeList, tradeCancel, tradeAccept, tradeErrorMessage } from './trade.js';
 import { fetchActiveDropEvent, subscribeDropEvents, dropRoll, isWaveActive, waveSecondsLeft, totalRemaining, makeRollThrottle } from './drops.js';
-import { fetchActiveLocker, subscribeLockers, subscribeFusionTicker, lockerFuse, fuseErrorMessage, checkRecipe, lockerCountdown } from './locker.js';
+import { fetchActiveLocker, subscribeLockers, subscribeFusionTicker, lockerFuse, fuseErrorMessage, checkRecipe, lockerCountdown, alreadyOwnsLimitedOutput } from './locker.js';
 import {
   registerServiceWorker, notify,
   shouldOfferOptIn, requestPermission, rememberOptInDismissed,
@@ -54,7 +54,7 @@ const CHARACTERS = [
     bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
   { id: 21, name: 'No My Pucks',  file: '21_no_my_pucks.png',  bgNum: '20', rarity: 'Common',    unlock: 0, emoji: '🥅', color: '#1a1a1a', mult: 1.2, tag: 'Sportini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
-  { id: 22, name: 'Hockey Bros',  file: '22_hockey_bros.png',  bgNum: '20', rarity: 'Mythic',    unlock: 0, emoji: '🏆', color: '#c0392b', mult: 12,  tag: 'Sportini', obtain: 'fusion',
+  { id: 22, name: 'Hockey Bros',  file: '22_hockey_bros.png',  bgNum: '20', rarity: 'Limited',   unlock: 0, emoji: '🏆', color: '#c0392b', mult: 12,  tag: 'Sportini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #c0392b 0%, #ff6b6b 35%, #e74c3c 65%, #922b21 100%)' },
   // ▼ PRESTIGE SKINS — unlocked by ascending N times.
   //   prestigeUnlock = number of ascensions required.
@@ -3704,50 +3704,60 @@ export default function App() {
         const isSoldOut = locker.status === 'sold_out' || locker.remaining_stock <= 0;
         const isExpired = locker.status === 'expired'
           || (locker.expires_at && new Date(locker.expires_at) < new Date());
-        const canFuse = !isSoldOut && !isExpired && recipeCheck.hasAll && !!player?.id;
+        const ownsAlready = alreadyOwnsLimitedOutput(locker, inventory);
+        const canFuse = !isSoldOut && !isExpired && recipeCheck.hasAll && !!player?.id && !ownsAlready;
         const pct = locker.remaining_stock / Math.max(locker.total_stock, 1);
         const stockColor = isSoldOut ? '#ff4500' : pct > 0.5 ? '#ffd700' : pct > 0.2 ? '#ff9500' : '#ff4444';
 
-        // MINIMIZED PILL — small badge at top, click to expand or fuse
+        // MINIMIZED — big floating locker icon, bottom-right. Click to expand.
+        // Stock pip in the corner gives a glance number; lock-with-key emoji
+        // reads as a "locker" without lots of words.
         if (lockerMinimized) {
           return (
-            <div style={{
-              position: 'absolute', top: '54px', left: '50%', transform: 'translateX(-50%)',
-              zIndex: 23, display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '5px 6px 5px 12px', borderRadius: '999px',
-              background: isSoldOut
-                ? 'linear-gradient(135deg, rgba(80,20,20,0.95), rgba(40,5,5,0.95))'
-                : 'linear-gradient(135deg, rgba(60,20,110,0.95), rgba(20,5,50,0.97))',
-              border: '1px solid ' + (isSoldOut ? '#ff4500' : '#ffd700'),
-              boxShadow: '0 0 16px ' + (isSoldOut ? 'rgba(255,69,0,0.4)' : 'rgba(255,215,0,0.4)'),
-              color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '12px',
-              maxWidth: '92vw',
-            }}>
-              <span style={{ fontSize: '14px' }}>🔐</span>
-              <span style={{ letterSpacing: '0.5px' }}>LOCKER · {locker.name}</span>
-              <span style={{ color: stockColor, fontWeight: 'bold' }}>{locker.remaining_stock}/{locker.total_stock}</span>
-              {!isSoldOut && !isExpired && (
-                <button
-                  disabled={!canFuse}
-                  onClick={(e) => { e.stopPropagation(); if (canFuse) setFuseConfirm(true); }}
-                  style={{
-                    padding: '3px 10px', borderRadius: '999px', border: 'none',
-                    background: canFuse ? 'linear-gradient(135deg,#ffd700,#ff8c00)' : 'rgba(255,255,255,0.1)',
-                    color: canFuse ? '#000' : '#888', fontSize: '11px', letterSpacing: '1.5px',
-                    fontFamily: "'Bangers', cursive", cursor: canFuse ? 'pointer' : 'not-allowed',
-                  }}
-                >FUSE</button>
+            <button
+              onClick={toggleLockerMinimized}
+              title={`${locker.name} — ${locker.remaining_stock}/${locker.total_stock} left · click to open`}
+              style={{
+                position: 'absolute', bottom: '74px', right: '14px',
+                zIndex: 23, width: '64px', height: '64px',
+                borderRadius: '50%', border: 'none',
+                background: isSoldOut
+                  ? 'linear-gradient(135deg, #ff4500, #c0392b)'
+                  : 'linear-gradient(135deg, #ffd700, #ff8c00 70%, #ff5500)',
+                boxShadow: isSoldOut
+                  ? '0 0 22px rgba(255,69,0,0.7)'
+                  : '0 0 28px rgba(255,215,0,0.75), inset 0 -3px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.4)',
+                cursor: 'pointer', padding: 0,
+                animation: isSoldOut ? 'none' : 'fuseButtonPulse 1.6s ease-in-out infinite',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '34px',
+              }}
+            >
+              🔐
+              {/* Stock pip — top-right corner of the icon */}
+              <span style={{
+                position: 'absolute', top: '-4px', right: '-4px',
+                minWidth: '24px', height: '24px', padding: '0 5px',
+                borderRadius: '999px',
+                background: isSoldOut ? '#0a0420' : '#0a0420',
+                border: `2px solid ${stockColor}`,
+                color: stockColor, fontSize: '11px', fontWeight: 'bold',
+                fontFamily: "'JetBrains Mono', monospace",
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                lineHeight: 1,
+              }}>
+                {isSoldOut ? '0' : locker.remaining_stock}
+              </span>
+              {/* "Can fuse" indicator — small green dot */}
+              {canFuse && (
+                <span style={{
+                  position: 'absolute', bottom: '-2px', right: '-2px',
+                  width: '14px', height: '14px', borderRadius: '50%',
+                  background: '#2ecc71', border: '2px solid #0a0420',
+                  boxShadow: '0 0 8px #2ecc71',
+                }} />
               )}
-              <button
-                onClick={(e) => { e.stopPropagation(); toggleLockerMinimized(); }}
-                title="Expand locker"
-                style={{
-                  width: '22px', height: '22px', borderRadius: '50%', border: 'none',
-                  background: 'rgba(255,255,255,0.12)', color: '#fff',
-                  cursor: 'pointer', fontSize: '14px', lineHeight: '20px', padding: 0,
-                }}
-              >▢</button>
-            </div>
+            </button>
           );
         }
 
@@ -3905,7 +3915,12 @@ export default function App() {
                     animation: canFuse ? 'fuseButtonPulse 1.4s ease-in-out infinite' : 'none',
                   }}
                 >FUSE NOW</button>
-                {!canFuse && recipeCheck.missing.length > 0 && (
+                {ownsAlready && (
+                  <div style={{ textAlign: 'center', fontSize: '12px', color: '#ffd700', marginTop: '8px', letterSpacing: '0.5px' }}>
+                    👑 You already own one — limit is 1 per player
+                  </div>
+                )}
+                {!canFuse && !ownsAlready && recipeCheck.missing.length > 0 && (
                   <div style={{ textAlign: 'center', fontSize: '12px', color: '#ff9500', marginTop: '8px', letterSpacing: '0.5px' }}>
                     Missing: {recipeCheck.missing.map(m => {
                       const sk = CHARACTERS.find(c => c.id === m.skin_id);
@@ -3913,7 +3928,7 @@ export default function App() {
                     }).join(', ')}
                   </div>
                 )}
-                {!canFuse && !recipeCheck.hasAll && (
+                {!canFuse && !ownsAlready && !recipeCheck.hasAll && (
                   <div style={{ textAlign: 'center', fontSize: '11px', color: '#aaa', marginTop: '4px', opacity: 0.85 }}>
                     Get ingredients during the event or trade with players!
                   </div>

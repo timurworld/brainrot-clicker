@@ -67,7 +67,7 @@ export async function lockerFuse({ playerId, pin, lockerId }) {
 function parseError(err) {
   const m = err?.message || '';
   for (const code of ['unauthorized', 'NOT_FOUND', 'NOT_ACTIVE', 'EXPIRED',
-       'SOLD_OUT', 'MISSING_INGREDIENTS', 'RACE_LOST']) {
+       'SOLD_OUT', 'MISSING_INGREDIENTS', 'RACE_LOST', 'OWN_CAP_REACHED']) {
     if (m.includes(code)) return code;
   }
   return m || 'UNKNOWN';
@@ -82,8 +82,18 @@ export function fuseErrorMessage(code) {
     case 'SOLD_OUT':             return '🔥 Sold out! Keep your ingredients as collectors.';
     case 'MISSING_INGREDIENTS':  return "You don't have the ingredients yet.";
     case 'RACE_LOST':            return 'Someone got the last one!';
+    case 'OWN_CAP_REACHED':      return 'You already own one — limit is 1 per player.';
     default:                     return 'Fusion failed. Try again.';
   }
+}
+
+// Returns true if this player already owns the locker's output skin (limited).
+// Used to grey out FUSE NOW pre-emptively, before they hit the server cap.
+export function alreadyOwnsLimitedOutput(locker, inventory) {
+  if (!locker || !inventory) return false;
+  return inventory.some(inv =>
+    inv.skin_id === locker.output_skin_id && inv.serial_number != null
+  );
 }
 
 // --- HELPERS ----------------------------------------------------------------
