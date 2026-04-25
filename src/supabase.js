@@ -32,6 +32,18 @@ export async function loginPlayer(username, pin) {
 
 // Save game to cloud
 export async function saveGameCloud(playerId, gameState) {
+  // Defensive: refuse to save if the game state's username doesn't match this
+  // player's actual username. Prevents cross-account contamination when a
+  // session switches user (logout + register) and the in-memory ref hasn't
+  // caught up yet — without this guard, the OLD player's points get written
+  // to the NEW player's cloud row.
+  if (!gameState?.username) return { error: 'no username in state' };
+  const { data: pl } = await supabase.from('players')
+    .select('username').eq('id', playerId).single();
+  if (!pl || pl.username.toLowerCase() !== String(gameState.username).toLowerCase()) {
+    return { error: 'username mismatch' };
+  }
+
   // Get current cloud save to compare
   const { data: currentSave } = await supabase
     .from('game_saves')

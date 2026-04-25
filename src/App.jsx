@@ -3233,28 +3233,42 @@ export default function App() {
       if (loginMode === 'register') {
         const res = await registerPlayer(loginUsername, loginPin);
         if (res.error) { setLoginError(res.error); return; }
-        setPlayer(res.player);
-        // Reset in-memory game state so a fresh account doesn't inherit the
-        // previous session's unlocks/points. Clear local save too — it's not
-        // keyed per-player and would otherwise leak across accounts.
+        // CRITICAL: gameRef.current must be updated SYNCHRONOUSLY before we
+        // change player. Otherwise the auto-save interval can fire with the
+        // OLD player's gameRef contents and write that to the new player's
+        // cloud row (cross-account contamination → trillionaire bug).
+        const fresh = { ...defaultState(), username: res.player.username };
+        gameRef.current = fresh;
         localStorage.removeItem('brainrot_save');
-        setGame({ ...defaultState(), username: res.player.username });
+        setGame(fresh);
+        setPlayer(res.player);
         localStorage.setItem('brainrot_player', JSON.stringify(res.player));
+        // Force-overwrite any contaminated cloud save / leaderboard from the
+        // prior session. Use the supabase client directly so we bypass the
+        // "only save if higher" guard.
+        await supabase.from('game_saves').upsert({
+          player_id: res.player.id,
+          save_data: fresh,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'player_id' });
+        await supabase.from('leaderboard').upsert({
+          player_id: res.player.id, username: res.player.username,
+          lifetime_points: 0, prestige_count: 0, equipped_skin: 0,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'player_id' });
         setScreen('start');
       } else {
         const res = await loginPlayer(loginUsername, loginPin);
         if (res.error) { setLoginError(res.error); return; }
-        setPlayer(res.player);
-        // Load cloud save
+        // Load cloud save first — same gameRef-sync rule as register.
         const cloudSave = await loadGameCloud(res.player.id);
-        if (cloudSave.save) {
-          setGame({ ...defaultState(), ...cloudSave.save, username: res.player.username });
-        } else {
-          // No cloud save for this account → treat as fresh. Reset state +
-          // wipe local save so we don't carry over a previous user's progress.
-          localStorage.removeItem('brainrot_save');
-          setGame({ ...defaultState(), username: res.player.username });
-        }
+        const fresh = cloudSave.save
+          ? { ...defaultState(), ...cloudSave.save, username: res.player.username }
+          : { ...defaultState(), username: res.player.username };
+        gameRef.current = fresh;
+        if (!cloudSave.save) localStorage.removeItem('brainrot_save');
+        setGame(fresh);
+        setPlayer(res.player);
         localStorage.setItem('brainrot_player', JSON.stringify(res.player));
         setScreen('start');
       }
