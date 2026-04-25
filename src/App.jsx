@@ -1947,41 +1947,42 @@ function TradeListingRow({ listing, offerSkin, wantSkin, isMine, onAccept, onCan
   const isActive = listing.status === 'active';
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '8px',
-      padding: '10px', marginBottom: '8px',
-      borderRadius: '12px',
-      background: isActive ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
-      border: '1px solid ' + (isActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)'),
-      opacity: isActive ? 1 : 0.6,
+      display: 'flex', alignItems: 'center', gap: '6px',
+      padding: '6px 8px', marginBottom: '5px',
+      borderRadius: '10px',
+      background: isActive ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
+      border: '1px solid ' + (isActive ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'),
+      opacity: isActive ? 1 : 0.55,
+      fontSize: '11px',
     }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '70px' }}>
-        {offerImg && <img src={offerImg} alt={offerSkin.name} style={{ width: '50px', height: '50px', objectFit: 'contain' }} />}
-        <div style={{ color: '#fff', fontSize: '11px', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.1 }}>{offerSkin?.name || `#${listing.offer_skin_id}`}</div>
-        {listing.offer_serial_number != null && <div style={{ color: '#ffd700', fontSize: '10px' }}>#{listing.offer_serial_number}</div>}
-        {listing.offer_quantity > 1 && <div style={{ color: '#9be7ff', fontSize: '10px' }}>x{listing.offer_quantity}</div>}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+        {offerImg && <img src={offerImg} alt={offerSkin.name} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />}
+        <div style={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.05, marginTop: '1px' }}>{offerSkin?.name?.split(' ')[0] || `#${listing.offer_skin_id}`}</div>
+        {listing.offer_serial_number != null && <div style={{ color: '#ffd700', fontSize: '9px' }}>#{listing.offer_serial_number}</div>}
       </div>
-      <div style={{ color: '#aaa', fontSize: '18px', flexShrink: 0 }}>→</div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '70px' }}>
-        {wantImg && <img src={wantImg} alt={wantSkin.name} style={{ width: '50px', height: '50px', objectFit: 'contain' }} />}
-        <div style={{ color: '#fff', fontSize: '11px', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.1 }}>{wantSkin?.name || `#${listing.want_skin_id}`}</div>
-        {listing.want_quantity > 1 && <div style={{ color: '#9be7ff', fontSize: '10px' }}>x{listing.want_quantity}</div>}
+      <div style={{ color: '#aaa', fontSize: '14px', flexShrink: 0 }}>→</div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+        {wantImg && <img src={wantImg} alt={wantSkin.name} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />}
+        <div style={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.05, marginTop: '1px' }}>{wantSkin?.name?.split(' ')[0] || `#${listing.want_skin_id}`}</div>
+        {listing.want_quantity > 1 && <div style={{ color: '#9be7ff', fontSize: '9px' }}>×{listing.want_quantity}</div>}
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-        <div style={{ color: '#aaa', fontSize: '10px' }}>{listing.seller_username} · {ago}</div>
-        {!isActive && <div style={{ color: '#888', fontSize: '11px', fontStyle: 'italic' }}>{listing.status}</div>}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: 0 }}>
+        <div style={{ color: '#aaa', fontSize: '9px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{listing.seller_username}</div>
+        <div style={{ color: '#888', fontSize: '9px' }}>{ago}</div>
+        {!isActive && <div style={{ color: '#888', fontSize: '10px', fontStyle: 'italic' }}>{listing.status}</div>}
         {isActive && isMine && onCancel && (
           <button onClick={onCancel} style={{
-            padding: '4px 10px', borderRadius: '6px', border: '1px solid #aa5555',
+            padding: '2px 8px', borderRadius: '5px', border: '1px solid #aa5555',
             background: 'transparent', color: '#ff8888', fontFamily: "'Bangers', cursive",
-            fontSize: '11px', cursor: 'pointer',
+            fontSize: '10px', cursor: 'pointer', letterSpacing: '0.5px',
           }}>CANCEL</button>
         )}
         {isActive && !isMine && onAccept && (
           <button onClick={onAccept} style={{
-            padding: '4px 12px', borderRadius: '6px', border: 'none',
+            padding: '3px 10px', borderRadius: '5px', border: 'none',
             background: 'linear-gradient(135deg, #2ecc71, #27ae60)', color: '#fff',
             fontFamily: "'Bangers', cursive", fontSize: '11px', cursor: 'pointer',
-            boxShadow: '0 0 10px rgba(46,204,113,0.4)',
+            boxShadow: '0 0 8px rgba(46,204,113,0.4)', letterSpacing: '0.5px',
           }}>ACCEPT</button>
         )}
       </div>
@@ -2061,6 +2062,8 @@ export default function App() {
   const [tradeTab, setTradeTab] = useState('browse'); // browse | mine | history
   const [listForm, setListForm] = useState(null);     // { invRow } or null
   const [tradeMessage, setTradeMessage] = useState(null); // { kind: 'ok'|'err', text }
+  // Filter Browse tab by want-skin — null = show all
+  const [tradeFilterWantSkinId, setTradeFilterWantSkinId] = useState(null);
   // V2 wave drops state
   const [dropEvent, setDropEvent] = useState(null);              // current active event
   const [dropToast, setDropToast] = useState(null);              // { skinId, t }
@@ -4564,34 +4567,72 @@ export default function App() {
             ))}
           </div>
           {/* BROWSE */}
-          {tradeTab === 'browse' && (
-            tradeListings.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px', color: '#aaa', fontSize: '13px' }}>
-                No active trades. Be the first — list a skin from your Vault!
-              </div>
-            ) : tradeListings.map(l => {
-              const offerSkin = CHARACTERS.find(c => c.id === l.offer_skin_id);
-              const wantSkin  = CHARACTERS.find(c => c.id === l.want_skin_id);
-              const isMine = l.seller_player_id === player?.id;
-              return (
-                <TradeListingRow key={l.id}
-                  listing={l} offerSkin={offerSkin} wantSkin={wantSkin}
-                  isMine={isMine}
-                  onAccept={async () => {
-                    if (!player?.id) return;
-                    const res = await tradeAccept({ playerId: player.id, pin: player.pin, listingId: l.id });
-                    if (res.error) {
-                      setTradeMessage({ kind: 'err', text: tradeErrorMessage(res.error) });
-                    } else {
-                      setTradeMessage({ kind: 'ok', text: '✅ Trade complete!' });
-                      soundEngine.play('unlock');
-                    }
-                    setTimeout(() => setTradeMessage(null), 3500);
-                  }}
-                />
-              );
-            })
-          )}
+          {tradeTab === 'browse' && (() => {
+            // Build filter pills from all active listings (by want-skin), with counts.
+            const wantCounts = {};
+            for (const l of tradeListings) wantCounts[l.want_skin_id] = (wantCounts[l.want_skin_id] || 0) + 1;
+            const wantSkinPills = Object.keys(wantCounts).map(id => ({
+              id: parseInt(id),
+              count: wantCounts[id],
+              skin: CHARACTERS.find(c => c.id === parseInt(id)),
+            })).sort((a, b) => b.count - a.count);
+            const visible = tradeFilterWantSkinId == null
+              ? tradeListings
+              : tradeListings.filter(l => l.want_skin_id === tradeFilterWantSkinId);
+            return (
+              <>
+                {/* Filter pills — only render when there are listings to filter */}
+                {tradeListings.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                    <button onClick={() => setTradeFilterWantSkinId(null)} style={{
+                      padding: '4px 10px', borderRadius: '999px', border: 'none', cursor: 'pointer',
+                      background: tradeFilterWantSkinId == null ? '#6a0dad' : 'rgba(255,255,255,0.08)',
+                      color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '11px',
+                      letterSpacing: '0.5px',
+                    }}>All ({tradeListings.length})</button>
+                    {wantSkinPills.map(p => (
+                      <button key={p.id} onClick={() => setTradeFilterWantSkinId(p.id)} style={{
+                        padding: '4px 10px', borderRadius: '999px', border: 'none', cursor: 'pointer',
+                        background: tradeFilterWantSkinId === p.id ? '#6a0dad' : 'rgba(255,255,255,0.08)',
+                        color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '11px',
+                        letterSpacing: '0.5px',
+                      }}>{p.skin?.emoji || '•'} {p.skin?.name?.split(' ')[0] || `#${p.id}`} ({p.count})</button>
+                    ))}
+                  </div>
+                )}
+                {tradeListings.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '24px', color: '#aaa', fontSize: '13px' }}>
+                    No active trades. Be the first — list a skin from your Vault!
+                  </div>
+                ) : visible.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '20px', color: '#aaa', fontSize: '12px' }}>
+                    No trades match this filter.
+                  </div>
+                ) : visible.map(l => {
+                  const offerSkin = CHARACTERS.find(c => c.id === l.offer_skin_id);
+                  const wantSkin  = CHARACTERS.find(c => c.id === l.want_skin_id);
+                  const isMine = l.seller_player_id === player?.id;
+                  return (
+                    <TradeListingRow key={l.id}
+                      listing={l} offerSkin={offerSkin} wantSkin={wantSkin}
+                      isMine={isMine}
+                      onAccept={async () => {
+                        if (!player?.id) return;
+                        const res = await tradeAccept({ playerId: player.id, pin: player.pin, listingId: l.id });
+                        if (res.error) {
+                          setTradeMessage({ kind: 'err', text: tradeErrorMessage(res.error) });
+                        } else {
+                          setTradeMessage({ kind: 'ok', text: '✅ Trade complete!' });
+                          soundEngine.play('unlock');
+                        }
+                        setTimeout(() => setTradeMessage(null), 3500);
+                      }}
+                    />
+                  );
+                })}
+              </>
+            );
+          })()}
           {/* MINE */}
           {tradeTab === 'mine' && (
             myListings.length === 0 ? (
