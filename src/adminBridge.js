@@ -82,13 +82,19 @@ export async function submitVote(voteId, choice) {
   await supabase.from('active_votes').update({ [col]: (cur[col] || 0) + 1 }).eq('id', voteId);
 }
 
-// Announce this player's presence so the admin hub can see who's live.
-// Returns an unsubscribe function.
-export function announcePresence(username) {
+// Announce this player's presence so the admin hub + other players can see
+// who's live. Optional onOnlineChange callback receives a lowercased Set of
+// online usernames whenever the presence state syncs. Returns an unsubscribe.
+export function announcePresence(username, onOnlineChange) {
   if (!username) return () => {};
   const key = username.toLowerCase();
   const channel = supabase.channel('brainrot:presence', {
     config: { presence: { key } },
+  });
+  channel.on('presence', { event: 'sync' }, () => {
+    if (!onOnlineChange) return;
+    const state = channel.presenceState();
+    onOnlineChange(new Set(Object.keys(state)));
   });
   channel.subscribe(async (status) => {
     if (status === 'SUBSCRIBED') {

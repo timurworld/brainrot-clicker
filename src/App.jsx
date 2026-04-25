@@ -2064,6 +2064,8 @@ export default function App() {
   const [tradeMessage, setTradeMessage] = useState(null); // { kind: 'ok'|'err', text }
   // Filter Browse tab by want-skin — null = show all
   const [tradeFilterWantSkinId, setTradeFilterWantSkinId] = useState(null);
+  // Online presence set (lowercased usernames). Updates via realtime sync.
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
   // V2 wave drops state
   const [dropEvent, setDropEvent] = useState(null);              // current active event
   const [dropToast, setDropToast] = useState(null);              // { skinId, t }
@@ -2260,10 +2262,12 @@ export default function App() {
     return unsub;
   }, [game.username]);
 
-  // Broadcast our presence so the admin hub knows we're live
+  // Broadcast our presence so the admin hub + other players know we're live.
+  // Also keep a local Set of online usernames so we can show green dots on
+  // the leaderboard.
   useEffect(() => {
     if (!game.username || screen !== 'game') return;
-    return announcePresence(game.username);
+    return announcePresence(game.username, (set) => setOnlineUsers(set));
   }, [game.username, screen]);
 
   // V2 inventory — fetch on player change + live-subscribe for drops/fusions/trades.
@@ -5005,6 +5009,12 @@ export default function App() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ color: i < 3 ? '#ffd700' : '#aaa', fontSize: '18px', width: '30px' }}>#{i + 1}</span>
+                <span style={{
+                  width: '8px', height: '8px', borderRadius: '50%',
+                  background: onlineUsers.has((entry.name || '').toLowerCase()) ? '#2ecc71' : 'rgba(255,255,255,0.18)',
+                  boxShadow: onlineUsers.has((entry.name || '').toLowerCase()) ? '0 0 6px #2ecc71' : 'none',
+                  flexShrink: 0,
+                }} title={onlineUsers.has((entry.name || '').toLowerCase()) ? 'Online now' : 'Offline'} />
                 <div>
                   <div style={{ color: entry.isPlayer ? '#ffd700' : '#fff', fontSize: '15px' }}>
                     {entry.name} {entry.isPlayer && '(You)'}
