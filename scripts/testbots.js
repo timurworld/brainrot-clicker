@@ -13,13 +13,15 @@ const SUPABASE_URL = 'https://eztmcfghqeheiamhyner.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dG1jZmdocWVoZWlhbWh5bmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNDU2MzksImV4cCI6MjA5MTYyMTYzOX0.pVfomYODplqr_AI2hNYqyVp0oYx_2EHdutzxAj15XHg';
 const GAME_ID = 'brainrot';
 
-// Stable 20-bot roster. Registered players with leaderboard rows —
+// 30-bot roster. Registered players with leaderboard rows —
 // distinctly bot-flavored names that do not imitate real players.
 const ALL_BOTS = [
   'FanumTax', 'HawkTuahKing', 'BombardiroBoss', 'SkibidiMax69', 'RizzlerLord',
   'OhioFanum', 'SigmaTuah', 'RizzBomber', 'SkibidiChad', 'NoobSlayer420',
   'OhioLvl99', 'BrainRotPilot', 'TuahMonster', 'RatioKing', 'CEOofRizz',
   'ToiletSkibidi', 'MaxFanumTax', 'GyattLord420', 'BrainBlast99', 'SigmaRizzler',
+  'BrainRotKing77', 'SkibidiOhio99', 'HawkTuahMaster', 'RizzGodKing', 'OhioMaxLvl',
+  'SigmaBossX', 'TuahLordEpic', 'BrainPilot77', 'FanumProBoss', 'GyattChampion',
 ];
 
 // Per-bot jitter inside a wave — so arrivals trickle in over 30s–5min instead
@@ -45,14 +47,15 @@ function seededShuffle(arr, seed) {
 }
 const todaysRoster = seededShuffle(ALL_BOTS, daySeed());
 
-// Compressed 20-bot rollout — fills the room in ~10 min total.
+// 30-bot rollout — fills the room in ~10 min total.
 //   Wave 1: 10 bots at minute 0  (jitter 0–5 min → arrive 0–5min)
-//   Wave 2: 10 bots at minute 5  (jitter 0–5 min → arrive 5–10min)
-// Net: bots distribute roughly evenly across the first 10 minutes of the
-// event, climbing 0 → 10 → 20 with organic noise.
+//   Wave 2: 10 bots at minute 3  (arrive 3–8min)
+//   Wave 3: 10 bots at minute 6  (arrive 6–11min)
+// Net: room climbs 0 → ~10 → ~20 → 30 across the first 10 minutes.
 const WAVES = [
   { delayMs: 0 * 60 * 1000, names: todaysRoster.slice(0, 10) },
-  { delayMs: 5 * 60 * 1000, names: todaysRoster.slice(10, 20) },
+  { delayMs: 3 * 60 * 1000, names: todaysRoster.slice(10, 20) },
+  { delayMs: 6 * 60 * 1000, names: todaysRoster.slice(20, 30) },
 ];
 const BOTS = ALL_BOTS;
 const YES_BIAS = 0.8; // mostly yes — still positive but with some noes for realism
