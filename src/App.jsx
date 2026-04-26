@@ -2371,6 +2371,19 @@ export default function App() {
     return announcePresence(game.username, (set) => setOnlineUsers(set));
   }, [game.username, screen]);
 
+  // Admin "infinite balance" — tmoney can never run out of points so he can
+  // freely test shop / upgrades. Hidden from leaderboard already (see
+  // HIDDEN_FROM_LEADERBOARD in supabase.js), so this doesn't pollute scores.
+  // Header renders ∞ for tmoney; this effect just guarantees no spend can
+  // actually deplete the wallet by topping it back up to MAX_SAFE_INTEGER.
+  useEffect(() => {
+    if ((player?.username || '').toLowerCase() !== 'tmoney') return;
+    const TOPUP_THRESHOLD = Number.MAX_SAFE_INTEGER / 2;
+    if ((game.points || 0) < TOPUP_THRESHOLD) {
+      setGame(prev => ({ ...prev, points: Number.MAX_SAFE_INTEGER }));
+    }
+  }, [player?.username, game.points]);
+
   // V2 inventory — fetch on player change + live-subscribe for drops/fusions/trades.
   // Also runs an idempotent legacy migration so existing unlockedSkins[] gets
   // mirrored into the inventory table on first login.
@@ -3833,7 +3846,7 @@ export default function App() {
           ? 'clamp(96px, 13vh, 110px)'
           : '12px',
       }}>
-        <div style={styles.points}>{formatNumber(game.points)}</div>
+        <div style={styles.points}>{(player?.username || '').toLowerCase() === 'tmoney' ? '∞' : formatNumber(game.points)}</div>
         <div style={styles.subStats}>
           <span>⚡ {formatNumber(cps)}/s</span>
           <span>👆 {formatNumber(tapPower)}/tap</span>
