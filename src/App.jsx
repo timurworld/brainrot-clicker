@@ -2026,7 +2026,7 @@ function AdminEffectCrowd() {
 
 // One row in the Trade Board. Same component renders for Browse and Mine tabs;
 // the action buttons swap based on whether the viewer owns the listing.
-function TradeListingRow({ listing, offerSkin, wantSkin, isMine, onAccept, onCancel }) {
+function TradeListingRow({ listing, offerSkin, wantSkin, isMine, onAccept, onCancel, canAccept = true, haveQty = 0 }) {
   const ago = useRelativeTime(listing.created_at);
   const offerImg = offerSkin ? `/characters/${offerSkin.file}` : null;
   const wantImg  = wantSkin  ? `/characters/${wantSkin.file}`  : null;
@@ -2063,14 +2063,29 @@ function TradeListingRow({ listing, offerSkin, wantSkin, isMine, onAccept, onCan
             fontSize: '10px', cursor: 'pointer', letterSpacing: '0.5px',
           }}>CANCEL</button>
         )}
-        {isActive && !isMine && onAccept && (
+        {isActive && !isMine && onAccept && (canAccept ? (
           <button onClick={onAccept} style={{
             padding: '3px 10px', borderRadius: '5px', border: 'none',
             background: 'linear-gradient(135deg, #2ecc71, #27ae60)', color: '#fff',
             fontFamily: "'Bangers', cursive", fontSize: '11px', cursor: 'pointer',
             boxShadow: '0 0 8px rgba(46,204,113,0.4)', letterSpacing: '0.5px',
           }}>ACCEPT</button>
-        )}
+        ) : (
+          <button
+            disabled
+            title={`You need ${listing.want_quantity}× ${wantSkin?.name || `#${listing.want_skin_id}`} (you have ${haveQty})`}
+            style={{
+              padding: '3px 10px', borderRadius: '5px',
+              border: '1px solid rgba(255,140,0,0.4)',
+              background: 'rgba(255,140,0,0.12)', color: '#ff9500',
+              fontFamily: "'Bangers', cursive", fontSize: '10px',
+              cursor: 'not-allowed', letterSpacing: '0.5px', whiteSpace: 'nowrap',
+            }}
+          >
+            NEED {listing.want_quantity > 1 ? `${listing.want_quantity}× ` : ''}
+            {(wantSkin?.name?.split(' ')[0] || `#${listing.want_skin_id}`).toUpperCase()}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -4895,10 +4910,19 @@ export default function App() {
                   const offerSkin = CHARACTERS.find(c => c.id === l.offer_skin_id);
                   const wantSkin  = CHARACTERS.find(c => c.id === l.want_skin_id);
                   const isMine = l.seller_player_id === player?.id;
+                  // Pre-flight: do I own enough of what they want? Trade RPC requires
+                  // a non-serial, non-reserved stack with quantity >= want_quantity.
+                  const haveQty = (inventory || []).reduce(
+                    (acc, inv) => (inv.skin_id === l.want_skin_id && inv.serial_number == null && !inv.reserved_by_listing)
+                      ? acc + (inv.quantity || 0) : acc,
+                    0
+                  );
+                  const canAccept = haveQty >= (l.want_quantity || 1);
                   return (
                     <TradeListingRow key={l.id}
                       listing={l} offerSkin={offerSkin} wantSkin={wantSkin}
                       isMine={isMine}
+                      canAccept={canAccept} haveQty={haveQty}
                       onAccept={async () => {
                         if (!player?.id) return;
                         const res = await tradeAccept({ playerId: player.id, pin: player.pin, listingId: l.id });
