@@ -4953,26 +4953,52 @@ export default function App() {
                     }}>🔒 {formatLockCountdown(invRow.trade_lock_until)}</div>
                   )}
                   {reserved && (
-                    <div title="On the trade board — cancel from the Trade tab" style={{
+                    <div title="On the trade board — tap CANCEL below to retract" style={{
                       position: 'absolute', top: '6px', right: '6px',
                       background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
                       padding: '2px 5px', fontSize: '10px', color: '#9be7ff',
                     }}>📋 Trade Listed</div>
                   )}
-                  {/* TRADE button — only render when we have something to list */}
+                  {/* TRADE / CANCEL button — only render when we have something
+                      to act on. If the row is reserved (listed), the button
+                      retracts the listing right here instead of forcing the
+                      player to navigate to the Trade tab. */}
                   {unlocked && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); if (canList) setListForm({ invRow, skin: ch }); }}
-                      disabled={!canList}
-                      style={{
-                        marginTop: '6px', width: '100%', padding: '4px 6px',
-                        borderRadius: '6px', border: 'none',
-                        background: canList ? 'linear-gradient(135deg,#6a0dad,#9b59b6)' : 'rgba(255,255,255,0.08)',
-                        color: canList ? '#fff' : '#888',
-                        fontFamily: "'Bangers', cursive", fontSize: '11px',
-                        cursor: canList ? 'pointer' : 'not-allowed', letterSpacing: '0.5px',
-                      }}
-                    >{locked ? 'LOCKED' : 'TRADE'}</button>
+                    reserved ? (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!player?.id || !invRow.reserved_by_listing) return;
+                          const res = await tradeCancel({ playerId: player.id, pin: player.pin, listingId: invRow.reserved_by_listing });
+                          if (res.error) {
+                            setTradeMessage({ kind: 'err', text: tradeErrorMessage(res.error) });
+                          } else {
+                            setTradeMessage({ kind: 'ok', text: '✅ Listing canceled' });
+                          }
+                          setTimeout(() => setTradeMessage(null), 2500);
+                        }}
+                        style={{
+                          marginTop: '6px', width: '100%', padding: '4px 6px',
+                          borderRadius: '6px', border: '1px solid #aa5555',
+                          background: 'transparent', color: '#ff8888',
+                          fontFamily: "'Bangers', cursive", fontSize: '11px',
+                          cursor: 'pointer', letterSpacing: '0.5px',
+                        }}
+                      >CANCEL LISTING</button>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (canList) setListForm({ invRow, skin: ch }); }}
+                        disabled={!canList}
+                        style={{
+                          marginTop: '6px', width: '100%', padding: '4px 6px',
+                          borderRadius: '6px', border: 'none',
+                          background: canList ? 'linear-gradient(135deg,#6a0dad,#9b59b6)' : 'rgba(255,255,255,0.08)',
+                          color: canList ? '#fff' : '#888',
+                          fontFamily: "'Bangers', cursive", fontSize: '11px',
+                          cursor: canList ? 'pointer' : 'not-allowed', letterSpacing: '0.5px',
+                        }}
+                      >{locked ? 'LOCKED' : 'TRADE'}</button>
+                    )
                   )}
                 </div>
               );
