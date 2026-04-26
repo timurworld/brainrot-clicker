@@ -4003,44 +4003,57 @@ export default function App() {
         // MINIMIZED — big floating locker icon, bottom-right. Click to expand.
         // Stock pip in the corner gives a glance number; lock-with-key emoji
         // reads as a "locker" without lots of words.
-        if (lockerMinimized) {
+        // Auto-collapse expired/sold-out lockers — the big card has nothing
+        // actionable left, and on mobile it just covers the score.
+        const forceMinimized = lockerMinimized || isExpired;
+        if (forceMinimized) {
+          const expiredStyle = isExpired && !isSoldOut;
           return (
             <button
               onClick={toggleLockerMinimized}
-              title={`${locker.name} — ${locker.remaining_stock}/${locker.total_stock} left · click to open`}
+              title={
+                isExpired ? `${locker.name} — event ended`
+                : `${locker.name} — ${locker.remaining_stock}/${locker.total_stock} left · click to open`
+              }
               style={{
                 position: 'absolute', bottom: '74px', right: '14px',
                 zIndex: 23, width: '64px', height: '64px',
                 borderRadius: '50%', border: 'none',
-                background: isSoldOut
-                  ? 'linear-gradient(135deg, #ff4500, #c0392b)'
-                  : 'linear-gradient(135deg, #ffd700, #ff8c00 70%, #ff5500)',
-                boxShadow: isSoldOut
-                  ? '0 0 22px rgba(255,69,0,0.7)'
-                  : '0 0 28px rgba(255,215,0,0.75), inset 0 -3px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.4)',
+                background: expiredStyle
+                  ? 'linear-gradient(135deg, #555, #333)'
+                  : isSoldOut
+                    ? 'linear-gradient(135deg, #ff4500, #c0392b)'
+                    : 'linear-gradient(135deg, #ffd700, #ff8c00 70%, #ff5500)',
+                boxShadow: expiredStyle
+                  ? '0 0 14px rgba(0,0,0,0.5)'
+                  : isSoldOut
+                    ? '0 0 22px rgba(255,69,0,0.7)'
+                    : '0 0 28px rgba(255,215,0,0.75), inset 0 -3px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.4)',
                 cursor: 'pointer', padding: 0,
-                animation: isSoldOut ? 'none' : 'fuseButtonPulse 1.6s ease-in-out infinite',
+                opacity: expiredStyle ? 0.7 : 1,
+                animation: (isSoldOut || expiredStyle) ? 'none' : 'fuseButtonPulse 1.6s ease-in-out infinite',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '34px',
               }}
             >
               🗄️
-              {/* Stock pip — top-right corner of the icon */}
+              {/* Stock / status pip — top-right corner of the icon */}
               <span style={{
                 position: 'absolute', top: '-4px', right: '-4px',
                 minWidth: '24px', height: '24px', padding: '0 5px',
                 borderRadius: '999px',
-                background: isSoldOut ? '#0a0420' : '#0a0420',
-                border: `2px solid ${stockColor}`,
-                color: stockColor, fontSize: '11px', fontWeight: 'bold',
+                background: '#0a0420',
+                border: `2px solid ${expiredStyle ? '#888' : stockColor}`,
+                color: expiredStyle ? '#aaa' : stockColor,
+                fontSize: expiredStyle ? '9px' : '11px', fontWeight: 'bold',
                 fontFamily: "'JetBrains Mono', monospace",
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 lineHeight: 1,
               }}>
-                {isSoldOut ? '0' : locker.remaining_stock}
+                {expiredStyle ? 'END' : isSoldOut ? '0' : locker.remaining_stock}
               </span>
               {/* "Can fuse" indicator — small green dot */}
-              {canFuse && (
+              {canFuse && !expiredStyle && (
                 <span style={{
                   position: 'absolute', bottom: '-2px', right: '-2px',
                   width: '14px', height: '14px', borderRadius: '50%',
@@ -4054,7 +4067,9 @@ export default function App() {
 
         return (
           <div style={{
-            position: 'absolute', top: '64px', left: '50%', transform: 'translateX(-50%)',
+            position: 'absolute',
+            top: (adminSchedule && !adminEvent.active) ? 'clamp(125px, 18vh, 150px)' : '64px',
+            left: '50%', transform: 'translateX(-50%)',
             zIndex: 23, width: 'min(96vw, 560px)',
             padding: '14px 18px 16px',
             borderRadius: '18px',
@@ -4099,11 +4114,15 @@ export default function App() {
               <button
                 onClick={(e) => { e.stopPropagation(); toggleLockerMinimized(); }}
                 title="Minimize"
+                aria-label="Minimize locker"
                 style={{
-                  position: 'absolute', top: '-4px', right: '-4px',
-                  width: '24px', height: '24px', borderRadius: '50%', border: 'none',
-                  background: 'rgba(255,255,255,0.12)', color: '#fff',
-                  cursor: 'pointer', fontSize: '18px', lineHeight: '20px', padding: 0,
+                  position: 'absolute', top: '-8px', right: '-6px',
+                  width: '34px', height: '34px', borderRadius: '50%',
+                  border: '2px solid rgba(255,255,255,0.4)',
+                  background: 'rgba(0,0,0,0.55)', color: '#fff',
+                  cursor: 'pointer', fontSize: '22px', lineHeight: '22px', padding: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.5)', zIndex: 2,
                 }}
               >−</button>
             </div>
