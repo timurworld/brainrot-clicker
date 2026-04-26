@@ -2178,6 +2178,7 @@ export default function App() {
   const [tradeMessage, setTradeMessage] = useState(null); // { kind: 'ok'|'err', text }
   // Filter Browse tab by want-skin — null = show all
   const [tradeFilterWantSkinId, setTradeFilterWantSkinId] = useState(null);
+  const [skinFilter, setSkinFilter] = useState('all'); // 'all' | 'owned' | 'locked'
   // Online presence set (lowercased usernames). Updates via realtime sync.
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   // V2 wave drops state
@@ -4827,20 +4828,47 @@ export default function App() {
         const orderedTiers = [];
         for (const t of TIER_ORDER) if (tiers[t]?.length) orderedTiers.push(t);
         for (const t of Object.keys(tiers)) if (!TIER_ORDER.includes(t)) orderedTiers.push(t);
+        // Counts for filter pills
+        const ownedCount = CHARACTERS.filter(c => inventory.some(inv => inv.skin_id === c.id)).length;
+        const lockedCount = CHARACTERS.length - ownedCount;
+        const filterFor = (tierEntries) => {
+          if (skinFilter === 'all') return tierEntries;
+          return tierEntries.filter(e => {
+            const owned = inventory.some(inv => inv.skin_id === e.ch.id);
+            return skinFilter === 'owned' ? owned : !owned;
+          });
+        };
+        const filterPill = (id, label, count) => (
+          <button key={id} onClick={() => setSkinFilter(id)} style={{
+            padding: '4px 10px', borderRadius: '999px', border: 'none', cursor: 'pointer',
+            background: skinFilter === id ? '#6a0dad' : 'rgba(255,255,255,0.08)',
+            color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '11px',
+            letterSpacing: '0.5px',
+          }}>{label} ({count})</button>
+        );
         return (
         <div style={styles.panel} data-panel onClick={e => e.stopPropagation()}>
           <div style={styles.panelTitle}>SKINS</div>
-          <div style={{ textAlign: 'center', fontSize: '11px', color: '#aaa', marginBottom: '10px', letterSpacing: '0.5px' }}>
-            Tap an unlocked skin to equip · 🔒 = not yet earned · TRADE to send a copy
+          <div style={{ textAlign: 'center', fontSize: '11px', color: '#aaa', marginBottom: '8px', letterSpacing: '0.5px' }}>
+            Tap to equip · ✅ EQUIPPED = currently wearing · 📋 LISTED = on trade board · TRADE to send a copy
           </div>
-          {orderedTiers.map(tier => (
+          {/* Filter pills */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
+            {filterPill('all', 'All', CHARACTERS.length)}
+            {filterPill('owned', '✨ Owned', ownedCount)}
+            {filterPill('locked', '🔒 Locked', lockedCount)}
+          </div>
+          {orderedTiers.map(tier => {
+            const filtered = filterFor(tiers[tier]);
+            if (filtered.length === 0) return null;
+            return (
             <div key={tier} style={{ marginBottom: '14px' }}>
               <div style={{
                 fontSize: '12px', letterSpacing: '1.5px', textTransform: 'uppercase',
                 color: tierColorOf(tier), marginBottom: '6px', fontWeight: 'bold', opacity: 0.9,
               }}>{tier}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                {tiers[tier].map((entry) => {
+                {filtered.map((entry) => {
                   const ch = entry.ch;
                   const idx = entry.idx;
               // Single-inventory model: a skin is unlocked iff at least one
@@ -4894,17 +4922,25 @@ export default function App() {
                   <div style={{ color: tierColor, fontSize: '10px', marginTop: '2px' }}>
                     {ch.rarity} | {ch.mult}x
                   </div>
-                  {/* Quantity / serial badge — only when owned */}
+                  {/* Quantity / serial badge — pinned top-LEFT so it never
+                      sits next to the rarity multiplier "1.2x" (avoids
+                      "is ×3 a quantity or a multiplier?" confusion). */}
                   {unlocked && invRow.serial_number != null && (
-                    <div style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold' }}>
-                      #{invRow.serial_number}{totalQty > 1 ? ` · ${totalQty} owned` : ''}
-                    </div>
+                    <div title={totalQty > 1 ? `Lowest serial #${invRow.serial_number} · ${totalQty} copies` : `Serial #${invRow.serial_number}`} style={{
+                      position: 'absolute', top: '6px', left: '6px',
+                      background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
+                      padding: '2px 6px', fontSize: '10px', color: '#ffd700', fontWeight: 'bold',
+                    }}>#{invRow.serial_number}{totalQty > 1 ? ` ×${totalQty}` : ''}</div>
                   )}
                   {unlocked && invRow.serial_number == null && totalQty > 1 && (
-                    <div style={{ color: '#9be7ff', fontSize: '11px' }}>×{totalQty}</div>
+                    <div title={`You own ${totalQty} of this skin`} style={{
+                      position: 'absolute', top: '6px', left: '6px',
+                      background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
+                      padding: '2px 6px', fontSize: '10px', color: '#9be7ff', fontWeight: 'bold',
+                    }}>×{totalQty}</div>
                   )}
                   {!unlocked && <div style={{ color: '#aaa', fontSize: '10px' }}>{unlockHint}</div>}
-                  {equipped && <div style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>EQUIPPED</div>}
+                  {equipped && <div title="Currently wearing this skin — its tap-power multiplier is active" style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>✅ EQUIPPED</div>}
                   {/* Trade-lock / listed corner badges */}
                   {locked && (
                     <div title="Trade-locked for 24h after fusion" style={{
@@ -4933,14 +4969,15 @@ export default function App() {
                         fontFamily: "'Bangers', cursive", fontSize: '11px',
                         cursor: canList ? 'pointer' : 'not-allowed', letterSpacing: '0.5px',
                       }}
-                    >{reserved ? 'LISTED' : locked ? 'LOCKED' : 'TRADE'}</button>
+                    >{locked ? 'LOCKED' : 'TRADE'}</button>
                   )}
                 </div>
               );
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
         );
       })()}
