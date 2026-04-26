@@ -2417,6 +2417,20 @@ export default function App() {
     return () => { cancelled = true; unsub(); };
   }, [player?.id]);
 
+  // Equipped-skin guard (single-inventory model): if the player traded away
+  // the last copy of the skin they're currently wearing, auto-fall back to
+  // skin 0 so they don't keep its tap-power multiplier without owning it.
+  // Skips while inventory is still empty/loading on first mount.
+  useEffect(() => {
+    if (!player?.id || !inventory || inventory.length === 0) return;
+    const equipped = CHARACTERS[game.equippedSkin];
+    if (!equipped) return;
+    const stillOwned = inventory.some(inv => inv.skin_id === equipped.id);
+    if (!stillOwned) {
+      setGame(prev => ({ ...prev, equippedSkin: 0 }));
+    }
+  }, [inventory, game.equippedSkin, player?.id]);
+
   // V2 trade board — keep listings/history fresh + live.
   useEffect(() => {
     if (!player?.id) { setTradeListings([]); setMyListings([]); setMyTradeHistory([]); return; }
@@ -2763,6 +2777,13 @@ export default function App() {
       if (obtain === 'prestige' && (ch.prestigeUnlock != null) && game.prestigeCount >= ch.prestigeUnlock) earned = true;
       if (earned) {
         setGame(prev => ({ ...prev, unlockedSkins: [...prev.unlockedSkins, idx] }));
+        // Single-inventory model: also mint a vault row for the newly
+        // unlocked skin so the player can immediately equip it (and so
+        // the equip check, which now reads from inventory, stays in sync).
+        // The seed RPC is idempotent — safe to call after every unlock.
+        if (player?.id) {
+          migrateLegacyInventory(player.id, CHARACTERS).catch(() => {});
+        }
         setSkinCelebration(ch);
         soundEngine.play('unlock');
         setTimeout(() => setSkinCelebration(null), 3000);
@@ -4790,9 +4811,13 @@ export default function App() {
               // unlockedSkins[]; Sportini event skins live in the inventory table.
               const isPointSkin = !ch.obtain || ch.obtain === 'points';
               const isPrestigeSkin = ch.obtain === 'prestige';
-              const unlocked = (isPointSkin || isPrestigeSkin)
-                ? game.unlockedSkins.includes(idx)
-                : inventory.some(inv => inv.skin_id === ch.id);
+              // Single-inventory model (Pet Sim style): a skin is "unlocked"
+              // (i.e. equipable) only while you have at least one copy in
+              // your vault. Trade away your last copy → can't equip until
+              // you reacquire. Achievement flag (unlockedSkins[]) is kept
+              // running in parallel for the achievements/bonuses code paths
+              // but is no longer the source of truth for equip access.
+              const unlocked = inventory.some(inv => inv.skin_id === ch.id);
               const equipped = game.equippedSkin === idx;
               const unlockHint = isPointSkin
                 ? `${formatNumber(ch.unlock)} pts`
