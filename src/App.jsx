@@ -201,12 +201,17 @@ const NEWS_HIGH = [
 const DAILY_REWARDS = [500, 1000, 2500, 5000, 10000, 25000, 50000];
 
 // Owner / admin accounts that get auto-refilling balances.
-// tmoney → renders ∞ in the header + tops up to MAX_SAFE_INTEGER on any spend.
-// emoney → keeps a trillions-scale wallet (refills to ~5T if spend drops it below 1T).
-const INFINITE_USERNAMES = new Set(['tmoney']);
+// Header shows the formatted number (e.g. "5000.0T"). When a purchase drops
+// the balance below the threshold, it tops back up to the target.
+//   tmoney → "thousands of trillions" tier (refills to 5,000T)
+//   emoney → "trillions" tier (refills to 5T)
+const HUGE_USERNAMES = new Set(['tmoney']);
+const HUGE_TARGET     = 5_000_000_000_000_000;   // 5 000T (a.k.a. 5 quadrillion)
+const HUGE_THRESHOLD  =   100_000_000_000_000;   // 100T  — top up if it falls below
+
 const TRILLIONAIRE_USERNAMES = new Set(['emoney']);
-const TRILLIONAIRE_TARGET = 5_000_000_000_000;     // refill TO this when below threshold
-const TRILLIONAIRE_THRESHOLD = 1_000_000_000_000;  // refill IF balance drops below this
+const TRILLIONAIRE_TARGET    = 5_000_000_000_000;   // 5T
+const TRILLIONAIRE_THRESHOLD = 1_000_000_000_000;   // 1T
 
 // ============================================================
 // SOUND ENGINE (Web Audio API)
@@ -2379,17 +2384,15 @@ export default function App() {
     return announcePresence(game.username, (set) => setOnlineUsers(set));
   }, [game.username, screen]);
 
-  // Admin "infinite balance" — owners can never run out of points so they
-  // can freely test shop / upgrades.
-  //   - tmoney: header renders ∞, refill target is MAX_SAFE_INTEGER
-  //   - emoney: header renders the actual number (in trillions),
-  //     auto-refill keeps it ≥1T by topping up to 5T
+  // Admin auto-refilling balances — tmoney sits in "thousands of trillions"
+  // (5 000T), emoney in "trillions" (5T). When a spend drops the wallet
+  // below the threshold the effect tops it back to the target on the next
+  // render, so they never actually run out of money.
   useEffect(() => {
     const uname = (player?.username || '').toLowerCase();
-    if (INFINITE_USERNAMES.has(uname)) {
-      const TOPUP_THRESHOLD = Number.MAX_SAFE_INTEGER / 2;
-      if ((game.points || 0) < TOPUP_THRESHOLD) {
-        setGame(prev => ({ ...prev, points: Number.MAX_SAFE_INTEGER }));
+    if (HUGE_USERNAMES.has(uname)) {
+      if ((game.points || 0) < HUGE_THRESHOLD) {
+        setGame(prev => ({ ...prev, points: HUGE_TARGET }));
       }
     } else if (TRILLIONAIRE_USERNAMES.has(uname)) {
       if ((game.points || 0) < TRILLIONAIRE_THRESHOLD) {
@@ -3861,14 +3864,21 @@ export default function App() {
           : '12px',
       }}>
         <div style={styles.points}>
-          {(player?.username || '').toLowerCase() === 'tmoney' ? (
+          {HUGE_USERNAMES.has((player?.username || '').toLowerCase()) ? (
             <span style={{
-              fontSize: 'clamp(96px, 26vw, 168px)',
-              fontFamily: "'Bungee Shade', 'Arial Black', sans-serif",
-              lineHeight: 0.85,
+              // Clean symmetric ∞: ditch the decorative Bungee Shade font
+              // (its ∞ fallback rendered lopsided), use a balanced sans
+              // and a single radial gold glow (no offset shadow that pulls
+              // one lobe heavier than the other).
               display: 'inline-block',
-              verticalAlign: 'middle',
-              textShadow: '0 0 40px rgba(255,215,0,1), 0 0 80px rgba(255,100,0,0.7), 3px 3px 0 #000',
+              fontSize: 'clamp(110px, 30vw, 200px)',
+              fontFamily: "'Helvetica Neue', 'Arial', sans-serif",
+              fontWeight: 900,
+              lineHeight: 0.85,
+              color: '#ffd700',
+              textShadow: '0 0 28px rgba(255,215,0,0.9), 0 0 56px rgba(255,140,0,0.55)',
+              WebkitTextStroke: '2px #000',
+              transform: 'translateY(-2%)',
             }}>∞</span>
           ) : formatNumber(game.points)}
         </div>
