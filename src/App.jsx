@@ -4801,14 +4801,48 @@ export default function App() {
       )}
 
       {/* SKINS PANEL */}
-      {activePanel === 'skins' && (
+      {activePanel === 'skins' && (() => {
+        // Group all CHARACTERS by rarity tier so the gallery isn't a
+        // scattered ID-ordered grid. Rarest tiers float to the top.
+        const TIER_ORDER = [
+          'Mythic', 'Mythic Limited', 'Prestige', 'Limited',
+          'Brainrot God', 'Secret', 'Legendary', 'OG', 'Rare', 'Common',
+        ];
+        const tierColorOf = (tier) =>
+          tier === 'Mythic' || tier === 'Mythic Limited' ? '#ff44ff'
+          : tier === 'Brainrot God' ? '#ff00ff'
+          : tier === 'Legendary' ? '#ffd700'
+          : tier === 'OG' ? '#00ff00'
+          : tier === 'Secret' ? '#ff4500'
+          : tier === 'Rare' ? '#4db8db'
+          : tier === 'Prestige' ? '#a259ff'
+          : tier === 'Limited' ? '#ff4500'
+          : '#aaa';
+        const tiers = {};
+        CHARACTERS.forEach((ch, idx) => {
+          const t = ch.rarity || 'Common';
+          if (!tiers[t]) tiers[t] = [];
+          tiers[t].push({ ch, idx });
+        });
+        const orderedTiers = [];
+        for (const t of TIER_ORDER) if (tiers[t]?.length) orderedTiers.push(t);
+        for (const t of Object.keys(tiers)) if (!TIER_ORDER.includes(t)) orderedTiers.push(t);
+        return (
         <div style={styles.panel} data-panel onClick={e => e.stopPropagation()}>
           <div style={styles.panelTitle}>SKINS</div>
           <div style={{ textAlign: 'center', fontSize: '11px', color: '#aaa', marginBottom: '10px', letterSpacing: '0.5px' }}>
             Tap an unlocked skin to equip · 🔒 = not yet earned · TRADE to send a copy
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-            {CHARACTERS.map((ch, idx) => {
+          {orderedTiers.map(tier => (
+            <div key={tier} style={{ marginBottom: '14px' }}>
+              <div style={{
+                fontSize: '12px', letterSpacing: '1.5px', textTransform: 'uppercase',
+                color: tierColorOf(tier), marginBottom: '6px', fontWeight: 'bold', opacity: 0.9,
+              }}>{tier}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                {tiers[tier].map((entry) => {
+                  const ch = entry.ch;
+                  const idx = entry.idx;
               // Single-inventory model: a skin is unlocked iff at least one
               // copy exists in the player's inventory. We pick the FIRST row
               // matching the skin (lowest serial / oldest acquired) as the
@@ -4903,10 +4937,13 @@ export default function App() {
                   )}
                 </div>
               );
-            })}
-          </div>
+                })}
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+        );
+      })()}
 
       {/* VAULT panel removed in single-inventory model — Skins panel now
           shows owned + locked skins with trade controls inline. */}
