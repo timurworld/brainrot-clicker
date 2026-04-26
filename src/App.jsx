@@ -4510,7 +4510,7 @@ export default function App() {
       {dropToast && (() => {
         const skin = CHARACTERS.find(c => c.id === dropToast.skinId);
         return (
-          <div onClick={() => { setActivePanel('inv'); setDropToast(null); }} style={{
+          <div onClick={() => { setActivePanel('skins'); setDropToast(null); }} style={{
             position: 'absolute', bottom: '70px', right: '12px', zIndex: 60,
             padding: '8px 12px', borderRadius: '12px',
             background: 'linear-gradient(135deg, rgba(20,80,30,0.95), rgba(15,60,20,0.95))',
@@ -4640,7 +4640,6 @@ export default function App() {
         {[
           { id: 'shop', label: 'Shop', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> },
           { id: 'skins', label: 'Skins', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-          { id: 'inv', label: 'Vault', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> },
           { id: 'trade', label: 'Trade', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg> },
           { id: 'codes', label: 'Codes', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
           { id: 'board', label: 'Board', svg: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15l-2 5l9-13h-5l2-5l-9 13h5z"/></svg> },
@@ -4805,20 +4804,23 @@ export default function App() {
       {activePanel === 'skins' && (
         <div style={styles.panel} data-panel onClick={e => e.stopPropagation()}>
           <div style={styles.panelTitle}>SKINS</div>
+          <div style={{ textAlign: 'center', fontSize: '11px', color: '#aaa', marginBottom: '10px', letterSpacing: '0.5px' }}>
+            Tap an unlocked skin to equip · 🔒 = not yet earned · TRADE to send a copy
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             {CHARACTERS.map((ch, idx) => {
-              // Ownership: legacy point-unlock + prestige-unlock skins live in
-              // unlockedSkins[]; Sportini event skins live in the inventory table.
-              const isPointSkin = !ch.obtain || ch.obtain === 'points';
-              const isPrestigeSkin = ch.obtain === 'prestige';
-              // Single-inventory model (Pet Sim style): a skin is "unlocked"
-              // (i.e. equipable) only while you have at least one copy in
-              // your vault. Trade away your last copy → can't equip until
-              // you reacquire. Achievement flag (unlockedSkins[]) is kept
-              // running in parallel for the achievements/bonuses code paths
-              // but is no longer the source of truth for equip access.
-              const unlocked = inventory.some(inv => inv.skin_id === ch.id);
+              // Single-inventory model: a skin is unlocked iff at least one
+              // copy exists in the player's inventory. We pick the FIRST row
+              // matching the skin (lowest serial / oldest acquired) as the
+              // representative for this card — qty/serial/trade-lock all read
+              // from that row. Multi-serial limiteds: trading the first row
+              // makes the next become "first" on next render.
+              const invRows = inventory.filter(inv => inv.skin_id === ch.id);
+              const invRow = invRows[0] || null;
+              const unlocked = !!invRow;
+              const totalQty = invRows.reduce((s, r) => s + (r.quantity || 1), 0);
               const equipped = game.equippedSkin === idx;
+              const isPointSkin = !ch.obtain || ch.obtain === 'points';
               const unlockHint = isPointSkin
                 ? `${formatNumber(ch.unlock)} pts`
                 : ch.obtain === 'fusion'
@@ -4826,26 +4828,79 @@ export default function App() {
                   : ch.obtain === 'prestige'
                     ? `Ascend ${ch.prestigeUnlock || 1}×`
                     : 'Earn from drop';
+              const locked = invRow ? isTradeLocked(invRow) : false;
+              const reserved = invRow ? !!invRow.reserved_by_listing : false;
+              const canList = unlocked && !locked && !reserved && !!player?.id;
+              const tierColor =
+                ch.rarity === 'Mythic' || ch.rarity === 'Mythic Limited' ? '#ff44ff'
+                : ch.rarity === 'Brainrot God' ? '#ff00ff'
+                : ch.rarity === 'Legendary' ? '#ffd700'
+                : ch.rarity === 'OG' ? '#00ff00'
+                : ch.rarity === 'Secret' ? '#ff4500'
+                : ch.rarity === 'Rare' ? '#4db8db'
+                : ch.rarity === 'Prestige' ? '#a259ff'
+                : ch.rarity === 'Limited' ? '#ff4500'
+                : '#aaa';
               return (
                 <div key={idx} onClick={() => unlocked && setGame(prev => ({ ...prev, equippedSkin: idx }))} style={{
                   padding: '8px', borderRadius: '12px', textAlign: 'center', cursor: unlocked ? 'pointer' : 'default',
                   background: equipped ? 'rgba(106,13,173,0.4)' : 'rgba(255,255,255,0.05)',
                   border: equipped ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
                   opacity: unlocked ? 1 : 0.5,
+                  position: 'relative',
                 }}>
-                  <div style={{ width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {unlocked ? (
                       <img src={`/characters/${ch.file}`} alt={ch.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                     ) : (
                       <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a2e', fontSize: '28px' }}>🔒</div>
                     )}
                   </div>
-                  <div style={{ color: '#fff', fontSize: '13px', lineHeight: 1.3, textShadow: '1px 1px 2px #000', fontWeight: 'bold' }}>{ch.name}</div>
-                  <div style={{ color: ch.rarity === 'Mythic' ? '#ff44ff' : ch.rarity === 'Legendary' ? '#ffd700' : ch.rarity === 'Brainrot God' ? '#ff00ff' : ch.rarity === 'OG' ? '#00ff00' : ch.rarity === 'Secret' ? '#ff4500' : '#aaa', fontSize: '10px', marginTop: '2px' }}>
+                  <div style={{ color: '#fff', fontSize: '12px', lineHeight: 1.25, textShadow: '1px 1px 2px #000', fontWeight: 'bold' }}>{ch.name}</div>
+                  <div style={{ color: tierColor, fontSize: '10px', marginTop: '2px' }}>
                     {ch.rarity} | {ch.mult}x
                   </div>
+                  {/* Quantity / serial badge — only when owned */}
+                  {unlocked && invRow.serial_number != null && (
+                    <div style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold' }}>
+                      #{invRow.serial_number}{totalQty > 1 ? ` · ${totalQty} owned` : ''}
+                    </div>
+                  )}
+                  {unlocked && invRow.serial_number == null && totalQty > 1 && (
+                    <div style={{ color: '#9be7ff', fontSize: '11px' }}>×{totalQty}</div>
+                  )}
                   {!unlocked && <div style={{ color: '#aaa', fontSize: '10px' }}>{unlockHint}</div>}
-                  {equipped && <div style={{ color: '#ffd700', fontSize: '11px', fontWeight: 'bold' }}>EQUIPPED</div>}
+                  {equipped && <div style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>EQUIPPED</div>}
+                  {/* Trade-lock / listed corner badges */}
+                  {locked && (
+                    <div title="Trade-locked for 24h after fusion" style={{
+                      position: 'absolute', top: '6px', right: '6px',
+                      background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
+                      padding: '2px 5px', fontSize: '10px', color: '#ffb347',
+                    }}>🔒 {formatLockCountdown(invRow.trade_lock_until)}</div>
+                  )}
+                  {reserved && (
+                    <div style={{
+                      position: 'absolute', top: '6px', right: '6px',
+                      background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
+                      padding: '2px 5px', fontSize: '10px', color: '#9be7ff',
+                    }}>📋 Listed</div>
+                  )}
+                  {/* TRADE button — only render when we have something to list */}
+                  {unlocked && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if (canList) setListForm({ invRow, skin: ch }); }}
+                      disabled={!canList}
+                      style={{
+                        marginTop: '6px', width: '100%', padding: '4px 6px',
+                        borderRadius: '6px', border: 'none',
+                        background: canList ? 'linear-gradient(135deg,#6a0dad,#9b59b6)' : 'rgba(255,255,255,0.08)',
+                        color: canList ? '#fff' : '#888',
+                        fontFamily: "'Bangers', cursive", fontSize: '11px',
+                        cursor: canList ? 'pointer' : 'not-allowed', letterSpacing: '0.5px',
+                      }}
+                    >{reserved ? 'LISTED' : locked ? 'LOCKED' : 'TRADE'}</button>
+                  )}
                 </div>
               );
             })}
@@ -4853,91 +4908,8 @@ export default function App() {
         </div>
       )}
 
-      {/* VAULT (INVENTORY) PANEL — V2 */}
-      {activePanel === 'inv' && (
-        <div style={styles.panel} data-panel onClick={e => e.stopPropagation()}>
-          <div style={styles.panelTitle}>VAULT</div>
-          {inventory.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#aaa', fontSize: '14px' }}>
-              Your vault is empty.<br />
-              <span style={{ fontSize: '12px', opacity: 0.7 }}>Earn skins from drops, fusions, and trades!</span>
-            </div>
-          ) : (
-            groupByTier(inventory, CHARACTERS).map(group => (
-              <div key={group.tier} style={{ marginBottom: '14px' }}>
-                <div style={{
-                  fontSize: '12px', letterSpacing: '1.5px', textTransform: 'uppercase',
-                  color: group.tier === 'Mythic' || group.tier === 'Mythic Limited' ? '#ff44ff'
-                       : group.tier === 'Brainrot God' ? '#ff00ff'
-                       : group.tier === 'Legendary' ? '#ffd700'
-                       : group.tier === 'OG' ? '#00ff00'
-                       : group.tier === 'Secret' ? '#ff4500'
-                       : group.tier === 'Rare' ? '#4db8db'
-                       : '#aaa',
-                  marginBottom: '6px', fontWeight: 'bold', opacity: 0.85,
-                }}>{group.tier}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                  {group.items.map(({ inv, skin }) => {
-                    const charIdx = indexOfSkinId(CHARACTERS, skin.id);
-                    const equipped = game.equippedSkin === charIdx;
-                    const locked = isTradeLocked(inv);
-                    const reserved = !!inv.reserved_by_listing;
-                    const canList = !locked && !reserved && !!player?.id;
-                    return (
-                      <div key={inv.id}
-                        onClick={() => charIdx >= 0 && setGame(prev => ({ ...prev, equippedSkin: charIdx }))}
-                        style={{
-                          padding: '8px', borderRadius: '12px', textAlign: 'center', cursor: 'pointer',
-                          background: equipped ? 'rgba(106,13,173,0.4)' : 'rgba(255,255,255,0.05)',
-                          border: equipped ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
-                          position: 'relative',
-                        }}>
-                        <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <img src={`/characters/${skin.file}`} alt={skin.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                        </div>
-                        <div style={{ color: '#fff', fontSize: '12px', lineHeight: 1.3, textShadow: '1px 1px 2px #000', fontWeight: 'bold' }}>{skin.name}</div>
-                        {inv.serial_number != null ? (
-                          <div style={{ color: '#ffd700', fontSize: '10px', marginTop: '2px', fontWeight: 'bold' }}>#{inv.serial_number}</div>
-                        ) : inv.quantity > 1 ? (
-                          <div style={{ color: '#9be7ff', fontSize: '11px', marginTop: '2px' }}>x{inv.quantity}</div>
-                        ) : null}
-                        {equipped && <div style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold' }}>EQUIPPED</div>}
-                        {locked && (
-                          <div title="Trade-locked for 24h after fusion" style={{
-                            position: 'absolute', top: '6px', right: '6px',
-                            background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
-                            padding: '2px 5px', fontSize: '10px', color: '#ffb347',
-                            display: 'flex', alignItems: 'center', gap: '3px',
-                          }}>🔒 {formatLockCountdown(inv.trade_lock_until)}</div>
-                        )}
-                        {reserved && (
-                          <div style={{
-                            position: 'absolute', top: '6px', right: '6px',
-                            background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
-                            padding: '2px 5px', fontSize: '10px', color: '#9be7ff',
-                          }}>📋 Listed</div>
-                        )}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); if (canList) setListForm({ invRow: inv, skin }); }}
-                          disabled={!canList}
-                          style={{
-                            marginTop: '6px', width: '100%', padding: '4px 6px',
-                            borderRadius: '6px', border: 'none',
-                            background: canList ? 'linear-gradient(135deg,#6a0dad,#9b59b6)' : 'rgba(255,255,255,0.08)',
-                            color: canList ? '#fff' : '#888',
-                            fontFamily: "'Bangers', cursive", fontSize: '11px',
-                            cursor: canList ? 'pointer' : 'not-allowed', letterSpacing: '0.5px',
-                          }}
-                        >{reserved ? 'LISTED' : 'TRADE'}</button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+      {/* VAULT panel removed in single-inventory model — Skins panel now
+          shows owned + locked skins with trade controls inline. */}
 
       {/* TRADE BOARD PANEL — V2 */}
       {activePanel === 'trade' && (
