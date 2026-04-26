@@ -4849,9 +4849,6 @@ export default function App() {
         return (
         <div style={styles.panel} data-panel onClick={e => e.stopPropagation()}>
           <div style={styles.panelTitle}>SKINS</div>
-          <div style={{ textAlign: 'center', fontSize: '11px', color: '#aaa', marginBottom: '8px', letterSpacing: '0.5px' }}>
-            Tap to wear · ✅ ACTIVE NOW = currently wearing · 📋 TRADE LISTED = on trade board · TRADE to send a copy
-          </div>
           {/* Filter pills */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
             {filterPill('all', 'All', CHARACTERS.length)}
