@@ -3846,7 +3846,18 @@ export default function App() {
           ? 'clamp(96px, 13vh, 110px)'
           : '12px',
       }}>
-        <div style={styles.points}>{(player?.username || '').toLowerCase() === 'tmoney' ? '∞' : formatNumber(game.points)}</div>
+        <div style={styles.points}>
+          {(player?.username || '').toLowerCase() === 'tmoney' ? (
+            <span style={{
+              fontSize: 'clamp(96px, 26vw, 168px)',
+              fontFamily: "'Bungee Shade', 'Arial Black', sans-serif",
+              lineHeight: 0.85,
+              display: 'inline-block',
+              verticalAlign: 'middle',
+              textShadow: '0 0 40px rgba(255,215,0,1), 0 0 80px rgba(255,100,0,0.7), 3px 3px 0 #000',
+            }}>∞</span>
+          ) : formatNumber(game.points)}
+        </div>
         <div style={styles.subStats}>
           <span>⚡ {formatNumber(cps)}/s</span>
           <span>👆 {formatNumber(tapPower)}/tap</span>
