@@ -210,8 +210,8 @@ const HUGE_TARGET     = 5_000_000_000_000_000;   // 5 000T (a.k.a. 5 quadrillion
 const HUGE_THRESHOLD  =   100_000_000_000_000;   // 100T  — top up if it falls below
 
 const TRILLIONAIRE_USERNAMES = new Set(['emoney']);
-const TRILLIONAIRE_TARGET    = 5_000_000_000_000;   // 5T
-const TRILLIONAIRE_THRESHOLD = 1_000_000_000_000;   // 1T
+const TRILLIONAIRE_TARGET    = 27_000_000_000_000_000; // 27 000T — matches lifetime scale
+const TRILLIONAIRE_THRESHOLD = 5_000_000_000_000_000;  // 5 000T — refill if drops below
 
 // ============================================================
 // SOUND ENGINE (Web Audio API)
