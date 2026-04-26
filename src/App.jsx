@@ -4850,7 +4850,7 @@ export default function App() {
         <div style={styles.panel} data-panel onClick={e => e.stopPropagation()}>
           <div style={styles.panelTitle}>SKINS</div>
           <div style={{ textAlign: 'center', fontSize: '11px', color: '#aaa', marginBottom: '8px', letterSpacing: '0.5px' }}>
-            Tap to equip · ✅ EQUIPPED = currently wearing · 📋 LISTED = on trade board · TRADE to send a copy
+            Tap to wear · ✅ ACTIVE NOW = currently wearing · 📋 TRADE LISTED = on trade board · TRADE to send a copy
           </div>
           {/* Filter pills */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
@@ -4928,19 +4928,25 @@ export default function App() {
                   {unlocked && invRow.serial_number != null && (
                     <div title={totalQty > 1 ? `Lowest serial #${invRow.serial_number} · ${totalQty} copies` : `Serial #${invRow.serial_number}`} style={{
                       position: 'absolute', top: '6px', left: '6px',
-                      background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
-                      padding: '2px 6px', fontSize: '10px', color: '#ffd700', fontWeight: 'bold',
+                      background: 'rgba(0,0,0,0.85)', borderRadius: '8px',
+                      padding: '4px 9px', fontSize: '15px', color: '#ffd700', fontWeight: 'bold',
+                      letterSpacing: '0.5px',
+                      boxShadow: '0 0 8px rgba(255,215,0,0.35)',
+                      border: '1px solid rgba(255,215,0,0.45)',
                     }}>#{invRow.serial_number}{totalQty > 1 ? ` ×${totalQty}` : ''}</div>
                   )}
                   {unlocked && invRow.serial_number == null && totalQty > 1 && (
                     <div title={`You own ${totalQty} of this skin`} style={{
                       position: 'absolute', top: '6px', left: '6px',
-                      background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
-                      padding: '2px 6px', fontSize: '10px', color: '#9be7ff', fontWeight: 'bold',
+                      background: 'rgba(0,0,0,0.85)', borderRadius: '8px',
+                      padding: '4px 9px', fontSize: '15px', color: '#9be7ff', fontWeight: 'bold',
+                      letterSpacing: '0.5px',
+                      boxShadow: '0 0 8px rgba(155,231,255,0.35)',
+                      border: '1px solid rgba(155,231,255,0.45)',
                     }}>×{totalQty}</div>
                   )}
                   {!unlocked && <div style={{ color: '#aaa', fontSize: '10px' }}>{unlockHint}</div>}
-                  {equipped && <div title="Currently wearing this skin — its tap-power multiplier is active" style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>✅ EQUIPPED</div>}
+                  {equipped && <div title="Currently wearing this skin — its tap-power multiplier is active" style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>✅ ACTIVE NOW</div>}
                   {/* Trade-lock / listed corner badges */}
                   {locked && (
                     <div title="Trade-locked for 24h after fusion" style={{
@@ -4950,11 +4956,11 @@ export default function App() {
                     }}>🔒 {formatLockCountdown(invRow.trade_lock_until)}</div>
                   )}
                   {reserved && (
-                    <div style={{
+                    <div title="On the trade board — cancel from the Trade tab" style={{
                       position: 'absolute', top: '6px', right: '6px',
                       background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
                       padding: '2px 5px', fontSize: '10px', color: '#9be7ff',
-                    }}>📋 Listed</div>
+                    }}>📋 Trade Listed</div>
                   )}
                   {/* TRADE button — only render when we have something to list */}
                   {unlocked && (
