@@ -200,6 +200,14 @@ const NEWS_HIGH = [
 
 const DAILY_REWARDS = [500, 1000, 2500, 5000, 10000, 25000, 50000];
 
+// Owner / admin accounts that get auto-refilling balances.
+// tmoney → renders ∞ in the header + tops up to MAX_SAFE_INTEGER on any spend.
+// emoney → keeps a trillions-scale wallet (refills to ~5T if spend drops it below 1T).
+const INFINITE_USERNAMES = new Set(['tmoney']);
+const TRILLIONAIRE_USERNAMES = new Set(['emoney']);
+const TRILLIONAIRE_TARGET = 5_000_000_000_000;     // refill TO this when below threshold
+const TRILLIONAIRE_THRESHOLD = 1_000_000_000_000;  // refill IF balance drops below this
+
 // ============================================================
 // SOUND ENGINE (Web Audio API)
 // ============================================================
@@ -2371,16 +2379,22 @@ export default function App() {
     return announcePresence(game.username, (set) => setOnlineUsers(set));
   }, [game.username, screen]);
 
-  // Admin "infinite balance" — tmoney can never run out of points so he can
-  // freely test shop / upgrades. Hidden from leaderboard already (see
-  // HIDDEN_FROM_LEADERBOARD in supabase.js), so this doesn't pollute scores.
-  // Header renders ∞ for tmoney; this effect just guarantees no spend can
-  // actually deplete the wallet by topping it back up to MAX_SAFE_INTEGER.
+  // Admin "infinite balance" — owners can never run out of points so they
+  // can freely test shop / upgrades.
+  //   - tmoney: header renders ∞, refill target is MAX_SAFE_INTEGER
+  //   - emoney: header renders the actual number (in trillions),
+  //     auto-refill keeps it ≥1T by topping up to 5T
   useEffect(() => {
-    if ((player?.username || '').toLowerCase() !== 'tmoney') return;
-    const TOPUP_THRESHOLD = Number.MAX_SAFE_INTEGER / 2;
-    if ((game.points || 0) < TOPUP_THRESHOLD) {
-      setGame(prev => ({ ...prev, points: Number.MAX_SAFE_INTEGER }));
+    const uname = (player?.username || '').toLowerCase();
+    if (INFINITE_USERNAMES.has(uname)) {
+      const TOPUP_THRESHOLD = Number.MAX_SAFE_INTEGER / 2;
+      if ((game.points || 0) < TOPUP_THRESHOLD) {
+        setGame(prev => ({ ...prev, points: Number.MAX_SAFE_INTEGER }));
+      }
+    } else if (TRILLIONAIRE_USERNAMES.has(uname)) {
+      if ((game.points || 0) < TRILLIONAIRE_THRESHOLD) {
+        setGame(prev => ({ ...prev, points: TRILLIONAIRE_TARGET }));
+      }
     }
   }, [player?.username, game.points]);
 
