@@ -3820,7 +3820,7 @@ export default function App() {
       {/* World Background Image */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
-        backgroundImage: `url(/worlds/bg_${currentSkin.bgNum}.png)`,
+        backgroundImage: `url(/worlds/bg_${currentSkin.bgNum}.jpg)`,
         backgroundSize: 'cover', backgroundPosition: 'center',
         filter: 'blur(3px) brightness(0.85)',
         transform: 'scale(1.02)',
