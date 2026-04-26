@@ -2067,7 +2067,8 @@ function TradeListingRow({ listing, offerSkin, wantSkin, isMine, onAccept, onCan
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
         {offerImg && <img src={offerImg} alt={offerSkin.name} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />}
         <div style={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.05, marginTop: '1px' }}>{offerSkin?.name?.split(' ')[0] || `#${listing.offer_skin_id}`}</div>
-        {listing.offer_serial_number != null && <div style={{ color: '#ffd700', fontSize: '9px' }}>#{listing.offer_serial_number}</div>}
+        {/* Serial numbers intentionally hidden from kid-facing UI — count
+            (×N) is shown when the player owns >1, otherwise nothing. */}
       </div>
       <div style={{ color: '#aaa', fontSize: '14px', flexShrink: 0 }}>→</div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
@@ -4380,7 +4381,7 @@ export default function App() {
                   if (res.error) {
                     setFuseMessage({ kind: 'err', text: fuseErrorMessage(res.error) });
                   } else {
-                    setFuseMessage({ kind: 'ok', text: `🎉 ${outputSkin?.name || 'Skin'} #${res.serial} is yours!` });
+                    setFuseMessage({ kind: 'ok', text: `🎉 ${outputSkin?.name || 'Skin'} is yours!` });
                     soundEngine.play('unlock');
                   }
                   setTimeout(() => setFuseMessage(null), 4000);
@@ -4410,7 +4411,7 @@ export default function App() {
             animation: 'fadeIn 0.3s ease-out',
             pointerEvents: 'none',
           }}>
-            🏒 {fusionToast.username} just fused {skin?.name || 'a skin'} #{fusionToast.serial}!
+            🏒 {fusionToast.username} just fused {skin?.name || 'a skin'}!
           </div>
         );
       })()}
@@ -5197,7 +5198,7 @@ export default function App() {
             <div style={{ color: '#ffd700', fontSize: '18px', fontFamily: "'Bangers', cursive", textAlign: 'center', marginBottom: '12px' }}>LIST FOR TRADE</div>
             <div style={{ color: '#fff', fontSize: '13px', textAlign: 'center', marginBottom: '14px' }}>
               You're offering: <strong>{listForm.skin.name}</strong>
-              {listForm.invRow.serial_number != null && <span style={{ color: '#ffd700' }}> #{listForm.invRow.serial_number}</span>}
+              {/* Serial number hidden from list-form UI as well. */}
             </div>
             <div style={{ color: '#aaa', fontSize: '12px', marginBottom: '4px' }}>You want…</div>
             <select
