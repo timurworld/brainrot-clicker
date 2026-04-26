@@ -845,6 +845,15 @@ const soundEngine = new SoundEngine();
 // ============================================================
 // UTILITY FUNCTIONS
 // ============================================================
+// Daily login streak multiplier: +5% per consecutive day, capped at 3× (day 41+).
+// Day 1 → 1.0x, Day 7 → 1.30x, Day 14 → 1.65x, Day 30 → 2.45x, Day 41+ → 3.0x.
+// Loss aversion is the point: the longer a kid plays, the more they don't want
+// to skip a day and reset the bonus.
+function streakMultiplier(streakDays) {
+  const d = Math.max(0, (streakDays || 0) - 1);
+  return 1 + 0.05 * Math.min(d, 40);
+}
+
 function formatNumber(n) {
   if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
   if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
@@ -928,6 +937,7 @@ function defaultState() {
     dailyDay: 0,
     dailyCycle: 1,
     lastDailyDate: null,
+    streakDays: 0,        // consecutive days logged in (compounding CPS / tap multiplier)
     lastSaveTime: Date.now(),
     storyShown: [],
     reflexMedals: { gold: 0, silver: 0, bronze: 0 },
@@ -2255,6 +2265,8 @@ export default function App() {
     // Skin multiplier
     const skin = CHARACTERS[g.equippedSkin] || CHARACTERS[0];
     cps *= skin.mult;
+    // Daily login streak multiplier (compounds with everything else).
+    cps *= streakMultiplier(g.streakDays);
     // Admin DJ effect: rocket = 3× CPS while active
     if (adminEffectsRef.current?.rocket) cps *= 3;
     return cps;
@@ -2272,6 +2284,8 @@ export default function App() {
     // Skin multiplier
     const skin = CHARACTERS[g.equippedSkin] || CHARACTERS[0];
     power *= skin.mult;
+    // Daily login streak multiplier (same boost as CPS).
+    power *= streakMultiplier(g.streakDays);
     return Math.floor(power);
   }, []);
 
@@ -2652,16 +2666,23 @@ export default function App() {
       const yesterday = new Date(Date.now() - 86400000).toDateString();
       let day = g.dailyDay;
       let cycle = g.dailyCycle || 1;
+      let streakDays = g.streakDays || 0;
+      let streakBroken = 0;
       if (g.lastDailyDate === yesterday) {
         day = (day + 1) % 7;
+        streakDays = streakDays + 1;
       } else if (g.lastDailyDate) {
         day = 0;
         cycle = 1;
+        if (streakDays >= 2) streakBroken = streakDays;
+        streakDays = 1;
+      } else {
+        streakDays = 1;
       }
       if (day === 0 && g.dailyDay === 6) cycle += 1;
       const reward = DAILY_REWARDS[day] * cycle;
-      setDailyReward({ day, reward, cycle });
-      setGame(prev => ({ ...prev, dailyDay: day, dailyCycle: cycle, lastDailyDate: today }));
+      setDailyReward({ day, reward, cycle, streakDays, streakBroken });
+      setGame(prev => ({ ...prev, dailyDay: day, dailyCycle: cycle, lastDailyDate: today, streakDays }));
     }
   }, [screen]);
 
@@ -4919,20 +4940,13 @@ export default function App() {
                   <div style={{ color: tierColor, fontSize: '10px', marginTop: '2px' }}>
                     {ch.rarity} | {ch.mult}x
                   </div>
-                  {/* Quantity / serial badge — pinned top-LEFT so it never
-                      sits next to the rarity multiplier "1.2x" (avoids
-                      "is ×3 a quantity or a multiplier?" confusion). */}
-                  {unlocked && invRow.serial_number != null && (
-                    <div title={totalQty > 1 ? `Lowest serial #${invRow.serial_number} · ${totalQty} copies` : `Serial #${invRow.serial_number}`} style={{
-                      position: 'absolute', top: '6px', left: '6px',
-                      background: 'rgba(0,0,0,0.85)', borderRadius: '8px',
-                      padding: '4px 9px', fontSize: '15px', color: '#ffd700', fontWeight: 'bold',
-                      letterSpacing: '0.5px',
-                      boxShadow: '0 0 8px rgba(255,215,0,0.35)',
-                      border: '1px solid rgba(255,215,0,0.45)',
-                    }}>#{invRow.serial_number}{totalQty > 1 ? ` ×${totalQty}` : ''}</div>
-                  )}
-                  {unlocked && invRow.serial_number == null && totalQty > 1 && (
+                  {/* Top-LEFT badge: ONE rule across all skin types.
+                      • Own 1 copy → no badge (would just say "×1" / "#1" — noise)
+                      • Own 2+ copies → "×N" (count of copies, blue)
+                      Limited skins still keep their identity via the 'LIMITED'
+                      tier label and the per-listing serial inside the trade
+                      flow — no need to spam the gallery card with serials. */}
+                  {unlocked && totalQty > 1 && (
                     <div title={`You own ${totalQty} of this skin`} style={{
                       position: 'absolute', top: '6px', left: '6px',
                       background: 'rgba(0,0,0,0.85)', borderRadius: '8px',
