@@ -13,21 +13,26 @@ const SUPABASE_URL = 'https://eztmcfghqeheiamhyner.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dG1jZmdocWVoZWlhbWh5bmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNDU2MzksImV4cCI6MjA5MTYyMTYzOX0.pVfomYODplqr_AI2hNYqyVp0oYx_2EHdutzxAj15XHg';
 const GAME_ID = 'brainrot';
 
-// 36-bot roster. ~20% on-brand brainrot, ~80% diversified gamer / animal /
-// random-word names so the leaderboard doesn't read as obviously seeded.
+// 36-bot roster. ~28% on-brand brainrot/marquee names, ~72% diversified
+// kid-style usernames. The three "marquee" top-band bots keep their original
+// identity (ToiletSkibidi, RizzGodKing, SigmaBossX) so they don't appear to
+// vanish from the visible top of the leaderboard.
 const ALL_BOTS = [
-  // Brainrot kept (7) — the theme still shows up
+  // Brainrot kept (4 + 3 marquee)
   'FanumKid', 'TuahKing', 'RizzMaster', 'OhioMain', 'SigmaBoy', 'BrainBoss', 'SkibidiChad',
+  'ToiletSkibidi', 'RizzGodKing', 'SigmaBossX',
   // Gamer / xX-flex (6)
   'ProGamer42', 'zombiekid77', 'NoobSlay3r', 'PixelKnight', 'SnipeKid44', 'xX_Sn1per_Xx',
-  // Animal + adjective (8)
-  'NinjaPanda', 'JellyMonster', 'SneakyKitty', 'PinkDragon', 'SpicyTurtle', 'PuddingDragon',
-  'PeachStorm', 'MintyFresh',
-  // Random words / food (10)
+  // Animal + adjective (7)
+  'NinjaPanda', 'JellyMonster', 'FrostyKnight', 'PinkDragon', 'SpicyTurtle', 'PeachStorm',
+  'MintyFresh',
+  // Random words / food (8)
   'CrispyBacon', 'ToastedKing', 'MrCheese', 'CoolBeans99', 'BananaPhone', 'SunnyKid23',
-  'ToadKnight7', 'LemonSlice99', 'BlueRocket', 'PixelSquid',
-  // Lifestyle / scenic (5)
-  'Waves07', 'Starboy_15', 'CloudHopper9', 'BlocxyKing', 'RoboBlast',
+  'ToadKnight7', 'LemonSlice99',
+  // Lifestyle / scenic (4)
+  'Waves07', 'CloudHopper9', 'BlocxyKing', 'RoboBlast',
+  // Misc (1)
+  'PixelSquid',
 ];
 
 // Per-bot jitter inside a wave — so arrivals trickle in over 30s–5min instead

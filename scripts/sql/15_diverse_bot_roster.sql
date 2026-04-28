@@ -3,21 +3,23 @@
 --
 -- The original 36-bot roster was 100% Skibidi/Sigma/Rizz/Tuah/Ohio/Brainrot
 -- mash-ups — together they read as obviously generated. New roster mixes:
---   • ~20% on-brand brainrot names (so the theme still shows up)
---   • ~80% gamer tags / animal+adjective / random word combos that look
+--   • ~28% on-brand brainrot names (so the theme still shows up + the
+--     three top-band marquee bots keep their identity so daily players
+--     don't notice the top of the leaderboard "vanish")
+--   • ~72% gamer tags / animal+adjective / random-word combos that look
 --     like real Roblox-style kid usernames
+--
+-- KEPT (NOT renamed):
+--   ToiletSkibidi, RizzGodKing, SigmaBossX  — top-band marquee bots,
+--                                             usually visible top-7,
+--                                             stable identity protects
+--                                             against "where did they go"
+--   SkibidiChad                              — already a fine name
 --
 -- Player UUIDs DON'T change — only the username text — so existing
 -- inventory, fusion history, trade rows, and game_saves stay linked.
 --
--- Three tables touched per rename:
---   1. players.username           (canonical, lowercase)
---   2. leaderboard.username       (denormalized display copy, mixed-case)
---   3. game_saves.save_data.username (denormalized inside JSON)
---
--- Idempotent. If you re-run after the rename has already happened,
--- the WHERE LOWER(...) = old_username matches nothing and no rows
--- update — safe.
+-- Idempotent. Re-running matches nothing the second time.
 -- ============================================================================
 
 WITH renames(old_lower, new_display) AS (VALUES
@@ -35,7 +37,6 @@ WITH renames(old_lower, new_display) AS (VALUES
   ('tuahmonster',      'CrispyBacon'),
   ('ratioking',        'ToastedKing'),
   ('ceoofrizz',        'MrCheese'),
-  ('toiletskibidi',    'BlueRocket'),
   ('maxfanumtax',      'SnipeKid44'),
   ('gyattlord420',     'Waves07'),
   ('brainblast99',     'CoolBeans99'),
@@ -43,12 +44,10 @@ WITH renames(old_lower, new_display) AS (VALUES
   ('brainrotking77',   'JellyMonster'),
   ('skibidiohio99',    'NinjaPanda'),
   ('hawktuahmaster',   'PixelSquid'),
-  ('rizzgodking',      'Starboy_15'),
   ('ohiomaxlvl',       'CloudHopper9'),
-  ('sigmabossx',       'PuddingDragon'),
   ('tuahlordepic',     'MintyFresh'),
   ('brainpilot77',     'PinkDragon'),
-  ('fanumproboss',     'SneakyKitty'),
+  ('fanumproboss',     'FrostyKnight'),
   ('gyattchampion',    'SunnyKid23'),
   ('brainrotkaiser',   'ToadKnight7'),
   ('skibidiqueen',     'BlocxyKing'),
@@ -56,7 +55,11 @@ WITH renames(old_lower, new_display) AS (VALUES
   ('ohiopharaoh',      'xX_Sn1per_Xx'),
   ('rizzninja',        'PeachStorm'),
   ('sigmawarlord',     'LemonSlice99')
-  -- (skibidichad keeps its name; intentionally not in the map)
+  -- Intentionally NOT in the map:
+  --   skibidichad      (already a fine name)
+  --   toiletskibidi    (top-band marquee — kept for leaderboard stability)
+  --   rizzgodking      (top-band marquee — kept for leaderboard stability)
+  --   sigmabossx       (top-band marquee — kept for leaderboard stability)
 ),
 players_update AS (
   UPDATE public.players p
