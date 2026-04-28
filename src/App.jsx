@@ -5328,6 +5328,7 @@ export default function App() {
                     color: entry.isPlayer ? '#ffd700' : '#fff',
                     fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
                     fontSize: '14px', fontWeight: 700, letterSpacing: '0.3px',
+                    textTransform: 'uppercase',
                   }}>
                     {entry.name} {entry.isPlayer && '(You)'}
                   </div>
