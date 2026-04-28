@@ -93,6 +93,7 @@ const TAP_UPGRADES = [
   { id: 'tp3', name: 'Power Poke', baseCost: 2500, power: 5 },
   { id: 'tp4', name: 'Thunder Thumb', baseCost: 15000, power: 15 },
   { id: 'tp5', name: 'Sigma Slap', baseCost: 100000, power: 50 },
+  { id: 'tp6', name: 'Sigma God', baseCost: 50000000, power: 1000000 },
 ];
 
 const EFFICIENCY_UPGRADES = [
