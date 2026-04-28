@@ -3301,7 +3301,10 @@ export default function App() {
     },
     characterImg: {
       maxWidth: '100%', maxHeight: '100%', objectFit: 'contain',
-      filter: `drop-shadow(0 0 8px #000) drop-shadow(0 0 20px ${currentSkin.color}) drop-shadow(0 0 40px ${currentSkin.color}88)`,
+      // Tightened from 3-layer 8/20/40 stack — outer 40 px halo was bleeding
+      // colored fuzz around eyes/edges. Now: crisp black outline + single
+      // tint glow.
+      filter: `drop-shadow(0 0 4px rgba(0,0,0,0.85)) drop-shadow(0 0 14px ${currentSkin.color}66)`,
     },
     // Animated glow ring around character
     glowRing: {
@@ -3847,12 +3850,13 @@ export default function App() {
   // ============================================================
   return (
     <div style={styles.container} onClick={(e) => { if (activePanel && !e.target.closest('[data-nav]') && !e.target.closest('[data-panel]')) setActivePanel(null); }}>
-      {/* World Background Image */}
+      {/* World Background Image — light blur (1px) so the world detail
+          stays legible. Heavier blur was washing out the new bg art. */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
         backgroundImage: `url(/worlds/bg_${currentSkin.bgNum}.jpg)`,
         backgroundSize: 'cover', backgroundPosition: 'center',
-        filter: 'blur(3px) brightness(0.85)',
+        filter: 'blur(1px) brightness(0.9)',
         transform: 'scale(1.02)',
       }} />
 
