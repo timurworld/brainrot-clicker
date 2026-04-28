@@ -20,7 +20,6 @@
 -- update — safe.
 -- ============================================================================
 
--- Mapping table: old username (lowercased) → new display name
 WITH renames(old_lower, new_display) AS (VALUES
   ('fanumtax',         'FanumKid'),
   ('hawktuahking',     'TuahKing'),
@@ -57,30 +56,31 @@ WITH renames(old_lower, new_display) AS (VALUES
   ('ohiopharaoh',      'xX_Sn1per_Xx'),
   ('rizzninja',        'PeachStorm'),
   ('sigmawarlord',     'LemonSlice99')
-  -- (skibidichad keeps its name; intentionally excluded from rename map)
-)
--- ---------- 1. players ----------
-, players_update AS (
+  -- (skibidichad keeps its name; intentionally not in the map)
+),
+players_update AS (
   UPDATE public.players p
      SET username = LOWER(r.new_display)
     FROM renames r
    WHERE LOWER(p.username) = r.old_lower
    RETURNING p.id
-)
--- ---------- 2. leaderboard (mixed-case for display) ----------
-, leaderboard_update AS (
+),
+leaderboard_update AS (
   UPDATE public.leaderboard lb
      SET username = r.new_display
     FROM renames r
    WHERE LOWER(lb.username) = r.old_lower
    RETURNING lb.player_id
-)
--- ---------- 3. game_saves.save_data.username ----------
-SELECT count(*) AS saves_renamed FROM (
+),
+saves_update AS (
   UPDATE public.game_saves gs
      SET save_data = jsonb_set(gs.save_data, '{username}', to_jsonb(LOWER(r.new_display))),
          updated_at = now()
     FROM renames r
    WHERE LOWER(gs.save_data->>'username') = r.old_lower
    RETURNING gs.player_id
-) saves_renamed;
+)
+SELECT
+  (SELECT count(*) FROM players_update)     AS players_renamed,
+  (SELECT count(*) FROM leaderboard_update) AS leaderboard_renamed,
+  (SELECT count(*) FROM saves_update)       AS saves_renamed;
