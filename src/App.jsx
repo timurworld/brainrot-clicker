@@ -72,6 +72,13 @@ const CHARACTERS = [
     rarity: 'Prestige', unlock: 0, emoji: '🫐', color: '#a259ff', mult: 20,
     obtain: 'prestige', prestigeUnlock: 5,
     bg: 'linear-gradient(180deg, #1a0530 0%, #6a0dad 40%, #a259ff 70%, #2a0a4a 100%)' },
+  // Maple Cup Mythic — fusion of Cupidini Hotspottini (#19) + Hockey Bros (#22).
+  // First Mythic tier in the game. Bears Timur's signature: jersey "T" + #7
+  // helmet — single creator-signed Mythic. 10 stock. 25× tap multiplier.
+  { id: 26, name: 'Cupideini Hockini', file: '26_cupideini_hockini.png', bgNum: '24',
+    rarity: 'Mythic', unlock: 0, emoji: '🏒', color: '#ffd700', mult: 25,
+    tag: 'Sportini', obtain: 'fusion',
+    bg: 'linear-gradient(180deg, #1a3050 0%, #ff4500 35%, #ffd700 60%, #1a0530 100%)' },
 ];
 
 const AUTO_CLICKERS = [
