@@ -5311,7 +5311,12 @@ export default function App() {
               background: entry.isPlayer ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.05)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ color: i < 3 ? '#ffd700' : '#aaa', fontSize: '18px', width: '30px' }}>#{i + 1}</span>
+                <span style={{
+                  color: i < 3 ? '#ffd700' : '#aaa',
+                  fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                  fontSize: '15px', fontWeight: 800, letterSpacing: '0.3px',
+                  width: '34px',
+                }}>#{i + 1}</span>
                 <span style={{
                   width: '8px', height: '8px', borderRadius: '50%',
                   background: onlineUsers.has((entry.name || '').toLowerCase()) ? '#2ecc71' : 'rgba(255,255,255,0.18)',
@@ -5319,12 +5324,20 @@ export default function App() {
                   flexShrink: 0,
                 }} title={onlineUsers.has((entry.name || '').toLowerCase()) ? 'Online now' : 'Offline'} />
                 <div>
-                  <div style={{ color: entry.isPlayer ? '#ffd700' : '#fff', fontSize: '15px' }}>
+                  <div style={{
+                    color: entry.isPlayer ? '#ffd700' : '#fff',
+                    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                    fontSize: '14px', fontWeight: 700, letterSpacing: '0.3px',
+                  }}>
                     {entry.name} {entry.isPlayer && '(You)'}
                   </div>
                 </div>
               </div>
-              <div style={{ color: '#ffd700', fontSize: '14px' }}>{formatNumber(entry.pts)}</div>
+              <div style={{
+                color: '#ffd700',
+                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                fontSize: '14px', fontWeight: 700,
+              }}>{formatNumber(entry.pts)}</div>
             </div>
           ))}
           <button onClick={() => {
