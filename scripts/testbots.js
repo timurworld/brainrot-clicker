@@ -13,16 +13,21 @@ const SUPABASE_URL = 'https://eztmcfghqeheiamhyner.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6dG1jZmdocWVoZWlhbWh5bmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNDU2MzksImV4cCI6MjA5MTYyMTYzOX0.pVfomYODplqr_AI2hNYqyVp0oYx_2EHdutzxAj15XHg';
 const GAME_ID = 'brainrot';
 
-// 36-bot roster. Registered players with leaderboard rows —
-// distinctly bot-flavored names that do not imitate real players.
+// 36-bot roster. ~20% on-brand brainrot, ~80% diversified gamer / animal /
+// random-word names so the leaderboard doesn't read as obviously seeded.
 const ALL_BOTS = [
-  'FanumTax', 'HawkTuahKing', 'BombardiroBoss', 'SkibidiMax69', 'RizzlerLord',
-  'OhioFanum', 'SigmaTuah', 'RizzBomber', 'SkibidiChad', 'NoobSlayer420',
-  'OhioLvl99', 'BrainRotPilot', 'TuahMonster', 'RatioKing', 'CEOofRizz',
-  'ToiletSkibidi', 'MaxFanumTax', 'GyattLord420', 'BrainBlast99', 'SigmaRizzler',
-  'BrainRotKing77', 'SkibidiOhio99', 'HawkTuahMaster', 'RizzGodKing', 'OhioMaxLvl',
-  'SigmaBossX', 'TuahLordEpic', 'BrainPilot77', 'FanumProBoss', 'GyattChampion',
-  'BrainrotKaiser', 'SkibidiQueen', 'TuahDragon', 'OhioPharaoh', 'RizzNinja', 'SigmaWarlord',
+  // Brainrot kept (7) — the theme still shows up
+  'FanumKid', 'TuahKing', 'RizzMaster', 'OhioMain', 'SigmaBoy', 'BrainBoss', 'SkibidiChad',
+  // Gamer / xX-flex (6)
+  'ProGamer42', 'zombiekid77', 'NoobSlay3r', 'PixelKnight', 'SnipeKid44', 'xX_Sn1per_Xx',
+  // Animal + adjective (8)
+  'NinjaPanda', 'JellyMonster', 'SneakyKitty', 'PinkDragon', 'SpicyTurtle', 'PuddingDragon',
+  'PeachStorm', 'MintyFresh',
+  // Random words / food (10)
+  'CrispyBacon', 'ToastedKing', 'MrCheese', 'CoolBeans99', 'BananaPhone', 'SunnyKid23',
+  'ToadKnight7', 'LemonSlice99', 'BlueRocket', 'PixelSquid',
+  // Lifestyle / scenic (5)
+  'Waves07', 'Starboy_15', 'CloudHopper9', 'BlocxyKing', 'RoboBlast',
 ];
 
 // Per-bot jitter inside a wave — so arrivals trickle in over 30s–5min instead
