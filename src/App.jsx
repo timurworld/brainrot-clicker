@@ -5341,18 +5341,28 @@ export default function App() {
       {activePanel === 'achieve' && (
         <div style={styles.panel} data-panel onClick={e => e.stopPropagation()}>
           <div style={styles.panelTitle}>ACHIEVEMENTS ({game.achievements.length}/20)</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             {ACHIEVEMENTS.map(a => {
               const unlocked = game.achievements.includes(a.id);
               return (
                 <div key={a.id} style={{
-                  padding: '8px 4px', borderRadius: '8px', textAlign: 'center',
+                  padding: '12px 8px', borderRadius: '10px', textAlign: 'center',
                   background: unlocked ? 'rgba(106,13,173,0.3)' : 'rgba(255,255,255,0.05)',
                   border: unlocked ? '1px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
                 }}>
-                  <div style={{ fontSize: '20px' }}>{unlocked ? a.icon : '🔒'}</div>
-                  <div style={{ color: unlocked ? '#fff' : '#666', fontSize: '9px' }}>{a.name}</div>
-                  <div style={{ color: '#aaa', fontSize: '8px' }}>{a.desc}</div>
+                  <div style={{ fontSize: '32px', marginBottom: '4px', lineHeight: 1 }}>
+                    {unlocked ? a.icon : '🔒'}
+                  </div>
+                  <div style={{
+                    color: unlocked ? '#fff' : '#999', fontSize: '13px',
+                    fontWeight: 'bold', letterSpacing: '0.5px', lineHeight: 1.2,
+                    marginBottom: '2px',
+                  }}>{a.name}</div>
+                  <div style={{
+                    color: unlocked ? '#cfcfd6' : '#888', fontSize: '11px',
+                    lineHeight: 1.2, fontFamily: "'Inter', system-ui, sans-serif",
+                    fontWeight: 500,
+                  }}>{a.desc}</div>
                 </div>
               );
             })}
