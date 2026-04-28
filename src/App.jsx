@@ -5354,14 +5354,18 @@ export default function App() {
                     {unlocked ? a.icon : '🔒'}
                   </div>
                   <div style={{
-                    color: unlocked ? '#fff' : '#999', fontSize: '13px',
-                    fontWeight: 'bold', letterSpacing: '0.5px', lineHeight: 1.2,
-                    marginBottom: '2px',
+                    color: unlocked ? '#fff' : '#999',
+                    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                    fontSize: '13px', fontWeight: 700,
+                    letterSpacing: '0.4px', lineHeight: 1.25,
+                    marginBottom: '3px',
+                    textTransform: 'uppercase',
                   }}>{a.name}</div>
                   <div style={{
-                    color: unlocked ? '#cfcfd6' : '#888', fontSize: '11px',
-                    lineHeight: 1.2, fontFamily: "'Inter', system-ui, sans-serif",
-                    fontWeight: 500,
+                    color: unlocked ? '#cfcfd6' : '#888',
+                    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                    fontSize: '11px', fontWeight: 500,
+                    lineHeight: 1.25,
                   }}>{a.desc}</div>
                 </div>
               );
