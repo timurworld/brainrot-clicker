@@ -991,6 +991,24 @@ function loadGame() {
 }
 
 // ============================================================
+// GUEST-TO-ACCOUNT NUDGES
+// Soft conversion prompts shown to guest players (player === null) at
+// emotionally invested moments. Each trigger fires at most once per browser
+// — we track which ones the user has seen in localStorage so we never spam.
+// "Maybe Later" still marks shown so they don't get re-prompted; multiple
+// triggers exist so a guest gets multiple chances over the natural arc.
+// ============================================================
+const NUDGE_KEY = 'brainrot_nudges_shown';
+function getNudgesShown() {
+  try { return JSON.parse(localStorage.getItem(NUDGE_KEY) || '{}'); } catch { return {}; }
+}
+function markNudgeShown(key) {
+  const shown = getNudgesShown();
+  shown[key] = true;
+  try { localStorage.setItem(NUDGE_KEY, JSON.stringify(shown)); } catch {}
+}
+
+// ============================================================
 // WORLD BACKGROUNDS — Immersive CSS scenes for each character
 // ============================================================
 function WorldBackground({ skinId }) {
@@ -2199,6 +2217,11 @@ export default function App() {
   const [dailyReward, setDailyReward] = useState(null);
   const [codeResult, setCodeResult] = useState(null);
   const [ascendConfirm, setAscendConfirm] = useState(false);
+  // Guest-to-account conversion nudge. null = hidden; { trigger: 'firstPrestige' | 'streak3' | 'points1m' } when shown.
+  const [accountNudge, setAccountNudge] = useState(null);
+  // Set when the guest acts on a nudge — tells the register flow to carry
+  // their existing game progress into the new account instead of resetting.
+  const [convertGuest, setConvertGuest] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shopTab, setShopTab] = useState('auto');
   const [reflexGame, setReflexGame] = useState(null);
@@ -2714,6 +2737,16 @@ export default function App() {
       const reward = DAILY_REWARDS[day] * cycle;
       setDailyReward({ day, reward, cycle, streakDays, streakBroken });
       setGame(prev => ({ ...prev, dailyDay: day, dailyCycle: cycle, lastDailyDate: today, streakDays }));
+      // Guest nudge: hitting day 3 of a streak means they've come back twice
+      // — habit forming. Strong moment to ask them to lock in progress.
+      if (!player && streakDays >= 3) {
+        const shown = getNudgesShown();
+        if (!shown.streak3) {
+          markNudgeShown('streak3');
+          // Wait until the daily-reward modal is dismissed before nudging.
+          setTimeout(() => setAccountNudge({ trigger: 'streak3' }), 5000);
+        }
+      }
     }
   }, [screen]);
 
@@ -2816,6 +2849,16 @@ export default function App() {
         setTimeout(() => setAchievementToast(null), 3000);
       }
     });
+    // Guest nudge: crossing 1M lifetime points is a meaningful milestone
+    // and unlocks ascension — strong moment to lock progress in. Defer so
+    // the achievement toast lands first.
+    if (!player && game.lifetimePoints >= 1000000) {
+      const shown = getNudgesShown();
+      if (!shown.points1m) {
+        markNudgeShown('points1m');
+        setTimeout(() => setAccountNudge({ trigger: 'points1m' }), 3500);
+      }
+    }
   }, [game.totalClicks, game.lifetimePoints, game.totalUpgrades, game.unlockedSkins.length, game.usedCodes.length, cps, game.prestigeCount, screen]);
 
   // Skin unlock checker — handles points-unlock (legacy) AND prestige-unlock (V2).
@@ -3113,6 +3156,15 @@ export default function App() {
     setAscendConfirm(false);
     setActivePanel(null);
     setScreen('start');
+    // Guest nudge: first ascension is the strongest emotional moment for
+    // converting a guest to an account. Show it once.
+    if (!player) {
+      const shown = getNudgesShown();
+      if (!shown.firstPrestige) {
+        markNudgeShown('firstPrestige');
+        setTimeout(() => setAccountNudge({ trigger: 'firstPrestige' }), 1400);
+      }
+    }
   };
 
   // ============================================================
@@ -3449,9 +3501,15 @@ export default function App() {
         // change player. Otherwise the auto-save interval can fire with the
         // OLD player's gameRef contents and write that to the new player's
         // cloud row (cross-account contamination → trillionaire bug).
-        const fresh = { ...defaultState(), username: res.player.username };
+        // Guest conversion: when the user came in via the nudge, carry
+        // their existing progress (points, skins, prestige, streak) into
+        // the new account instead of resetting to defaultState.
+        const carryGuestState = convertGuest && !!gameRef.current?.lifetimePoints;
+        const fresh = carryGuestState
+          ? { ...gameRef.current, username: res.player.username }
+          : { ...defaultState(), username: res.player.username };
         gameRef.current = fresh;
-        localStorage.removeItem('brainrot_save');
+        if (!carryGuestState) localStorage.removeItem('brainrot_save');
         setGame(fresh);
         setPlayer(res.player);
         localStorage.setItem('brainrot_player', JSON.stringify(res.player));
@@ -3465,9 +3523,12 @@ export default function App() {
         }, { onConflict: 'player_id' });
         await supabase.from('leaderboard').upsert({
           player_id: res.player.id, username: res.player.username,
-          lifetime_points: 0, prestige_count: 0, equipped_skin: 0,
+          lifetime_points: carryGuestState ? (fresh.lifetimePoints || 0) : 0,
+          prestige_count: carryGuestState ? (fresh.prestigeCount || 0) : 0,
+          equipped_skin: carryGuestState ? (fresh.equippedSkin || 0) : 0,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'player_id' });
+        setConvertGuest(false);
         setScreen('start');
       } else {
         const res = await loginPlayer(loginUsername, loginPin);
@@ -5733,6 +5794,75 @@ export default function App() {
           ))}
         </div>
       )}
+
+      {/* Guest-to-account conversion nudge. Only fires for guests (player == null)
+          at emotionally invested moments. Each trigger fires once per browser. */}
+      {accountNudge && !player && (() => {
+        const headlines = {
+          firstPrestige: { icon: '🧬', title: 'First Ascension!', sub: "You just hit a major milestone — lock it in so you don't lose it." },
+          streak3:       { icon: '🔥', title: '3-Day Streak!',     sub: "You're forming a habit. Save your progress so a browser refresh doesn't reset everything." },
+          points1m:      { icon: '🤑', title: '1 Million Points!', sub: "You've earned a real run — save it before localStorage gets cleared." },
+        };
+        const h = headlines[accountNudge.trigger] || headlines.firstPrestige;
+        return (
+          <div onClick={() => setAccountNudge(null)} style={{
+            position: 'absolute', inset: 0, zIndex: 60,
+            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+            animation: 'fadeIn 0.25s ease-out',
+          }}>
+            <div onClick={e => e.stopPropagation()} style={{
+              maxWidth: '380px', width: '100%',
+              background: 'linear-gradient(160deg, #1a0e3a 0%, #2a1456 60%, #1a0e3a 100%)',
+              borderRadius: '20px', padding: '24px',
+              border: '2px solid rgba(255,159,10,0.55)',
+              boxShadow: '0 0 40px rgba(255,159,10,0.35), 0 0 90px rgba(255,45,120,0.2)',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '52px', marginBottom: '8px', lineHeight: 1 }}>{h.icon}</div>
+              <div style={{
+                fontFamily: FONTS.display, fontSize: '24px', color: '#fff',
+                textShadow: '0 0 20px rgba(255,159,10,0.6)', marginBottom: '6px', lineHeight: 1.1,
+              }}>{h.title}</div>
+              <div style={{
+                fontFamily: FONTS.data, fontSize: '13px', color: 'rgba(255,255,255,0.85)',
+                lineHeight: 1.4, marginBottom: '16px', fontWeight: 500,
+              }}>{h.sub}</div>
+              <div style={{
+                background: 'rgba(0,0,0,0.4)', borderRadius: '12px', padding: '12px',
+                border: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px',
+                fontFamily: FONTS.data, fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.9)',
+                display: 'flex', flexDirection: 'column', gap: '4px',
+              }}>
+                <div style={{ color: '#ffd700', fontSize: '11px', letterSpacing: LETTER_SPACING.wide, textTransform: 'uppercase', marginBottom: '4px' }}>What you'd save</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Lifetime points</span><strong>{formatNumber(game.lifetimePoints)}</strong></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Skins unlocked</span><strong>{game.unlockedSkins?.length || 0}</strong></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Ascensions</span><strong>{game.prestigeCount || 0}</strong></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Daily streak</span><strong>{game.streakDays || 0} day{(game.streakDays || 0) === 1 ? '' : 's'}</strong></div>
+              </div>
+              <button onClick={() => {
+                setAccountNudge(null);
+                setConvertGuest(true);
+                setLoginMode('register');
+                setLoginUsername('');
+                setLoginPin('');
+                setScreen('login');
+              }} style={{
+                width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, #ff6600, #ff2d78)',
+                color: '#fff', fontFamily: FONTS.ui, fontSize: '18px',
+                boxShadow: '0 4px 14px rgba(255,102,0,0.5)', marginBottom: '8px',
+                letterSpacing: LETTER_SPACING.wide,
+              }}>💾 Save Progress</button>
+              <button onClick={() => setAccountNudge(null)} style={{
+                width: '100%', padding: '10px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                background: 'transparent', color: 'rgba(255,255,255,0.5)',
+                fontFamily: FONTS.data, fontSize: '13px', fontWeight: 500,
+              }}>Maybe later</button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Achievement toast */}
       {achievementToast && (
