@@ -5801,7 +5801,7 @@ export default function App() {
         const headlines = {
           firstPrestige: { icon: '🧬', title: 'First Ascension!', sub: "You just hit a major milestone — lock it in so you don't lose it." },
           streak3:       { icon: '🔥', title: '3-Day Streak!',     sub: "You're forming a habit. Save your progress so a browser refresh doesn't reset everything." },
-          points1m:      { icon: '🤑', title: '1 Million Points!', sub: "You've earned a real run — save it before localStorage gets cleared." },
+          points1m:      { icon: '💰', title: '1 Million Points!', sub: "You've earned a real run — save it before localStorage gets cleared." },
         };
         const h = headlines[accountNudge.trigger] || headlines.firstPrestige;
         return (
@@ -5814,19 +5814,20 @@ export default function App() {
             <div onClick={e => e.stopPropagation()} style={{
               maxWidth: '380px', width: '100%',
               background: 'linear-gradient(160deg, #1a0e3a 0%, #2a1456 60%, #1a0e3a 100%)',
-              borderRadius: '20px', padding: '24px',
+              borderRadius: '20px', padding: '28px 24px',
               border: '2px solid rgba(255,159,10,0.55)',
               boxShadow: '0 0 40px rgba(255,159,10,0.35), 0 0 90px rgba(255,45,120,0.2)',
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: '52px', marginBottom: '8px', lineHeight: 1 }}>{h.icon}</div>
+              <div style={{ fontSize: '64px', marginBottom: '14px', lineHeight: 1, filter: 'drop-shadow(0 0 18px rgba(255,159,10,0.45))' }}>{h.icon}</div>
               <div style={{
-                fontFamily: FONTS.display, fontSize: '24px', color: '#fff',
-                textShadow: '0 0 20px rgba(255,159,10,0.6)', marginBottom: '6px', lineHeight: 1.1,
+                fontFamily: FONTS.ui, fontSize: '32px', color: '#fff',
+                marginBottom: '10px', lineHeight: 1.05,
+                letterSpacing: LETTER_SPACING.normal,
               }}>{h.title}</div>
               <div style={{
-                fontFamily: FONTS.data, fontSize: '13px', color: 'rgba(255,255,255,0.85)',
-                lineHeight: 1.4, marginBottom: '16px', fontWeight: 500,
+                fontFamily: FONTS.data, fontSize: '14px', color: 'rgba(255,255,255,0.85)',
+                lineHeight: 1.45, marginBottom: '18px', fontWeight: 500,
               }}>{h.sub}</div>
               <div style={{
                 background: 'rgba(0,0,0,0.4)', borderRadius: '12px', padding: '12px',
