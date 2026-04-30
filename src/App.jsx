@@ -4971,7 +4971,7 @@ export default function App() {
                       <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a2e', fontSize: '28px' }}>🔒</div>
                     )}
                   </div>
-                  <div style={{ color: '#fff', fontFamily: FONTS.data, fontSize: '12px', fontWeight: 700, lineHeight: 1.25, textShadow: '1px 1px 2px #000' }}>{ch.name}</div>
+                  <div style={{ color: '#fff', fontFamily: FONTS.data, fontSize: '15px', fontWeight: 700, lineHeight: 1.2, textShadow: '1px 1px 2px #000' }}>{ch.name}</div>
                   <div style={{ color: tierColor, fontFamily: FONTS.data, fontSize: '10px', fontWeight: 600, marginTop: '2px' }}>
                     {ch.rarity} | {ch.mult}x
                   </div>
