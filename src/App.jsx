@@ -2500,7 +2500,7 @@ export default function App() {
   // V2 wave drops — subscribe to drop_events, maintain currentEvent, detect
   // wave starts and sold-out transitions for full-screen announcements.
   useEffect(() => {
-    const isAdmin = (player?.username || '').toLowerCase() === 'tmoney';
+    const isAdmin = !!player?.is_admin;
     let cancelled = false;
     const refresh = async () => {
       const ev = await fetchActiveDropEvent({ isAdmin });
@@ -2539,11 +2539,11 @@ export default function App() {
       setDropEvent(curr => curr ? { ...curr } : curr);
     }, 1000);
     return () => { cancelled = true; unsub(); clearInterval(tick); };
-  }, [player?.username]);
+  }, [player?.is_admin]);
 
   // V2 locker — fetch + subscribe; show sold-out banner on transition.
   useEffect(() => {
-    const isAdmin = (player?.username || '').toLowerCase() === 'tmoney';
+    const isAdmin = !!player?.is_admin;
     let cancelled = false;
     let lastStatus = null;
     const refresh = async () => {
@@ -2561,7 +2561,7 @@ export default function App() {
     const unsub = subscribeLockers(refresh);
     const tick = setInterval(() => setLocker(c => c ? { ...c } : c), 1000);
     return () => { cancelled = true; unsub(); clearInterval(tick); };
-  }, [player?.username]);
+  }, [player?.is_admin]);
 
   // V2 fusion ticker — pop a top-of-screen banner when anyone fuses.
   useEffect(() => {
@@ -3573,8 +3573,8 @@ export default function App() {
   // ============================================================
   if (screen === 'start') {
     // Live-event teaser — reuses the existing dropEvent / locker state.
-    const liveLocker = locker && locker.status === 'active' && (!locker.admin_only || (player?.username || '').toLowerCase() === 'tmoney');
-    const liveDrop   = dropEvent && dropEvent.status === 'active' && (!dropEvent.admin_only || (player?.username || '').toLowerCase() === 'tmoney');
+    const liveLocker = locker && locker.status === 'active' && (!locker.admin_only || !!player?.is_admin);
+    const liveDrop   = dropEvent && dropEvent.status === 'active' && (!dropEvent.admin_only || !!player?.is_admin);
 
     // Hero character — context-aware:
     //   1. Active locker → show its output skin (Hockey Bros etc.) — direct FOMO
