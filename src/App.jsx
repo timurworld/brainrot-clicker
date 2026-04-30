@@ -20,9 +20,10 @@ import {
 // codebase. Loaded via index.html: Bangers, Bungee Shade, Press Start 2P.
 const FONTS = {
   display: "'Bungee Shade', cursive",       // hero numbers, panel titles
-  ui:      "'Bangers', cursive",             // body, buttons, cards, descriptions
+  ui:      "'Bangers', cursive",             // hero CTAs, big character names, modal action buttons
+  data:    "'Fredoka', system-ui, sans-serif", // dense info: leaderboards, achievement lists, tab badges, tier/stat chips
   meta:    "'Press Start 2P', monospace",   // tiny system labels (timestamps, opt-in, pool readouts)
-  symbol:  "system-ui, -apple-system, 'Segoe UI', sans-serif", // glyphs (∞, math) — Bangers/Bungee Shade render these lopsided
+  symbol:  "system-ui, -apple-system, 'Segoe UI', sans-serif", // glyphs (∞, math) — display fonts render these lopsided
 };
 
 // Canonical letter-spacing rhythm. Use these instead of arbitrary decimal
@@ -4970,8 +4971,8 @@ export default function App() {
                       <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a2e', fontSize: '28px' }}>🔒</div>
                     )}
                   </div>
-                  <div style={{ color: '#fff', fontSize: '12px', lineHeight: 1.25, textShadow: '1px 1px 2px #000', fontWeight: 'bold' }}>{ch.name}</div>
-                  <div style={{ color: tierColor, fontSize: '10px', marginTop: '2px' }}>
+                  <div style={{ color: '#fff', fontFamily: FONTS.data, fontSize: '12px', fontWeight: 700, lineHeight: 1.25, textShadow: '1px 1px 2px #000' }}>{ch.name}</div>
+                  <div style={{ color: tierColor, fontFamily: FONTS.data, fontSize: '10px', fontWeight: 600, marginTop: '2px' }}>
                     {ch.rarity} | {ch.mult}x
                   </div>
                   {/* Top-LEFT badge: ONE rule across all skin types.
@@ -4984,27 +4985,27 @@ export default function App() {
                     <div title={`You own ${totalQty} of this skin`} style={{
                       position: 'absolute', top: '6px', left: '6px',
                       background: 'rgba(0,0,0,0.85)', borderRadius: '8px',
-                      padding: '4px 9px', fontSize: '15px', color: '#9be7ff', fontWeight: 'bold',
+                      padding: '4px 9px', fontFamily: FONTS.data, fontSize: '15px', color: '#9be7ff', fontWeight: 700,
                       letterSpacing: LETTER_SPACING.tight,
                       boxShadow: '0 0 8px rgba(155,231,255,0.35)',
                       border: '1px solid rgba(155,231,255,0.45)',
                     }}>×{totalQty}</div>
                   )}
-                  {!unlocked && <div style={{ color: '#aaa', fontSize: '10px' }}>{unlockHint}</div>}
-                  {equipped && <div title="Currently wearing this skin — its tap-power multiplier is active" style={{ color: '#ffd700', fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>✅ ACTIVE NOW</div>}
+                  {!unlocked && <div style={{ color: '#aaa', fontFamily: FONTS.data, fontSize: '10px', fontWeight: 500 }}>{unlockHint}</div>}
+                  {equipped && <div title="Currently wearing this skin — its tap-power multiplier is active" style={{ color: '#ffd700', fontFamily: FONTS.data, fontSize: '10px', fontWeight: 700, marginTop: '2px' }}>✅ ACTIVE NOW</div>}
                   {/* Trade-lock / listed corner badges */}
                   {locked && (
                     <div title="Trade-locked for 24h after fusion" style={{
                       position: 'absolute', top: '6px', right: '6px',
                       background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
-                      padding: '2px 5px', fontSize: '10px', color: '#ffb347',
+                      padding: '2px 5px', fontFamily: FONTS.data, fontSize: '10px', fontWeight: 600, color: '#ffb347',
                     }}>🔒 {formatLockCountdown(invRow.trade_lock_until)}</div>
                   )}
                   {reserved && (
                     <div title="On the trade board — tap CANCEL below to retract" style={{
                       position: 'absolute', top: '6px', right: '6px',
                       background: 'rgba(0,0,0,0.7)', borderRadius: '6px',
-                      padding: '2px 5px', fontSize: '10px', color: '#9be7ff',
+                      padding: '2px 5px', fontFamily: FONTS.data, fontSize: '10px', fontWeight: 600, color: '#9be7ff',
                     }}>📋 Trade Listed</div>
                   )}
                   {/* TRADE / CANCEL button — only render when we have something
@@ -5345,7 +5346,7 @@ export default function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{
                   color: i < 3 ? '#ffd700' : '#aaa',
-                  fontFamily: FONTS.ui,
+                  fontFamily: FONTS.data,
                   fontSize: '15px', fontWeight: 800, letterSpacing: LETTER_SPACING.tight,
                   width: '34px',
                 }}>#{i + 1}</span>
@@ -5358,7 +5359,7 @@ export default function App() {
                 <div>
                   <div style={{
                     color: entry.isPlayer ? '#ffd700' : '#fff',
-                    fontFamily: FONTS.ui,
+                    fontFamily: FONTS.data,
                     fontSize: '14px', fontWeight: 700, letterSpacing: LETTER_SPACING.tight,
                     textTransform: 'uppercase',
                   }}>
@@ -5368,7 +5369,7 @@ export default function App() {
               </div>
               <div style={{
                 color: '#ffd700',
-                fontFamily: FONTS.ui,
+                fontFamily: FONTS.data,
                 fontSize: '14px', fontWeight: 700,
               }}>{formatNumber(entry.pts)}</div>
             </div>
@@ -5401,7 +5402,7 @@ export default function App() {
                   </div>
                   <div style={{
                     color: unlocked ? '#fff' : '#999',
-                    fontFamily: FONTS.ui,
+                    fontFamily: FONTS.data,
                     fontSize: '13px', fontWeight: 700,
                     letterSpacing: LETTER_SPACING.tight, lineHeight: 1.25,
                     marginBottom: '3px',
@@ -5409,7 +5410,7 @@ export default function App() {
                   }}>{a.name}</div>
                   <div style={{
                     color: unlocked ? '#cfcfd6' : '#888',
-                    fontFamily: FONTS.ui,
+                    fontFamily: FONTS.data,
                     fontSize: '11px', fontWeight: 500,
                     lineHeight: 1.25,
                   }}>{a.desc}</div>
