@@ -6,9 +6,10 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Best-effort IP geolocation. Fire-and-forget — never blocks login. Failures
-// (network, rate limit, DNS, ad-blocker) are silent. Updates the players
-// row with country/region/city for "where are my players?" analytics.
-// Schema columns added in scripts/sql/09_player_geo.sql.
+// (network, rate limit, DNS, ad-blocker, RPC error) are silent. Routes the
+// write through public.player_update_geo (SECURITY DEFINER) because RLS on
+// the players table blocks direct UPDATE from the anon client — see
+// scripts/sql/09b_player_geo_rpc.sql. Schema columns are in 09_player_geo.sql.
 async function captureGeo(playerId) {
   if (!playerId) return;
   try {
@@ -16,13 +17,13 @@ async function captureGeo(playerId) {
     if (!res.ok) return;
     const d = await res.json();
     if (!d || d.error) return;
-    await supabase.from('players').update({
-      country:      d.country_name || null,
-      country_code: d.country_code || null,
-      region:       d.region || null,
-      city:         d.city || null,
-      geo_updated_at: new Date().toISOString(),
-    }).eq('id', playerId);
+    await supabase.rpc('player_update_geo', {
+      p_player_id:    playerId,
+      p_country:      d.country_name || null,
+      p_country_code: d.country_code || null,
+      p_region:       d.region || null,
+      p_city:         d.city || null,
+    });
   } catch { /* never block auth on geo */ }
 }
 
