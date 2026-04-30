@@ -72,11 +72,15 @@ const CHARACTERS = [
     bg: 'linear-gradient(180deg, #ff6d00 0%, #ffab00 25%, #ff8f00 50%, #ff6d00 75%, #e65100 100%)' },
   // Sportini event skins — earned via drops (ingredients) or locker fusion (output).
   // obtain !== 'points' hides them from the standard skins shop.
-  { id: 20, name: 'Stick Stick',  file: '20_stick_stick.png',  bgNum: '20', rarity: 'Rare',    unlock: 0, emoji: '🏒', color: '#8b4513', mult: 1.2, tag: 'Sportini', obtain: 'drop',
+  // Sportini rarity + multipliers brought in line with the marketing site
+  // (timur-world Projects.tsx) — that's the published source of truth.
+  // DO NOT change these values without explicit approval; they affect live
+  // player tap power and are visible to anyone browsing timur.world.
+  { id: 20, name: 'Stick Stick',  file: '20_stick_stick.png',  bgNum: '20', rarity: 'Secret',  unlock: 0, emoji: '🏒', color: '#8b4513', mult: 9.5, tag: 'Sportini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
-  { id: 21, name: 'No My Pucks',  file: '21_no_my_pucks.png',  bgNum: '20', rarity: 'Rare',    unlock: 0, emoji: '🥅', color: '#1a1a1a', mult: 1.2, tag: 'Sportini', obtain: 'drop',
+  { id: 21, name: 'No My Pucks',  file: '21_no_my_pucks.png',  bgNum: '20', rarity: 'Secret',  unlock: 0, emoji: '🥅', color: '#1a1a1a', mult: 12,  tag: 'Sportini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
-  { id: 22, name: 'Hockey Bros',  file: '22_hockey_bros.png',  bgNum: '20', rarity: 'Limited',   unlock: 0, emoji: '🏆', color: '#c0392b', mult: 12,  tag: 'Sportini', obtain: 'fusion',
+  { id: 22, name: 'Hockey Bros',  file: '22_hockey_bros.png',  bgNum: '20', rarity: 'Limited', unlock: 0, emoji: '🏆', color: '#c0392b', mult: 22,  tag: 'Sportini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #c0392b 0%, #ff6b6b 35%, #e74c3c 65%, #922b21 100%)' },
   // ▼ PRESTIGE SKINS — unlocked by ascending N times.
   //   prestigeUnlock = number of ascensions required.
@@ -3485,6 +3489,81 @@ export default function App() {
   }
 
   // ============================================================
+  // GUEST CONVERSION NUDGE — defined here (before any screen branch)
+  // so it can render across login / start / game without duplication.
+  // The doAscend handler transitions to screen='start' before the
+  // deferred setTimeout fires, so a modal scoped to the game branch only
+  // would be unmounted before it could appear after first prestige.
+  // ============================================================
+  const accountNudgeModal = (accountNudge && !player) ? (() => {
+    const headlines = {
+      firstPrestige: { icon: '🧬', title: 'First Ascension!', sub: "You just hit a major milestone — lock it in so you don't lose it." },
+      streak3:       { icon: '🔥', title: '3-Day Streak!',     sub: "You're forming a habit. Save your progress so a browser refresh doesn't reset everything." },
+      points1m:      { icon: '💰', title: '1 Million Points!', sub: "You've earned a real run — save it before localStorage gets cleared." },
+    };
+    const h = headlines[accountNudge.trigger] || headlines.firstPrestige;
+    return (
+      <div onClick={() => setAccountNudge(null)} style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+        animation: 'fadeIn 0.25s ease-out',
+      }}>
+        <div onClick={e => e.stopPropagation()} style={{
+          maxWidth: '380px', width: '100%',
+          background: 'linear-gradient(160deg, #1a0e3a 0%, #2a1456 60%, #1a0e3a 100%)',
+          borderRadius: '20px', padding: '28px 24px',
+          border: '2px solid rgba(255,159,10,0.55)',
+          boxShadow: '0 0 40px rgba(255,159,10,0.35), 0 0 90px rgba(255,45,120,0.2)',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '64px', marginBottom: '14px', lineHeight: 1, filter: 'drop-shadow(0 0 18px rgba(255,159,10,0.45))' }}>{h.icon}</div>
+          <div style={{
+            fontFamily: FONTS.ui, fontSize: '32px', color: '#fff',
+            marginBottom: '10px', lineHeight: 1.05,
+            letterSpacing: LETTER_SPACING.normal,
+          }}>{h.title}</div>
+          <div style={{
+            fontFamily: FONTS.data, fontSize: '14px', color: 'rgba(255,255,255,0.85)',
+            lineHeight: 1.45, marginBottom: '18px', fontWeight: 500,
+          }}>{h.sub}</div>
+          <div style={{
+            background: 'rgba(0,0,0,0.4)', borderRadius: '12px', padding: '12px',
+            border: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px',
+            fontFamily: FONTS.data, fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.9)',
+            display: 'flex', flexDirection: 'column', gap: '4px',
+          }}>
+            <div style={{ color: '#ffd700', fontSize: '11px', letterSpacing: LETTER_SPACING.wide, textTransform: 'uppercase', marginBottom: '4px' }}>What you'd save</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Lifetime points</span><strong>{formatNumber(game.lifetimePoints)}</strong></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Skins unlocked</span><strong>{game.unlockedSkins?.length || 0}</strong></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Ascensions</span><strong>{game.prestigeCount || 0}</strong></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Daily streak</span><strong>{game.streakDays || 0} day{(game.streakDays || 0) === 1 ? '' : 's'}</strong></div>
+          </div>
+          <button onClick={() => {
+            setAccountNudge(null);
+            setConvertGuest(true);
+            setLoginMode('register');
+            setLoginUsername('');
+            setLoginPin('');
+            setScreen('login');
+          }} style={{
+            width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #ff6600, #ff2d78)',
+            color: '#fff', fontFamily: FONTS.ui, fontSize: '18px',
+            boxShadow: '0 4px 14px rgba(255,102,0,0.5)', marginBottom: '8px',
+            letterSpacing: LETTER_SPACING.wide,
+          }}>💾 Save Progress</button>
+          <button onClick={() => setAccountNudge(null)} style={{
+            width: '100%', padding: '10px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+            background: 'transparent', color: 'rgba(255,255,255,0.5)',
+            fontFamily: FONTS.data, fontSize: '13px', fontWeight: 500,
+          }}>Maybe later</button>
+        </div>
+      </div>
+    );
+  })() : null;
+
+  // ============================================================
   // LOGIN / REGISTER SCREEN
   // ============================================================
   if (screen === 'login') {
@@ -3664,6 +3743,7 @@ export default function App() {
         position: 'relative', overflow: 'hidden',
       }}>
         <BackToSiteLink />
+        {accountNudgeModal}
 
         {/* Animated stage spotlight beams */}
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
@@ -5795,75 +5875,11 @@ export default function App() {
         </div>
       )}
 
-      {/* Guest-to-account conversion nudge. Only fires for guests (player == null)
-          at emotionally invested moments. Each trigger fires once per browser. */}
-      {accountNudge && !player && (() => {
-        const headlines = {
-          firstPrestige: { icon: '🧬', title: 'First Ascension!', sub: "You just hit a major milestone — lock it in so you don't lose it." },
-          streak3:       { icon: '🔥', title: '3-Day Streak!',     sub: "You're forming a habit. Save your progress so a browser refresh doesn't reset everything." },
-          points1m:      { icon: '💰', title: '1 Million Points!', sub: "You've earned a real run — save it before localStorage gets cleared." },
-        };
-        const h = headlines[accountNudge.trigger] || headlines.firstPrestige;
-        return (
-          <div onClick={() => setAccountNudge(null)} style={{
-            position: 'absolute', inset: 0, zIndex: 60,
-            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
-            animation: 'fadeIn 0.25s ease-out',
-          }}>
-            <div onClick={e => e.stopPropagation()} style={{
-              maxWidth: '380px', width: '100%',
-              background: 'linear-gradient(160deg, #1a0e3a 0%, #2a1456 60%, #1a0e3a 100%)',
-              borderRadius: '20px', padding: '28px 24px',
-              border: '2px solid rgba(255,159,10,0.55)',
-              boxShadow: '0 0 40px rgba(255,159,10,0.35), 0 0 90px rgba(255,45,120,0.2)',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: '64px', marginBottom: '14px', lineHeight: 1, filter: 'drop-shadow(0 0 18px rgba(255,159,10,0.45))' }}>{h.icon}</div>
-              <div style={{
-                fontFamily: FONTS.ui, fontSize: '32px', color: '#fff',
-                marginBottom: '10px', lineHeight: 1.05,
-                letterSpacing: LETTER_SPACING.normal,
-              }}>{h.title}</div>
-              <div style={{
-                fontFamily: FONTS.data, fontSize: '14px', color: 'rgba(255,255,255,0.85)',
-                lineHeight: 1.45, marginBottom: '18px', fontWeight: 500,
-              }}>{h.sub}</div>
-              <div style={{
-                background: 'rgba(0,0,0,0.4)', borderRadius: '12px', padding: '12px',
-                border: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px',
-                fontFamily: FONTS.data, fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.9)',
-                display: 'flex', flexDirection: 'column', gap: '4px',
-              }}>
-                <div style={{ color: '#ffd700', fontSize: '11px', letterSpacing: LETTER_SPACING.wide, textTransform: 'uppercase', marginBottom: '4px' }}>What you'd save</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Lifetime points</span><strong>{formatNumber(game.lifetimePoints)}</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Skins unlocked</span><strong>{game.unlockedSkins?.length || 0}</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Ascensions</span><strong>{game.prestigeCount || 0}</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Daily streak</span><strong>{game.streakDays || 0} day{(game.streakDays || 0) === 1 ? '' : 's'}</strong></div>
-              </div>
-              <button onClick={() => {
-                setAccountNudge(null);
-                setConvertGuest(true);
-                setLoginMode('register');
-                setLoginUsername('');
-                setLoginPin('');
-                setScreen('login');
-              }} style={{
-                width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, #ff6600, #ff2d78)',
-                color: '#fff', fontFamily: FONTS.ui, fontSize: '18px',
-                boxShadow: '0 4px 14px rgba(255,102,0,0.5)', marginBottom: '8px',
-                letterSpacing: LETTER_SPACING.wide,
-              }}>💾 Save Progress</button>
-              <button onClick={() => setAccountNudge(null)} style={{
-                width: '100%', padding: '10px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                background: 'transparent', color: 'rgba(255,255,255,0.5)',
-                fontFamily: FONTS.data, fontSize: '13px', fontWeight: 500,
-              }}>Maybe later</button>
-            </div>
-          </div>
-        );
-      })()}
+      {/* Guest-to-account conversion nudge — extracted to accountNudgeModal
+          above the screen branches so it can also render on the start screen
+          after first prestige (which transitions screen='start' before the
+          deferred setTimeout fires). */}
+      {accountNudgeModal}
 
       {/* Achievement toast */}
       {achievementToast && (
