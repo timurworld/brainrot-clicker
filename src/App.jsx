@@ -14,6 +14,27 @@ import {
 // ============================================================
 // CONSTANTS & CONFIG
 // ============================================================
+
+// Typography registry — three roles, three fonts. Reference these constants
+// instead of hard-coding font strings so we don't drift back into a five-font
+// codebase. Loaded via index.html: Bangers, Bungee Shade, Press Start 2P.
+const FONTS = {
+  display: "'Bungee Shade', cursive",       // hero numbers, panel titles
+  ui:      "'Bangers', cursive",             // body, buttons, cards, descriptions
+  meta:    "'Press Start 2P', monospace",   // tiny system labels (timestamps, opt-in, pool readouts)
+  symbol:  "system-ui, -apple-system, 'Segoe UI', sans-serif", // glyphs (∞, math) — Bangers/Bungee Shade render these lopsided
+};
+
+// Canonical letter-spacing rhythm. Use these instead of arbitrary decimal
+// values — keeps typographic spacing predictable across surfaces.
+const LETTER_SPACING = {
+  tight:   '0.5px',
+  normal:  '1px',
+  wide:    '2px',
+  title:   '3px',
+  display: '4px',
+};
+
 const CHARACTERS = [
   { id: 1, name: 'Noobini Lovini', file: '01_noobini_lovini.png', bgNum: '01', rarity: 'Common', unlock: 0, emoji: '💖', color: '#ff69b4', mult: 1,
     bg: 'linear-gradient(180deg, #6a11cb 0%, #bc4dff 50%, #6a11cb 100%)' },
@@ -1342,30 +1363,30 @@ function TutorialOverlay({ step, onNext, onSkip }) {
         maxWidth: '380px', width: '100%', textAlign: 'center',
       }}>
         <div style={{
-          fontFamily: "'Press Start 2P', monospace", fontSize: '9px',
-          color: '#a259ff', letterSpacing: '2px', marginBottom: '8px',
+          fontFamily: FONTS.meta, fontSize: '9px',
+          color: '#a259ff', letterSpacing: LETTER_SPACING.wide, marginBottom: '8px',
         }}>STEP {step + 1} OF {TUTORIAL_STEPS.length}</div>
         <div style={{ fontSize: '64px', marginBottom: '8px' }}>{s.emoji}</div>
         <div style={{
-          fontFamily: "'Bungee Shade', cursive", fontSize: '22px',
-          color: '#fff', letterSpacing: '1px', marginBottom: '10px',
+          fontFamily: FONTS.display, fontSize: '22px',
+          color: '#fff', letterSpacing: LETTER_SPACING.normal, marginBottom: '10px',
           textShadow: '0 0 12px rgba(162,89,255,0.7)',
         }}>{s.title}</div>
         <div style={{
-          fontFamily: "'Bangers', cursive", fontSize: '17px', color: 'rgba(255,255,255,0.85)',
-          lineHeight: 1.4, letterSpacing: '0.5px', marginBottom: '20px',
+          fontFamily: FONTS.ui, fontSize: '17px', color: 'rgba(255,255,255,0.85)',
+          lineHeight: 1.4, letterSpacing: LETTER_SPACING.tight, marginBottom: '20px',
         }}>{s.body}</div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={onSkip} style={{
             padding: '10px 14px', borderRadius: '10px',
             border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer',
             background: 'transparent', color: 'rgba(255,255,255,0.6)',
-            fontFamily: "'Bangers', cursive", fontSize: '14px',
+            fontFamily: FONTS.ui, fontSize: '14px',
           }}>Skip</button>
           <button onClick={onNext} style={{
             flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
             background: 'linear-gradient(135deg, #a259ff, #6a0dad)', color: '#fff',
-            fontFamily: "'Bangers', cursive", fontSize: '17px', letterSpacing: '1px',
+            fontFamily: FONTS.ui, fontSize: '17px', letterSpacing: LETTER_SPACING.normal,
           }}>{isLast ? '🎮 LET\'S GO!' : 'NEXT →'}</button>
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '14px' }}>
@@ -1397,8 +1418,8 @@ function BackToSiteLink() {
         background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
         border: '1px solid rgba(255,255,255,0.18)',
         color: 'rgba(255,255,255,0.85)', textDecoration: 'none',
-        fontFamily: "'Press Start 2P', monospace", fontSize: '9px',
-        letterSpacing: '1.5px',
+        fontFamily: FONTS.meta, fontSize: '9px',
+        letterSpacing: LETTER_SPACING.wide,
       }}
     >
       ← TIMUR.WORLD
@@ -1430,14 +1451,14 @@ function AdminCountdown({ schedule }) {
       background: 'linear-gradient(135deg, rgba(162,89,255,0.95), rgba(106,13,173,0.95))',
       borderBottom: '2px solid rgba(255,255,255,0.18)',
       boxShadow: '0 4px 20px rgba(162,89,255,0.4)',
-      color: '#fff', fontFamily: "'Bangers', cursive",
+      color: '#fff', fontFamily: FONTS.ui,
       fontSize: 'clamp(16px, 4vw, 22px)',
-      letterSpacing: '1px', textAlign: 'center', lineHeight: 1.2,
+      letterSpacing: LETTER_SPACING.normal, textAlign: 'center', lineHeight: 1.2,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       gap: '10px', flexWrap: 'wrap',
     }}>
       <span style={{ fontSize: '1.2em' }}>⚡</span>
-      <span style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '0.55em', color: 'rgba(255,255,255,0.75)', letterSpacing: '2px' }}>
+      <span style={{ fontFamily: FONTS.meta, fontSize: '0.55em', color: 'rgba(255,255,255,0.75)', letterSpacing: LETTER_SPACING.wide }}>
         ADMIN ABUSE IN
       </span>
       <span className="font-mono" style={{ fontWeight: 700, fontSize: '1.1em', color: '#fff' }}>
@@ -1481,9 +1502,9 @@ function AdminEffectDisco() {
     {/* Banner */}
     <div style={{
       position: 'absolute', top: '14%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
-      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 6vw, 36px)', color: '#fff',
+      fontFamily: FONTS.display, fontSize: 'clamp(22px, 6vw, 36px)', color: '#fff',
       textShadow: '0 0 18px #ff00ff, 0 0 36px #00ffff, 3px 3px 0 #000',
-      letterSpacing: '3px', whiteSpace: 'nowrap',
+      letterSpacing: LETTER_SPACING.title, whiteSpace: 'nowrap',
       animation: 'discoBannerPulse 0.5s ease-in-out infinite',
     }}>🎧 DJ TIMUR ON THE DECKS 🎧</div>
     <style>{`
@@ -1613,9 +1634,9 @@ function AdminEffectFireworks({ setGame }) {
     {/* Banner */}
     <div style={{
       position: 'absolute', top: '11%', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
-      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(26px, 6.5vw, 40px)', color: '#fff',
+      fontFamily: FONTS.display, fontSize: 'clamp(26px, 6.5vw, 40px)', color: '#fff',
       textShadow: '0 0 18px #ffd900, 0 0 40px #ff3060, 0 0 60px #ff00ff, 4px 4px 0 #000',
-      letterSpacing: '3px', whiteSpace: 'nowrap',
+      letterSpacing: LETTER_SPACING.title, whiteSpace: 'nowrap',
       animation: 'fwBannerPulse 1.6s ease-in-out infinite',
     }}>🎆 FIREWORKS SHOW 🎆</div>
     <style>{`
@@ -1671,9 +1692,9 @@ function AdminEffectPoop() {
     })}
     <div style={{
       position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
-      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
+      fontFamily: FONTS.display, fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
       textShadow: '0 0 18px #8b5a2b, 0 0 36px #5a3a18, 3px 3px 0 #000',
-      letterSpacing: '2px', whiteSpace: 'nowrap',
+      letterSpacing: LETTER_SPACING.wide, whiteSpace: 'nowrap',
     }}>💩 POOP STORM 💩</div>
     <style>{`
       @keyframes poopFall0 { 0% { top: -60px; transform: rotate(0deg); } 100% { top: 110%; transform: rotate(var(--rot)); } }
@@ -1721,9 +1742,9 @@ function AdminEffectRocket() {
     {/* Banner */}
     <div style={{
       position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
-      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
+      fontFamily: FONTS.display, fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
       textShadow: '0 0 18px #ff6a00, 0 0 36px #ffd900, 3px 3px 0 #000',
-      letterSpacing: '2px', whiteSpace: 'nowrap',
+      letterSpacing: LETTER_SPACING.wide, whiteSpace: 'nowrap',
       animation: 'rocketBannerShake 0.18s linear infinite',
     }}>🚀 LIFT OFF 🚀</div>
     <style>{`
@@ -1798,7 +1819,7 @@ function AdminEffectCats({ setGame }) {
     {popups.map(p => (
       <div key={p.id} style={{
         position: 'fixed', top: p.y, left: p.x, zIndex: 30,
-        fontFamily: "'Bungee Shade', cursive", fontSize: '24px', color: '#ffd700',
+        fontFamily: FONTS.display, fontSize: '24px', color: '#ffd700',
         textShadow: '0 0 12px #ff69b4, 2px 2px 0 #000', pointerEvents: 'none',
         animation: 'catCatchPop 0.9s ease-out forwards',
         transform: 'translate(-50%, -50%)',
@@ -1808,7 +1829,7 @@ function AdminEffectCats({ setGame }) {
     {[...Array(8)].map((_, i) => (
       <div key={'m'+i} style={{
         position: 'absolute', top: `${10 + (i * 11) % 70}%`, left: `${(i * 13) % 90}%`,
-        fontFamily: "'Bangers', cursive", fontSize: '22px', color: '#fff',
+        fontFamily: FONTS.ui, fontSize: '22px', color: '#fff',
         textShadow: '0 0 8px #ff69b4, 2px 2px 0 #000',
         zIndex: 16, opacity: 0,
         animation: `meowBubble 1.8s ease-out ${i * 0.4}s infinite`,
@@ -1816,9 +1837,9 @@ function AdminEffectCats({ setGame }) {
     ))}
     <div style={{
       position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
-      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
+      fontFamily: FONTS.display, fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
       textShadow: '0 0 18px #ff69b4, 0 0 36px #ff00ff, 3px 3px 0 #000',
-      letterSpacing: '2px', whiteSpace: 'nowrap',
+      letterSpacing: LETTER_SPACING.wide, whiteSpace: 'nowrap',
     }}>🐱 CAT RAVE 🐱</div>
     <style>{`
       @keyframes catZoomL { 0% { left: -80px; } 100% { left: calc(100% + 80px); } }
@@ -1854,16 +1875,16 @@ function AdminEffectTsunami({ setGame }) {
     {[...Array(8)].map((_, i) => (
       <div key={'p'+i} style={{
         position: 'absolute', bottom: '40%', left: `${10 + i * 11}%`,
-        fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(16px, 4vw, 22px)', color: '#ffd700',
+        fontFamily: FONTS.display, fontSize: 'clamp(16px, 4vw, 22px)', color: '#ffd700',
         textShadow: '0 0 10px #ff9500, 2px 2px 0 #000', zIndex: 17, opacity: 0,
         animation: `coinScore 1.5s ease-out ${i * 0.3}s infinite`,
       }}>+100</div>
     ))}
     <div style={{
       position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
-      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
+      fontFamily: FONTS.display, fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff',
       textShadow: '0 0 18px #00d4ff, 0 0 36px #0066cc, 3px 3px 0 #000',
-      letterSpacing: '2px', whiteSpace: 'nowrap',
+      letterSpacing: LETTER_SPACING.wide, whiteSpace: 'nowrap',
     }}>🌊 COIN TSUNAMI 🌊</div>
     <style>{`
       @keyframes tsuWave1 { 0%, 100% { transform: translateY(20px) skewX(-2deg); } 50% { transform: translateY(-15px) skewX(2deg); } }
@@ -1915,9 +1936,9 @@ function AdminEffectLightning() {
     ))}
     <div style={{
       position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
-      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff700',
+      fontFamily: FONTS.display, fontSize: 'clamp(22px, 5.5vw, 32px)', color: '#fff700',
       textShadow: '0 0 18px #fff700, 0 0 36px #fff, 3px 3px 0 #000',
-      letterSpacing: '2px', whiteSpace: 'nowrap',
+      letterSpacing: LETTER_SPACING.wide, whiteSpace: 'nowrap',
       animation: 'lightStrike 1s ease-out infinite',
     }}>⚡ THUNDER STRIKES ⚡</div>
     <style>{`
@@ -1965,10 +1986,10 @@ function AdminEffectBomb({ setGame }) {
     {/* BOOM text */}
     <div style={{
       position: 'absolute', top: '40%', left: '50%', zIndex: 21,
-      fontFamily: "'Bungee Shade', cursive", fontSize: 'clamp(60px, 18vw, 140px)',
+      fontFamily: FONTS.display, fontSize: 'clamp(60px, 18vw, 140px)',
       color: '#fff',
       textShadow: '0 0 20px #ff4400, 0 0 40px #ff0000, 0 0 60px #ffd700, 6px 6px 0 #000',
-      letterSpacing: '4px', opacity: 0,
+      letterSpacing: LETTER_SPACING.display, opacity: 0,
       animation: 'boomText 2.4s ease-out infinite',
       transform: 'translate(-50%, -50%)',
       whiteSpace: 'nowrap', pointerEvents: 'none',
@@ -2037,7 +2058,7 @@ function AdminEffectCrowd() {
       fontSize: 'clamp(28px, 8vw, 56px)', fontWeight: 900, color: '#fff',
       textShadow: '0 0 25px #00e87a, 0 0 50px #00e87a, 4px 4px 0 #000',
       animation: 'crowdPulse 0.45s ease-in-out infinite',
-      fontFamily: "'Bungee Shade', cursive", letterSpacing: '4px', lineHeight: 1.1,
+      fontFamily: FONTS.display, letterSpacing: LETTER_SPACING.display, lineHeight: 1.1,
     }}>THE CROWD<br/>GOES WILD</div>
     <style>{`
       @keyframes spotSweep { 0% { transform: rotate(-30deg); } 100% { transform: rotate(30deg); } }
@@ -2091,16 +2112,16 @@ function TradeListingRow({ listing, offerSkin, wantSkin, isMine, onAccept, onCan
         {isActive && isMine && onCancel && (
           <button onClick={onCancel} style={{
             padding: '2px 8px', borderRadius: '5px', border: '1px solid #aa5555',
-            background: 'transparent', color: '#ff8888', fontFamily: "'Bangers', cursive",
-            fontSize: '10px', cursor: 'pointer', letterSpacing: '0.5px',
+            background: 'transparent', color: '#ff8888', fontFamily: FONTS.ui,
+            fontSize: '10px', cursor: 'pointer', letterSpacing: LETTER_SPACING.tight,
           }}>CANCEL</button>
         )}
         {isActive && !isMine && onAccept && (canAccept ? (
           <button onClick={onAccept} style={{
             padding: '3px 10px', borderRadius: '5px', border: 'none',
             background: 'linear-gradient(135deg, #2ecc71, #27ae60)', color: '#fff',
-            fontFamily: "'Bangers', cursive", fontSize: '11px', cursor: 'pointer',
-            boxShadow: '0 0 8px rgba(46,204,113,0.4)', letterSpacing: '0.5px',
+            fontFamily: FONTS.ui, fontSize: '11px', cursor: 'pointer',
+            boxShadow: '0 0 8px rgba(46,204,113,0.4)', letterSpacing: LETTER_SPACING.tight,
           }}>ACCEPT</button>
         ) : (
           <button
@@ -2110,8 +2131,8 @@ function TradeListingRow({ listing, offerSkin, wantSkin, isMine, onAccept, onCan
               padding: '3px 10px', borderRadius: '5px',
               border: '1px solid rgba(255,140,0,0.4)',
               background: 'rgba(255,140,0,0.12)', color: '#ff9500',
-              fontFamily: "'Bangers', cursive", fontSize: '10px',
-              cursor: 'not-allowed', letterSpacing: '0.5px', whiteSpace: 'nowrap',
+              fontFamily: FONTS.ui, fontSize: '10px',
+              cursor: 'not-allowed', letterSpacing: LETTER_SPACING.tight, whiteSpace: 'nowrap',
             }}
           >
             NEED {listing.want_quantity > 1 ? `${listing.want_quantity}× ` : ''}
@@ -3260,7 +3281,7 @@ export default function App() {
   const tapScale = shaking ? 'scale(0.92)' : 'scale(1)';
   const styles = {
     container: {
-      width: '100vw', height: '100vh', fontFamily: "'Bangers', cursive",
+      width: '100vw', height: '100vh', fontFamily: FONTS.ui,
       background: lightningFlash ? '#fff' : (currentSkin.bg || getWeatherBg(weather)),
       transition: 'background 2s ease', overflow: 'hidden', position: 'relative',
       userSelect: 'none', WebkitUserSelect: 'none',
@@ -3271,20 +3292,20 @@ export default function App() {
     },
     points: {
       fontSize: 'clamp(42px, 12vw, 72px)', color: '#fff', textAlign: 'center',
-      fontFamily: "'Bungee Shade', cursive",
+      fontFamily: FONTS.display,
       textShadow: '0 0 30px rgba(255,215,0,0.9), 0 0 60px rgba(255,100,0,0.5), 3px 3px 0 #000',
-      letterSpacing: '2px', lineHeight: 1,
+      letterSpacing: LETTER_SPACING.wide, lineHeight: 1,
     },
     subStats: {
       display: 'flex', justifyContent: 'center', gap: '20px', fontSize: '15px',
-      color: 'rgba(255,255,255,0.7)', fontFamily: "'Bangers', cursive",
+      color: 'rgba(255,255,255,0.7)', fontFamily: FONTS.ui,
     },
     ticker: {
       background: 'linear-gradient(90deg, rgba(60,10,100,0.95), rgba(15,0,30,0.95), rgba(60,10,100,0.95))',
       height: '36px', lineHeight: '36px', overflow: 'hidden',
       whiteSpace: 'nowrap',
       fontSize: 'clamp(16px, 1.4vw, 22px)',
-      fontFamily: "'Bangers', cursive", letterSpacing: '1.2px',
+      fontFamily: FONTS.ui, letterSpacing: LETTER_SPACING.normal,
       color: '#7afcff',
       textShadow: '0 0 10px rgba(0,255,255,0.6), 1px 1px 0 #000',
       borderTop: '1px solid rgba(0,255,255,0.4)', borderBottom: '1px solid rgba(0,255,255,0.4)',
@@ -3329,7 +3350,7 @@ export default function App() {
       position: 'absolute', top: 'calc(46% + min(195px, 38vw))', left: '50%',
       transform: 'translateX(-50%)', color: '#fff', fontSize: '20px',
       textShadow: `0 0 15px ${currentSkin.color}, 0 0 30px ${currentSkin.color}88, 2px 2px 0 #000`,
-      whiteSpace: 'nowrap', letterSpacing: '2px', zIndex: 6,
+      whiteSpace: 'nowrap', letterSpacing: LETTER_SPACING.wide, zIndex: 6,
     },
     bottomNav: {
       position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
@@ -3344,7 +3365,7 @@ export default function App() {
     navBtn: {
       flex: 1, padding: '4px 2px', textAlign: 'center', color: '#fff',
       cursor: 'pointer', border: 'none', background: 'none',
-      fontFamily: "'Bangers', cursive", display: 'flex', flexDirection: 'column',
+      fontFamily: FONTS.ui, display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', gap: '2px',
       transition: 'all 0.18s ease',
       borderRadius: '10px', position: 'relative',
@@ -3361,7 +3382,7 @@ export default function App() {
     panelTitle: {
       fontSize: '28px', color: '#fff', textAlign: 'center', marginBottom: '14px',
       textShadow: '0 0 20px #6a0dad, 0 0 40px rgba(106,13,173,0.5)',
-      letterSpacing: '3px',
+      letterSpacing: LETTER_SPACING.title,
     },
     shopItem: {
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -3373,11 +3394,11 @@ export default function App() {
     buyBtn: (canBuy) => ({
       padding: '8px 16px', borderRadius: '10px', border: 'none', cursor: canBuy ? 'pointer' : 'default',
       background: canBuy ? 'linear-gradient(135deg, #ff3366, #ff6600)' : 'rgba(255,255,255,0.08)',
-      color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '14px',
+      color: '#fff', fontFamily: FONTS.ui, fontSize: '14px',
       opacity: canBuy ? 1 : 0.4,
       boxShadow: canBuy ? '0 0 15px rgba(255,51,102,0.4), 0 4px 0 rgba(0,0,0,0.3)' : 'none',
       transition: 'transform 0.08s ease-out, box-shadow 0.1s',
-      letterSpacing: '1px',
+      letterSpacing: LETTER_SPACING.normal,
       display: 'inline-flex', alignItems: 'center', gap: '6px',
       userSelect: 'none',
     }),
@@ -3402,7 +3423,7 @@ export default function App() {
   if (loading) {
     return (
       <div style={{ ...styles.container, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
-        <div style={{ fontSize: '48px', color: '#fff', fontFamily: "'Bungee Shade', cursive", textShadow: '0 0 30px #ff0, 3px 3px 0 #f00, -3px -3px 0 #0ff' }}>
+        <div style={{ fontSize: '48px', color: '#fff', fontFamily: FONTS.display, textShadow: '0 0 30px #ff0, 3px 3px 0 #f00, -3px -3px 0 #0ff' }}>
           BRAINROT
         </div>
         <div style={{ fontSize: '24px', color: '#ff69b4', marginTop: '8px' }}>Loading...</div>
@@ -3469,7 +3490,7 @@ export default function App() {
         <BackToSiteLink />
         <div style={{ fontSize: '48px', marginBottom: '8px' }}>🧠</div>
         <div style={{
-          fontSize: 'clamp(32px, 8vw, 52px)', fontFamily: "'Bungee Shade', cursive", color: '#fff',
+          fontSize: 'clamp(32px, 8vw, 52px)', fontFamily: FONTS.display, color: '#fff',
           textShadow: '3px 3px 0 #f00, -2px -2px 0 #0ff, 0 0 30px #ff0',
           textAlign: 'center', lineHeight: 1.1, marginBottom: '16px',
         }}>
@@ -3484,12 +3505,12 @@ export default function App() {
             <button onClick={() => setLoginMode('login')} style={{
               flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
               background: loginMode === 'login' ? 'linear-gradient(135deg, #00d4ff, #bf5af2)' : 'rgba(255,255,255,0.08)',
-              color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '16px',
+              color: '#fff', fontFamily: FONTS.ui, fontSize: '16px',
             }}>Login</button>
             <button onClick={() => setLoginMode('register')} style={{
               flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
               background: loginMode === 'register' ? 'linear-gradient(135deg, #ff3366, #ff6600)' : 'rgba(255,255,255,0.08)',
-              color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '16px',
+              color: '#fff', fontFamily: FONTS.ui, fontSize: '16px',
             }}>Register</button>
           </div>
 
@@ -3500,7 +3521,7 @@ export default function App() {
             maxLength={20}
             style={{
               width: '100%', padding: '12px', borderRadius: '10px', border: '2px solid rgba(106,13,173,0.4)',
-              background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: "'Bangers', cursive",
+              background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: FONTS.ui,
               fontSize: '18px', marginBottom: '10px', outline: 'none', boxSizing: 'border-box',
             }}
           />
@@ -3513,7 +3534,7 @@ export default function App() {
             maxLength={4}
             style={{
               width: '100%', padding: '12px', borderRadius: '10px', border: '2px solid rgba(106,13,173,0.4)',
-              background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: "'Bangers', cursive",
+              background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: FONTS.ui,
               fontSize: '18px', marginBottom: '14px', outline: 'none', boxSizing: 'border-box',
               letterSpacing: '8px', textAlign: 'center',
             }}
@@ -3528,7 +3549,7 @@ export default function App() {
           <button onClick={handleAuth} style={{
             width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
             background: loginMode === 'login' ? 'linear-gradient(135deg, #00d4ff, #bf5af2)' : 'linear-gradient(135deg, #ff3366, #ff6600)',
-            color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '20px',
+            color: '#fff', fontFamily: FONTS.ui, fontSize: '20px',
             boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
           }}>
             {loginMode === 'login' ? '🎮 Play!' : '🚀 Create Account'}
@@ -3536,7 +3557,7 @@ export default function App() {
 
           <button onClick={() => { setPlayer(null); setScreen('start'); }} style={{
             width: '100%', padding: '10px', marginTop: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-            background: 'transparent', color: 'rgba(255,255,255,0.4)', fontFamily: "'Bangers', cursive",
+            background: 'transparent', color: 'rgba(255,255,255,0.4)', fontFamily: FONTS.ui,
             fontSize: '14px',
           }}>
             Play without account →
@@ -3628,7 +3649,7 @@ export default function App() {
             position: 'absolute', top: '20px', zIndex: 5,
             background: 'rgba(255,215,0,0.18)', padding: '6px 20px', borderRadius: '999px',
             color: '#ffd700', fontSize: '13px', border: '1px solid rgba(255,215,0,0.5)',
-            fontFamily: "'Bangers', cursive", letterSpacing: '2px',
+            fontFamily: FONTS.ui, letterSpacing: LETTER_SPACING.wide,
             boxShadow: '0 0 20px rgba(255,215,0,0.3)',
           }}>{getSeasonName()}</div>
         )}
@@ -3636,14 +3657,14 @@ export default function App() {
         {/* TITLE — bigger, with gradient + neon stroke + slight breath */}
         <div style={{
           fontSize: 'clamp(44px, 12vw, 88px)',
-          fontFamily: "'Bungee Shade', cursive",
+          fontFamily: FONTS.display,
           background: 'linear-gradient(180deg, #ffffff 0%, #ffd700 50%, #ff4dff 100%)',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
           color: 'transparent',
           textAlign: 'center', lineHeight: 1.0,
           filter: 'drop-shadow(0 0 18px rgba(255,77,255,0.55)) drop-shadow(0 0 40px rgba(255,215,0,0.35))',
-          letterSpacing: '2px',
+          letterSpacing: LETTER_SPACING.wide,
           animation: 'titleGlow 3.5s ease-in-out infinite',
           position: 'relative', zIndex: 4,
         }}>
@@ -3659,12 +3680,12 @@ export default function App() {
             background: `linear-gradient(135deg, ${teaser.color}33, rgba(0,0,0,0.5))`,
             border: `2px solid ${teaser.color}`,
             boxShadow: `0 0 24px ${teaser.color}88`,
-            color: '#fff', fontFamily: "'Bangers', cursive",
+            color: '#fff', fontFamily: FONTS.ui,
             animation: 'fuseButtonPulse 1.6s ease-in-out infinite',
           }}>
             <span style={{ fontSize: '24px' }}>{teaser.icon}</span>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '14px', color: teaser.color, letterSpacing: '2px' }}>🔴 {teaser.label}</span>
+              <span style={{ fontSize: '14px', color: teaser.color, letterSpacing: LETTER_SPACING.wide }}>🔴 {teaser.label}</span>
               <span style={{ fontSize: '11px', opacity: 0.85 }}>{teaser.sub} · TAP TO JOIN</span>
             </div>
           </div>
@@ -3690,12 +3711,12 @@ export default function App() {
           {/* Character name flag */}
           <div style={{
             textAlign: 'center', marginTop: '4px',
-            color: '#fff', fontSize: '13px', fontFamily: "'Bangers', cursive",
-            textShadow: '0 0 10px rgba(0,0,0,0.7)', letterSpacing: '1.5px',
+            color: '#fff', fontSize: '13px', fontFamily: FONTS.ui,
+            textShadow: '0 0 10px rgba(0,0,0,0.7)', letterSpacing: LETTER_SPACING.normal,
           }}>{heroChar.name}</div>
         </div>
 
-        <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '9px', color: '#888', letterSpacing: '3px', position: 'relative', zIndex: 3 }}>
+        <div style={{ fontFamily: FONTS.meta, fontSize: '9px', color: '#888', letterSpacing: LETTER_SPACING.title, position: 'relative', zIndex: 3 }}>
           tap · tap · tap
         </div>
 
@@ -3705,14 +3726,14 @@ export default function App() {
             <div style={{
               padding: '4px 14px', borderRadius: '999px',
               background: 'rgba(0,212,255,0.12)', border: '1px solid rgba(0,212,255,0.35)',
-              color: '#00d4ff', fontSize: '14px', fontFamily: "'Bangers', cursive", letterSpacing: '1.5px',
+              color: '#00d4ff', fontSize: '14px', fontFamily: FONTS.ui, letterSpacing: LETTER_SPACING.normal,
             }}>👤 {player.username}</div>
           )}
           {game.brainCells > 0 && (
             <div style={{
               padding: '3px 12px', borderRadius: '999px',
               background: 'rgba(255,105,180,0.15)', border: '1px solid rgba(255,105,180,0.35)',
-              color: '#ff69b4', fontSize: '13px', fontFamily: "'Bangers', cursive",
+              color: '#ff69b4', fontSize: '13px', fontFamily: FONTS.ui,
               boxShadow: '0 0 12px rgba(255,105,180,0.3)',
             }}>🧬 {game.brainCells} Brain Cells · +{game.brainCells * 5}% boost</div>
           )}
@@ -3720,7 +3741,7 @@ export default function App() {
 
         <button onClick={() => { soundEngine.init(); setScreen('game'); }} style={{
           padding: '20px 80px', fontSize: 'clamp(28px, 6vw, 38px)',
-          fontFamily: "'Bungee Shade', cursive",
+          fontFamily: FONTS.display,
           background: 'linear-gradient(135deg, #ff3366 0%, #ff6600 60%, #ffd700 100%)',
           color: '#fff', border: 'none', borderRadius: '24px', cursor: 'pointer',
           boxShadow: '0 10px 0 rgba(120,0,40,0.85), 0 0 60px rgba(255,77,166,0.65), 0 0 120px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.6)',
@@ -3831,7 +3852,7 @@ export default function App() {
               Bonus: +{formatNumber(reflexGame.score * tapPower * 10)} pts
             </div>
             <button onClick={collectReflexReward} style={{
-              padding: '12px 32px', fontSize: '20px', fontFamily: "'Bangers', cursive",
+              padding: '12px 32px', fontSize: '20px', fontFamily: FONTS.ui,
               background: 'linear-gradient(135deg, #6a0dad, #9b59b6)', color: '#fff',
               border: 'none', borderRadius: '12px', cursor: 'pointer',
             }}>Collect</button>
@@ -3900,9 +3921,9 @@ export default function App() {
           background: 'linear-gradient(135deg, rgba(0,212,255,0.18), rgba(106,13,173,0.25))',
           border: '1px solid rgba(0,212,255,0.4)',
           color: '#fff',
-          fontFamily: "'Bangers', cursive",
+          fontFamily: FONTS.ui,
           fontSize: '12px',
-          letterSpacing: '1px',
+          letterSpacing: LETTER_SPACING.normal,
           maxWidth: '50vw',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -3928,7 +3949,7 @@ export default function App() {
               // one lobe heavier than the other).
               display: 'inline-block',
               fontSize: 'clamp(110px, 30vw, 200px)',
-              fontFamily: "'Helvetica Neue', 'Arial', sans-serif",
+              fontFamily: FONTS.symbol,
               fontWeight: 900,
               lineHeight: 0.85,
               color: '#ffd700',
@@ -3950,7 +3971,7 @@ export default function App() {
         {activeEffect && (
           <div style={{
             textAlign: 'center', padding: '8px 16px', borderRadius: '12px', fontSize: '20px', color: '#fff',
-            fontFamily: "'Bungee Shade', cursive", letterSpacing: '2px',
+            fontFamily: FONTS.display, letterSpacing: LETTER_SPACING.wide,
             background: activeEffect.type === 'frenzy' ? 'linear-gradient(90deg, #f00, #ff6600, #ff0)' :
                        activeEffect.type === 'tapstorm' ? 'linear-gradient(90deg, #0ff, #6a0dad, #f0f)' :
                        'linear-gradient(90deg, #ffd700, #ff4500, #ff8c00)',
@@ -4010,7 +4031,7 @@ export default function App() {
           <div style={{ fontSize: '46px', filter: 'drop-shadow(0 0 10px rgba(162,89,255,0.8))' }}>{f.emote}</div>
           <div style={{
             fontSize: '11px', color: '#fff',
-            fontFamily: "'Bangers', cursive", letterSpacing: '1.2px',
+            fontFamily: FONTS.ui, letterSpacing: LETTER_SPACING.normal,
             textShadow: '0 0 6px rgba(0,0,0,0.9), 1px 1px 0 #000',
             marginTop: '-4px',
           }}>{f.username}</div>
@@ -4022,7 +4043,7 @@ export default function App() {
         <div style={{
           position: 'absolute', top: '28%', left: '50%', transform: 'translateX(-50%)',
           fontSize: 'clamp(48px, 14vw, 80px)', color: '#fff',
-          fontFamily: "'Bungee Shade', cursive",
+          fontFamily: FONTS.display,
           textShadow: `0 0 ${combo * 15}px ${combo >= 4 ? '#f00' : '#f90'}, 0 0 ${combo * 30}px ${combo >= 4 ? '#f00' : '#f90'}44, 3px 3px 0 #000`,
           zIndex: 8, pointerEvents: 'none',
           animation: 'pulse 0.3s ease-in-out infinite',
@@ -4038,16 +4059,16 @@ export default function App() {
           zIndex: 50, padding: '24px 36px', borderRadius: '22px',
           background: 'linear-gradient(135deg, rgba(20,5,40,0.96), rgba(40,10,80,0.96))',
           border: '2px solid #a259ff',
-          color: '#fff', fontFamily: "'Bangers', cursive",
-          fontSize: 'clamp(26px, 6.5vw, 38px)', letterSpacing: '1.5px',
+          color: '#fff', fontFamily: FONTS.ui,
+          fontSize: 'clamp(26px, 6.5vw, 38px)', letterSpacing: LETTER_SPACING.wide,
           textAlign: 'center', lineHeight: 1.15,
           boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 12px 40px rgba(162,89,255,0.55), 0 0 80px rgba(162,89,255,0.45)',
           maxWidth: 'min(620px, 90vw)',
           animation: 'broadcastIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), broadcastGlow 2s ease-in-out 0.5s infinite',
         }}>
           <div style={{
-            fontFamily: "'Press Start 2P', monospace", fontSize: '10px',
-            color: '#a259ff', letterSpacing: '3px', marginBottom: '12px',
+            fontFamily: FONTS.meta, fontSize: '10px',
+            color: '#a259ff', letterSpacing: LETTER_SPACING.title, marginBottom: '12px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           }}>
             <span style={{
@@ -4071,8 +4092,8 @@ export default function App() {
           display: 'flex', alignItems: 'center', gap: '8px',
           padding: '6px 12px 6px 10px', borderRadius: '999px',
           background: 'linear-gradient(135deg, #ff0040, #d10030)',
-          color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '13px',
-          letterSpacing: '1.5px', textTransform: 'uppercase',
+          color: '#fff', fontFamily: FONTS.ui, fontSize: '13px',
+          letterSpacing: LETTER_SPACING.wide, textTransform: 'uppercase',
           boxShadow: '0 2px 12px rgba(255,0,64,0.5), 0 0 0 1px rgba(255,255,255,0.15)',
           animation: 'liveBadgeIn 0.3s ease-out',
         }}>
@@ -4085,7 +4106,7 @@ export default function App() {
           {adminEvent.name && (
             <>
               <span style={{ opacity: 0.5, fontSize: '11px' }}>·</span>
-              <span style={{ fontSize: '12px', opacity: 0.95, letterSpacing: '1px' }}>{adminEvent.name}</span>
+              <span style={{ fontSize: '12px', opacity: 0.95, letterSpacing: LETTER_SPACING.normal }}>{adminEvent.name}</span>
             </>
           )}
         </div>
@@ -4150,7 +4171,7 @@ export default function App() {
                 border: `2px solid ${expiredStyle ? '#888' : stockColor}`,
                 color: expiredStyle ? '#aaa' : stockColor,
                 fontSize: expiredStyle ? '9px' : '11px', fontWeight: 'bold',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: FONTS.meta,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 lineHeight: 1,
               }}>
@@ -4184,7 +4205,7 @@ export default function App() {
             boxShadow: isSoldOut
               ? '0 0 40px rgba(255,69,0,0.55), inset 0 0 20px rgba(255,69,0,0.15)'
               : '0 0 60px rgba(255,215,0,0.45), inset 0 0 24px rgba(255,215,0,0.12)',
-            color: '#fff', fontFamily: "'Bangers', cursive",
+            color: '#fff', fontFamily: FONTS.ui,
             animation: isSoldOut ? 'none' : 'lockerGlow 2.4s ease-in-out infinite',
             overflow: 'hidden',
           }}>
@@ -4211,7 +4232,7 @@ export default function App() {
             }}>
               <div style={{ flex: 1, height: '2px', background: 'linear-gradient(90deg, transparent, #ffd700)' }} />
               <div style={{
-                fontSize: '22px', color: '#ffd700', letterSpacing: '4px',
+                fontSize: '22px', color: '#ffd700', letterSpacing: LETTER_SPACING.display,
                 textShadow: '0 0 12px rgba(255,215,0,0.7)', whiteSpace: 'nowrap',
               }}>🗄️ LOCKER 🗄️</div>
               <div style={{ flex: 1, height: '2px', background: 'linear-gradient(90deg, #ffd700, transparent)' }} />
@@ -4232,13 +4253,13 @@ export default function App() {
             </div>
             <div style={{
               textAlign: 'center', fontSize: '13px', color: '#fff', opacity: 0.85,
-              letterSpacing: '1px', marginBottom: '10px',
+              letterSpacing: LETTER_SPACING.normal, marginBottom: '10px',
             }}>{locker.name}</div>
 
             {isSoldOut ? (
               <>
                 <div style={{ textAlign: 'center', fontSize: '34px', color: '#ff4500',
-                  textShadow: '0 0 20px #ff4500, 0 0 40px #ff0000', letterSpacing: '4px',
+                  textShadow: '0 0 20px #ff4500, 0 0 40px #ff0000', letterSpacing: LETTER_SPACING.display,
                 }}>🔥 SOLD OUT 🔥</div>
                 <div style={{ textAlign: 'center', fontSize: '13px', opacity: 0.9, marginTop: '6px' }}>
                   All {outputSkin?.name || 'output'} claimed — trade for one!
@@ -4286,7 +4307,7 @@ export default function App() {
                     <div style={{ fontSize: '13px', color: '#ffd700', marginTop: '4px', textShadow: '0 0 6px rgba(255,215,0,0.5)' }}>
                       {outputSkin?.name || 'output'}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#ffd700', opacity: 0.85, letterSpacing: '1px' }}>LIMITED</div>
+                    <div style={{ fontSize: '10px', color: '#ffd700', opacity: 0.85, letterSpacing: LETTER_SPACING.normal }}>LIMITED</div>
                   </div>
                 </div>
 
@@ -4302,12 +4323,12 @@ export default function App() {
                       fontSize: '32px', color: stockColor, lineHeight: 1,
                       textShadow: `0 0 14px ${stockColor}`, fontWeight: 'bold',
                     }}>{locker.remaining_stock}<span style={{ fontSize: '18px', opacity: 0.6 }}>/{locker.total_stock}</span></div>
-                    <div style={{ fontSize: '10px', letterSpacing: '2px', color: stockColor, opacity: 0.85 }}>REMAINING</div>
+                    <div style={{ fontSize: '10px', letterSpacing: LETTER_SPACING.wide, color: stockColor, opacity: 0.85 }}>REMAINING</div>
                   </div>
                   <div style={{ width: '1px', height: '32px', background: 'rgba(255,255,255,0.15)' }} />
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '20px', color: '#9be7ff', lineHeight: 1 }}>⏰ {lockerCountdown(locker.expires_at)}</div>
-                    <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#9be7ff', opacity: 0.7 }}>CLOSES IN</div>
+                    <div style={{ fontSize: '10px', letterSpacing: LETTER_SPACING.wide, color: '#9be7ff', opacity: 0.7 }}>CLOSES IN</div>
                   </div>
                 </div>
 
@@ -4321,7 +4342,7 @@ export default function App() {
                       ? 'linear-gradient(135deg, #ffd700, #ff8c00 60%, #ff5500)'
                       : 'rgba(255,255,255,0.08)',
                     color: canFuse ? '#000' : '#888',
-                    fontFamily: "'Bangers', cursive", fontSize: '22px', letterSpacing: '4px',
+                    fontFamily: FONTS.ui, fontSize: '22px', letterSpacing: LETTER_SPACING.display,
                     textShadow: canFuse ? '0 1px 0 rgba(255,255,255,0.3)' : 'none',
                     boxShadow: canFuse
                       ? '0 0 30px rgba(255,215,0,0.7), inset 0 -3px 0 rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.4)'
@@ -4330,12 +4351,12 @@ export default function App() {
                   }}
                 >FUSE NOW</button>
                 {ownsAlready && (
-                  <div style={{ textAlign: 'center', fontSize: '12px', color: '#ffd700', marginTop: '8px', letterSpacing: '0.5px' }}>
+                  <div style={{ textAlign: 'center', fontSize: '12px', color: '#ffd700', marginTop: '8px', letterSpacing: LETTER_SPACING.tight }}>
                     👑 You already own one — limit is 1 per player
                   </div>
                 )}
                 {!canFuse && !ownsAlready && recipeCheck.missing.length > 0 && (
-                  <div style={{ textAlign: 'center', fontSize: '12px', color: '#ff9500', marginTop: '8px', letterSpacing: '0.5px' }}>
+                  <div style={{ textAlign: 'center', fontSize: '12px', color: '#ff9500', marginTop: '8px', letterSpacing: LETTER_SPACING.tight }}>
                     Missing: {recipeCheck.missing.map(m => {
                       const sk = CHARACTERS.find(c => c.id === m.skin_id);
                       return `${m.need - m.have}× ${sk?.name || `#${m.skin_id}`}`;
@@ -4348,7 +4369,7 @@ export default function App() {
                   </div>
                 )}
                 {locker.admin_only && (
-                  <div style={{ textAlign: 'center', fontSize: '10px', color: '#ff9500', marginTop: '6px', letterSpacing: '2px' }}>
+                  <div style={{ textAlign: 'center', fontSize: '10px', color: '#ff9500', marginTop: '6px', letterSpacing: LETTER_SPACING.wide }}>
                     🛠 DRY-RUN · admin only
                   </div>
                 )}
@@ -4384,7 +4405,7 @@ export default function App() {
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => setFuseConfirm(false)} style={{
                   flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #555',
-                  background: 'transparent', color: '#aaa', fontFamily: "'Bangers', cursive", fontSize: '14px', cursor: 'pointer',
+                  background: 'transparent', color: '#aaa', fontFamily: FONTS.ui, fontSize: '14px', cursor: 'pointer',
                 }}>CANCEL</button>
                 <button onClick={async () => {
                   setFuseConfirm(false);
@@ -4400,7 +4421,7 @@ export default function App() {
                 }} style={{
                   flex: 1.5, padding: '10px', borderRadius: '8px', border: 'none',
                   background: 'linear-gradient(135deg, #ffd700, #ff8c00)',
-                  color: '#000', fontFamily: "'Bangers', cursive", fontSize: '14px',
+                  color: '#000', fontFamily: FONTS.ui, fontSize: '14px',
                   cursor: 'pointer', boxShadow: '0 0 20px rgba(255,215,0,0.5)',
                 }}>FUSE NOW</button>
               </div>
@@ -4417,9 +4438,9 @@ export default function App() {
             position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)',
             zIndex: 90, padding: '6px 14px', borderRadius: '999px',
             background: 'linear-gradient(135deg, rgba(255,215,0,0.95), rgba(255,140,0,0.95))',
-            color: '#000', fontFamily: "'Bangers', cursive", fontSize: '12px',
+            color: '#000', fontFamily: FONTS.ui, fontSize: '12px',
             boxShadow: '0 0 20px rgba(255,215,0,0.7)',
-            letterSpacing: '0.5px', maxWidth: '90%', textAlign: 'center',
+            letterSpacing: LETTER_SPACING.tight, maxWidth: '90%', textAlign: 'center',
             animation: 'fadeIn 0.3s ease-out',
             pointerEvents: 'none',
           }}>
@@ -4435,7 +4456,7 @@ export default function App() {
           zIndex: 95, padding: '14px 22px', borderRadius: '14px',
           background: fuseMessage.kind === 'ok' ? 'rgba(20,80,30,0.95)' : 'rgba(120,30,30,0.95)',
           border: '2px solid ' + (fuseMessage.kind === 'ok' ? '#ffd700' : '#ff4444'),
-          color: '#fff', fontSize: '15px', fontFamily: "'Bangers', cursive",
+          color: '#fff', fontSize: '15px', fontFamily: FONTS.ui,
           boxShadow: '0 0 40px ' + (fuseMessage.kind === 'ok' ? 'rgba(255,215,0,0.6)' : 'rgba(255,68,68,0.5)'),
           maxWidth: '85%', textAlign: 'center',
         }}>{fuseMessage.text}</div>
@@ -4454,12 +4475,12 @@ export default function App() {
             padding: '7px 11px', borderRadius: '10px',
             background: 'rgba(15,5,35,0.92)', border: '1px solid rgba(255,215,0,0.4)',
             boxShadow: '0 0 14px rgba(255,215,0,0.2)',
-            color: '#fff', fontSize: '11px', fontFamily: "'Bangers', cursive",
-            letterSpacing: '0.5px', maxWidth: '190px', lineHeight: 1.3,
+            color: '#fff', fontSize: '11px', fontFamily: FONTS.ui,
+            letterSpacing: LETTER_SPACING.tight, maxWidth: '190px', lineHeight: 1.3,
           }}
         >
           <div style={{ color: '#ffd700', fontSize: '12px', marginBottom: '1px' }}>🎁 DROP EVENT</div>
-          <div style={{ color: '#aaa', fontSize: '9px', marginBottom: '4px', letterSpacing: '0.5px' }}>LEFT IN POOL</div>
+          <div style={{ color: '#aaa', fontSize: '9px', marginBottom: '4px', letterSpacing: LETTER_SPACING.tight }}>LEFT IN POOL</div>
           {dropEvent.drop_pool.map(p => {
             const skin = CHARACTERS.find(c => c.id === p.skin_id);
             const out = p.remaining <= 0;
@@ -4471,7 +4492,7 @@ export default function App() {
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                   {skin?.emoji || '•'} {skin?.name || `#${p.skin_id}`}
                 </span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', color: out ? '#ff8888' : '#9be7ff', whiteSpace: 'nowrap' }}>
+                <span style={{ fontFamily: FONTS.meta, fontSize: '10px', color: out ? '#ff8888' : '#9be7ff', whiteSpace: 'nowrap' }}>
                   {out ? 'OUT' : `${p.remaining} left`}
                 </span>
               </div>
@@ -4501,8 +4522,8 @@ export default function App() {
           }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: '36px', color: '#ffd700', fontFamily: "'Bangers', cursive",
-                textShadow: '0 0 30px #ffd700, 0 0 60px #ff8c00', letterSpacing: '4px',
+                fontSize: '36px', color: '#ffd700', fontFamily: FONTS.ui,
+                textShadow: '0 0 30px #ffd700, 0 0 60px #ff8c00', letterSpacing: LETTER_SPACING.display,
               }}>🚨 {(skin?.name || 'WAVE').toUpperCase()} STORM! 🚨</div>
               <div style={{
                 fontSize: '20px', color: '#fff', marginTop: '12px',
@@ -4530,8 +4551,8 @@ export default function App() {
         }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{
-              fontSize: '40px', color: '#ff4500', fontFamily: "'Bangers', cursive",
-              textShadow: '0 0 30px #ff4500, 0 0 60px #ff0000', letterSpacing: '4px',
+              fontSize: '40px', color: '#ff4500', fontFamily: FONTS.ui,
+              textShadow: '0 0 30px #ff4500, 0 0 60px #ff0000', letterSpacing: LETTER_SPACING.display,
             }}>🔥 ALL CLAIMED! 🔥</div>
             <div style={{
               fontSize: '18px', color: '#fff', marginTop: '12px',
@@ -4551,7 +4572,7 @@ export default function App() {
             background: 'linear-gradient(135deg, rgba(20,80,30,0.95), rgba(15,60,20,0.95))',
             border: '1px solid #2ecc71',
             boxShadow: '0 0 24px rgba(46,204,113,0.5)',
-            color: '#fff', fontSize: '13px', fontFamily: "'Bangers', cursive",
+            color: '#fff', fontSize: '13px', fontFamily: FONTS.ui,
             display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
             animation: 'fadeIn 0.3s ease-out',
             maxWidth: '220px',
@@ -4580,11 +4601,11 @@ export default function App() {
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={() => { submitVote(adminVote.id, 'yes'); setVotedOn(p => ({ ...p, [adminVote.id]: true })); }} style={{
               flex: 1, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-              background: '#00e87a', color: '#000', fontFamily: "'Bangers', cursive", fontSize: '16px',
+              background: '#00e87a', color: '#000', fontFamily: FONTS.ui, fontSize: '16px',
             }}>YES</button>
             <button onClick={() => { submitVote(adminVote.id, 'no'); setVotedOn(p => ({ ...p, [adminVote.id]: true })); }} style={{
               flex: 1, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-              background: '#ff4a4a', color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '16px',
+              background: '#ff4a4a', color: '#fff', fontFamily: FONTS.ui, fontSize: '16px',
             }}>NO</button>
           </div>
         </div>
@@ -4634,7 +4655,7 @@ export default function App() {
             left: `calc(50% + ${p.x - 100}px)`,
             top: `calc(50% + ${p.y - 100 - age * 60}px)`,
             color: '#fff', fontSize: '28px', fontWeight: 'bold',
-            fontFamily: "'Bungee Shade', cursive",
+            fontFamily: FONTS.display,
             textShadow: '0 0 20px rgba(255,215,0,0.9), 0 0 40px rgba(255,100,0,0.6), 2px 2px 0 #000',
             opacity: 1 - age, pointerEvents: 'none', zIndex: 12,
           }}>{p.text}</div>
@@ -4701,7 +4722,7 @@ export default function App() {
               {tab.svg}
               <span style={{
                 fontSize: '9px',
-                letterSpacing: '1px',
+                letterSpacing: LETTER_SPACING.normal,
                 textTransform: 'uppercase',
                 textShadow: active ? '0 0 6px rgba(255,215,0,0.6)' : 'none',
               }}>{tab.label}</span>
@@ -4721,7 +4742,7 @@ export default function App() {
               <button key={t} onClick={() => setShopTab(t)} style={{
                 padding: '6px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                 background: shopTab === t ? '#6a0dad' : 'rgba(255,255,255,0.1)',
-                color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '13px',
+                color: '#fff', fontFamily: FONTS.ui, fontSize: '13px',
               }}>{t === 'auto' ? 'Auto-Clickers' : t === 'tap' ? 'Tap Power' : t === 'efficiency' ? 'Efficiency' : 'Synergies'}</button>
             ))}
           </div>
@@ -4750,7 +4771,7 @@ export default function App() {
                 {flashing && (
                   <div style={{
                     position: 'absolute', right: '24px', top: '-4px', zIndex: 10,
-                    color: '#ffd700', fontSize: '18px', fontFamily: "'Bangers', cursive",
+                    color: '#ffd700', fontSize: '18px', fontFamily: FONTS.ui,
                     animation: 'floatUpFade 650ms ease-out forwards',
                     pointerEvents: 'none',
                     textShadow: '0 0 10px rgba(255,215,0,0.9), 1px 1px 0 #000',
@@ -4781,7 +4802,7 @@ export default function App() {
                 {flashing && (
                   <div style={{
                     position: 'absolute', right: '24px', top: '-4px', zIndex: 10,
-                    color: '#ffd700', fontSize: '18px', fontFamily: "'Bangers', cursive",
+                    color: '#ffd700', fontSize: '18px', fontFamily: FONTS.ui,
                     animation: 'floatUpFade 650ms ease-out forwards',
                     pointerEvents: 'none',
                     textShadow: '0 0 10px rgba(255,215,0,0.9), 1px 1px 0 #000',
@@ -4811,7 +4832,7 @@ export default function App() {
                 {flashing && (
                   <div style={{
                     position: 'absolute', right: '24px', top: '-4px', zIndex: 10,
-                    color: '#ffd700', fontSize: '18px', fontFamily: "'Bangers', cursive",
+                    color: '#ffd700', fontSize: '18px', fontFamily: FONTS.ui,
                     animation: 'floatUpFade 650ms ease-out forwards',
                     pointerEvents: 'none',
                     textShadow: '0 0 10px rgba(255,215,0,0.9), 1px 1px 0 #000',
@@ -4876,8 +4897,8 @@ export default function App() {
           <button key={id} onClick={() => setSkinFilter(id)} style={{
             padding: '4px 10px', borderRadius: '999px', border: 'none', cursor: 'pointer',
             background: skinFilter === id ? '#6a0dad' : 'rgba(255,255,255,0.08)',
-            color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '11px',
-            letterSpacing: '0.5px',
+            color: '#fff', fontFamily: FONTS.ui, fontSize: '11px',
+            letterSpacing: LETTER_SPACING.tight,
           }}>{label} ({count})</button>
         );
         return (
@@ -4895,7 +4916,7 @@ export default function App() {
             return (
             <div key={tier} style={{ marginBottom: '14px' }}>
               <div style={{
-                fontSize: '12px', letterSpacing: '1.5px', textTransform: 'uppercase',
+                fontSize: '12px', letterSpacing: LETTER_SPACING.wide, textTransform: 'uppercase',
                 color: tierColorOf(tier), marginBottom: '6px', fontWeight: 'bold', opacity: 0.9,
               }}>{tier}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
@@ -4964,7 +4985,7 @@ export default function App() {
                       position: 'absolute', top: '6px', left: '6px',
                       background: 'rgba(0,0,0,0.85)', borderRadius: '8px',
                       padding: '4px 9px', fontSize: '15px', color: '#9be7ff', fontWeight: 'bold',
-                      letterSpacing: '0.5px',
+                      letterSpacing: LETTER_SPACING.tight,
                       boxShadow: '0 0 8px rgba(155,231,255,0.35)',
                       border: '1px solid rgba(155,231,255,0.45)',
                     }}>×{totalQty}</div>
@@ -5008,8 +5029,8 @@ export default function App() {
                           marginTop: '6px', width: '100%', padding: '4px 6px',
                           borderRadius: '6px', border: '1px solid #aa5555',
                           background: 'transparent', color: '#ff8888',
-                          fontFamily: "'Bangers', cursive", fontSize: '11px',
-                          cursor: 'pointer', letterSpacing: '0.5px',
+                          fontFamily: FONTS.ui, fontSize: '11px',
+                          cursor: 'pointer', letterSpacing: LETTER_SPACING.tight,
                         }}
                       >CANCEL LISTING</button>
                     ) : (
@@ -5021,8 +5042,8 @@ export default function App() {
                           borderRadius: '6px', border: 'none',
                           background: canList ? 'linear-gradient(135deg,#6a0dad,#9b59b6)' : 'rgba(255,255,255,0.08)',
                           color: canList ? '#fff' : '#888',
-                          fontFamily: "'Bangers', cursive", fontSize: '11px',
-                          cursor: canList ? 'pointer' : 'not-allowed', letterSpacing: '0.5px',
+                          fontFamily: FONTS.ui, fontSize: '11px',
+                          cursor: canList ? 'pointer' : 'not-allowed', letterSpacing: LETTER_SPACING.tight,
                         }}
                       >{locked ? 'LOCKED' : 'TRADE'}</button>
                     )
@@ -5054,7 +5075,7 @@ export default function App() {
               <button key={t.id} onClick={() => setTradeTab(t.id)} style={{
                 padding: '5px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                 background: tradeTab === t.id ? '#6a0dad' : 'rgba(255,255,255,0.1)',
-                color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '12px',
+                color: '#fff', fontFamily: FONTS.ui, fontSize: '12px',
               }}>{t.label}</button>
             ))}
           </div>
@@ -5079,15 +5100,15 @@ export default function App() {
                     <button onClick={() => setTradeFilterWantSkinId(null)} style={{
                       padding: '4px 10px', borderRadius: '999px', border: 'none', cursor: 'pointer',
                       background: tradeFilterWantSkinId == null ? '#6a0dad' : 'rgba(255,255,255,0.08)',
-                      color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '11px',
-                      letterSpacing: '0.5px',
+                      color: '#fff', fontFamily: FONTS.ui, fontSize: '11px',
+                      letterSpacing: LETTER_SPACING.tight,
                     }}>All ({tradeListings.length})</button>
                     {wantSkinPills.map(p => (
                       <button key={p.id} onClick={() => setTradeFilterWantSkinId(p.id)} style={{
                         padding: '4px 10px', borderRadius: '999px', border: 'none', cursor: 'pointer',
                         background: tradeFilterWantSkinId === p.id ? '#6a0dad' : 'rgba(255,255,255,0.08)',
-                        color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '11px',
-                        letterSpacing: '0.5px',
+                        color: '#fff', fontFamily: FONTS.ui, fontSize: '11px',
+                        letterSpacing: LETTER_SPACING.tight,
                       }}>{p.skin?.emoji || '•'} {p.skin?.name?.split(' ')[0] || `#${p.id}`} ({p.count})</button>
                     ))}
                   </div>
@@ -5207,7 +5228,7 @@ export default function App() {
             padding: '20px', width: '100%', maxWidth: '320px',
             boxShadow: '0 0 40px rgba(106,13,173,0.5)',
           }}>
-            <div style={{ color: '#ffd700', fontSize: '18px', fontFamily: "'Bangers', cursive", textAlign: 'center', marginBottom: '12px' }}>LIST FOR TRADE</div>
+            <div style={{ color: '#ffd700', fontSize: '18px', fontFamily: FONTS.ui, textAlign: 'center', marginBottom: '12px' }}>LIST FOR TRADE</div>
             <div style={{ color: '#fff', fontSize: '13px', textAlign: 'center', marginBottom: '14px' }}>
               You're offering: <strong>{listForm.skin.name}</strong>
               {/* Serial number hidden from list-form UI as well. */}
@@ -5232,7 +5253,7 @@ export default function App() {
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => setListForm(null)} style={{
                 flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #555',
-                background: 'transparent', color: '#aaa', fontFamily: "'Bangers', cursive", fontSize: '14px', cursor: 'pointer',
+                background: 'transparent', color: '#aaa', fontFamily: FONTS.ui, fontSize: '14px', cursor: 'pointer',
               }}>CANCEL</button>
               <button
                 disabled={!listForm.wantSkinId}
@@ -5257,7 +5278,7 @@ export default function App() {
                 style={{
                   flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
                   background: listForm.wantSkinId ? 'linear-gradient(135deg, #6a0dad, #9b59b6)' : 'rgba(255,255,255,0.1)',
-                  color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '14px',
+                  color: '#fff', fontFamily: FONTS.ui, fontSize: '14px',
                   cursor: listForm.wantSkinId ? 'pointer' : 'not-allowed',
                 }}
               >LIST</button>
@@ -5273,7 +5294,7 @@ export default function App() {
           zIndex: 70, padding: '12px 20px', borderRadius: '12px',
           background: tradeMessage.kind === 'ok' ? 'rgba(20, 80, 30, 0.95)' : 'rgba(120, 30, 30, 0.95)',
           border: '1px solid ' + (tradeMessage.kind === 'ok' ? '#0f0' : '#f00'),
-          color: '#fff', fontSize: '14px', fontFamily: "'Bangers', cursive",
+          color: '#fff', fontSize: '14px', fontFamily: FONTS.ui,
           boxShadow: '0 0 30px ' + (tradeMessage.kind === 'ok' ? 'rgba(0,255,0,0.4)' : 'rgba(255,0,0,0.4)'),
           maxWidth: '80%', textAlign: 'center',
         }}>{tradeMessage.text}</div>
@@ -5289,13 +5310,13 @@ export default function App() {
               placeholder='Try something brainrot-related...'
               style={{
                 flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid #6a0dad',
-                background: 'rgba(0,0,0,0.5)', color: '#fff', fontFamily: "'Bangers', cursive",
+                background: 'rgba(0,0,0,0.5)', color: '#fff', fontFamily: FONTS.ui,
                 fontSize: '16px', outline: 'none',
               }} />
             <button onClick={submitCode} style={{
               padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer',
               background: 'linear-gradient(135deg, #6a0dad, #9b59b6)', color: '#fff',
-              fontFamily: "'Bangers', cursive", fontSize: '16px',
+              fontFamily: FONTS.ui, fontSize: '16px',
             }}>GO</button>
           </div>
           {codeResult && (
@@ -5324,8 +5345,8 @@ export default function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{
                   color: i < 3 ? '#ffd700' : '#aaa',
-                  fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                  fontSize: '15px', fontWeight: 800, letterSpacing: '0.3px',
+                  fontFamily: FONTS.ui,
+                  fontSize: '15px', fontWeight: 800, letterSpacing: LETTER_SPACING.tight,
                   width: '34px',
                 }}>#{i + 1}</span>
                 <span style={{
@@ -5337,8 +5358,8 @@ export default function App() {
                 <div>
                   <div style={{
                     color: entry.isPlayer ? '#ffd700' : '#fff',
-                    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                    fontSize: '14px', fontWeight: 700, letterSpacing: '0.3px',
+                    fontFamily: FONTS.ui,
+                    fontSize: '14px', fontWeight: 700, letterSpacing: LETTER_SPACING.tight,
                     textTransform: 'uppercase',
                   }}>
                     {entry.name} {entry.isPlayer && '(You)'}
@@ -5347,7 +5368,7 @@ export default function App() {
               </div>
               <div style={{
                 color: '#ffd700',
-                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                fontFamily: FONTS.ui,
                 fontSize: '14px', fontWeight: 700,
               }}>{formatNumber(entry.pts)}</div>
             </div>
@@ -5357,7 +5378,7 @@ export default function App() {
           }} style={{
             width: '100%', padding: '10px', marginTop: '12px', borderRadius: '8px', border: 'none',
             background: 'linear-gradient(135deg, #6a0dad, #9b59b6)', color: '#fff',
-            fontFamily: "'Bangers', cursive", fontSize: '16px', cursor: 'pointer',
+            fontFamily: FONTS.ui, fontSize: '16px', cursor: 'pointer',
           }}>📋 Share Score</button>
         </div>
       )}
@@ -5380,15 +5401,15 @@ export default function App() {
                   </div>
                   <div style={{
                     color: unlocked ? '#fff' : '#999',
-                    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                    fontFamily: FONTS.ui,
                     fontSize: '13px', fontWeight: 700,
-                    letterSpacing: '0.4px', lineHeight: 1.25,
+                    letterSpacing: LETTER_SPACING.tight, lineHeight: 1.25,
                     marginBottom: '3px',
                     textTransform: 'uppercase',
                   }}>{a.name}</div>
                   <div style={{
                     color: unlocked ? '#cfcfd6' : '#888',
-                    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                    fontFamily: FONTS.ui,
                     fontSize: '11px', fontWeight: 500,
                     lineHeight: 1.25,
                   }}>{a.desc}</div>
@@ -5415,7 +5436,7 @@ export default function App() {
               <button onClick={() => setAscendConfirm(true)} style={{
                 width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #ffd700',
                 background: 'linear-gradient(135deg, #6a0dad, #9b59b6)', color: '#fff',
-                fontFamily: "'Bangers', cursive", fontSize: '22px', cursor: 'pointer',
+                fontFamily: FONTS.ui, fontSize: '22px', cursor: 'pointer',
                 boxShadow: '0 0 20px rgba(106,13,173,0.5)',
               }}>🧬 ASCEND</button>
             ) : (
@@ -5426,11 +5447,11 @@ export default function App() {
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                   <button onClick={doAscend} style={{
                     padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                    background: '#e74c3c', color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '16px',
+                    background: '#e74c3c', color: '#fff', fontFamily: FONTS.ui, fontSize: '16px',
                   }}>CONFIRM</button>
                   <button onClick={() => setAscendConfirm(false)} style={{
                     padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                    background: '#555', color: '#fff', fontFamily: "'Bangers', cursive", fontSize: '16px',
+                    background: '#555', color: '#fff', fontFamily: FONTS.ui, fontSize: '16px',
                   }}>CANCEL</button>
                 </div>
               </div>
@@ -5464,7 +5485,7 @@ export default function App() {
               <input value={game.username} onChange={e => setGame(prev => ({ ...prev, username: e.target.value }))}
                 style={{
                   width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #6a0dad',
-                  background: 'rgba(0,0,0,0.5)', color: '#fff', fontFamily: "'Bangers', cursive",
+                  background: 'rgba(0,0,0,0.5)', color: '#fff', fontFamily: FONTS.ui,
                 }} />
             </div>
             <button onClick={() => {
@@ -5475,14 +5496,14 @@ export default function App() {
               setScreen('login');
             }} style={{
               width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)',
-              background: 'transparent', color: '#fff', fontFamily: "'Bangers', cursive",
+              background: 'transparent', color: '#fff', fontFamily: FONTS.ui,
               fontSize: '16px', cursor: 'pointer', marginTop: '8px',
             }}>Logout</button>
             <a href="https://timur.world" style={{
               display: 'block', width: '100%', padding: '10px', borderRadius: '8px',
               border: '1px solid rgba(255,255,255,0.15)',
               background: 'transparent', color: 'rgba(255,255,255,0.7)',
-              fontFamily: "'Bangers', cursive", fontSize: '14px',
+              fontFamily: FONTS.ui, fontSize: '14px',
               textAlign: 'center', textDecoration: 'none',
               marginTop: '8px', boxSizing: 'border-box',
             }}>← Back to timur.world</a>
@@ -5531,8 +5552,8 @@ export default function App() {
           {/* "From Timur" header */}
           <div style={{
             position: 'absolute', top: '14%', left: '50%', transform: 'translateX(-50%)',
-            fontFamily: "'Press Start 2P', monospace", fontSize: '11px',
-            color: '#ffd700', letterSpacing: '3px',
+            fontFamily: FONTS.meta, fontSize: '11px',
+            color: '#ffd700', letterSpacing: LETTER_SPACING.title,
             textShadow: '0 0 12px rgba(255,215,0,0.7)',
             animation: 'fadeInDown 0.5s ease-out 0.1s both',
             whiteSpace: 'nowrap',
@@ -5575,7 +5596,7 @@ export default function App() {
               animation: 'amountReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 2.15s both',
             }}>
               <div style={{
-                fontFamily: "'Bungee Shade', cursive",
+                fontFamily: FONTS.display,
                 fontSize: 'clamp(44px, 12vw, 84px)',
                 color: '#fff', lineHeight: 1, textAlign: 'center',
                 textShadow: '0 0 20px #ffd700, 0 0 40px #ff9500, 4px 4px 0 #6a0d0d',
@@ -5583,8 +5604,8 @@ export default function App() {
                 +{coinCelebration.amount.toLocaleString()}
               </div>
               <div style={{
-                fontFamily: "'Bangers', cursive", fontSize: 'clamp(20px, 4.5vw, 28px)',
-                color: '#ffd700', letterSpacing: '2px', marginTop: '6px',
+                fontFamily: FONTS.ui, fontSize: 'clamp(20px, 4.5vw, 28px)',
+                color: '#ffd700', letterSpacing: LETTER_SPACING.wide, marginTop: '6px',
                 textShadow: '0 0 12px rgba(255,215,0,0.8)',
               }}>
                 🪙 COINS 🪙
@@ -5620,8 +5641,8 @@ export default function App() {
           {/* Header */}
           <div style={{
             position: 'absolute', top: '14%', left: '50%', transform: 'translateX(-50%)',
-            fontFamily: "'Press Start 2P', monospace", fontSize: '11px',
-            color: skinGiftCelebration.skin.color, letterSpacing: '3px',
+            fontFamily: FONTS.meta, fontSize: '11px',
+            color: skinGiftCelebration.skin.color, letterSpacing: LETTER_SPACING.title,
             textShadow: `0 0 12px ${skinGiftCelebration.skin.color}`,
             animation: 'fadeInDown 0.5s ease-out 0.1s both',
             whiteSpace: 'nowrap',
@@ -5673,7 +5694,7 @@ export default function App() {
               </div>
               <div style={{
                 position: 'absolute', bottom: '-12%', left: '50%', transform: 'translateX(-50%)',
-                fontFamily: "'Bungee Shade', cursive",
+                fontFamily: FONTS.display,
                 fontSize: 'clamp(18px, 4.5vw, 28px)',
                 color: '#fff', whiteSpace: 'nowrap',
                 textShadow: `0 0 14px ${skinGiftCelebration.skin.color}, 0 0 28px ${skinGiftCelebration.skin.color}aa, 3px 3px 0 #000`,
@@ -5686,8 +5707,8 @@ export default function App() {
           {/* Tagline below */}
           <div style={{
             position: 'absolute', bottom: '18%', left: '50%', transform: 'translateX(-50%)',
-            fontFamily: "'Bangers', cursive", fontSize: 'clamp(16px, 4vw, 22px)',
-            color: skinGiftCelebration.skin.color, letterSpacing: '2px',
+            fontFamily: FONTS.ui, fontSize: 'clamp(16px, 4vw, 22px)',
+            color: skinGiftCelebration.skin.color, letterSpacing: LETTER_SPACING.wide,
             textShadow: `0 0 12px ${skinGiftCelebration.skin.color}`,
             opacity: 0,
             animation: 'fadeInDown 0.5s ease-out 2.6s both',
@@ -5739,10 +5760,10 @@ export default function App() {
           color: '#fff', animation: 'slideDown 0.35s ease-out',
         }}>
           <div style={{
-            fontFamily: "'Press Start 2P', monospace", fontSize: '9px',
-            color: '#a259ff', letterSpacing: '2px', marginBottom: '8px',
+            fontFamily: FONTS.meta, fontSize: '9px',
+            color: '#a259ff', letterSpacing: LETTER_SPACING.wide, marginBottom: '8px',
           }}>🔔 NEVER MISS A LIVE EVENT</div>
-          <div style={{ fontFamily: "'Bangers', cursive", fontSize: '17px', lineHeight: 1.3, marginBottom: '12px' }}>
+          <div style={{ fontFamily: FONTS.ui, fontSize: '17px', lineHeight: 1.3, marginBottom: '12px' }}>
             Get a ping when Timur runs an Admin Abuse, gifts you coins, or sends a broadcast.
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -5752,13 +5773,13 @@ export default function App() {
             }} style={{
               flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
               background: 'linear-gradient(135deg, #a259ff, #6a0dad)', color: '#fff',
-              fontFamily: "'Bangers', cursive", fontSize: '15px', letterSpacing: '1px',
+              fontFamily: FONTS.ui, fontSize: '15px', letterSpacing: LETTER_SPACING.normal,
             }}>🔔 TURN ON</button>
             <button onClick={() => { rememberOptInDismissed(); setShowNotifPrompt(false); }} style={{
               padding: '10px 14px', borderRadius: '10px',
               border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer',
               background: 'transparent', color: 'rgba(255,255,255,0.7)',
-              fontFamily: "'Bangers', cursive", fontSize: '14px',
+              fontFamily: FONTS.ui, fontSize: '14px',
             }}>Not now</button>
           </div>
         </div>
