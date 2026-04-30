@@ -5,6 +5,27 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Best-effort IP geolocation. Fire-and-forget — never blocks login. Failures
+// (network, rate limit, DNS, ad-blocker) are silent. Updates the players
+// row with country/region/city for "where are my players?" analytics.
+// Schema columns added in scripts/sql/09_player_geo.sql.
+async function captureGeo(playerId) {
+  if (!playerId) return;
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    if (!res.ok) return;
+    const d = await res.json();
+    if (!d || d.error) return;
+    await supabase.from('players').update({
+      country:      d.country_name || null,
+      country_code: d.country_code || null,
+      region:       d.region || null,
+      city:         d.city || null,
+      geo_updated_at: new Date().toISOString(),
+    }).eq('id', playerId);
+  } catch { /* never block auth on geo */ }
+}
+
 // Register a new player
 export async function registerPlayer(username, pin) {
   const { data, error } = await supabase
@@ -15,6 +36,8 @@ export async function registerPlayer(username, pin) {
   if (error) return { error: error.message.includes('duplicate') ? 'Username taken!' : error.message };
   // Create leaderboard entry
   await supabase.from('leaderboard').insert({ player_id: data.id, username: data.username });
+  // Fire-and-forget geo capture so analytics has city/country from day one.
+  captureGeo(data.id);
   return { player: data };
 }
 
@@ -27,6 +50,8 @@ export async function loginPlayer(username, pin) {
     .eq('pin', pin)
     .single();
   if (error || !data) return { error: 'Wrong username or PIN!' };
+  // Refresh geo on login so the dataset stays current as players move.
+  captureGeo(data.id);
   return { player: data };
 }
 
