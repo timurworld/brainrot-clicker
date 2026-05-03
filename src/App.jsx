@@ -3437,6 +3437,15 @@ export default function App() {
       boxShadow: `0 0 60px ${currentSkin.color}22`,
       animation: 'ringPulse 3s ease-in-out infinite reverse',
     },
+    // Soft inner glow inside the character circle — lifts the brainrot
+    // off detailed bg art so it pops without obscuring the bg.
+    innerGlow: {
+      position: 'absolute', top: '46%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: 'min(360px, 73vw)', height: 'min(360px, 73vw)',
+      borderRadius: '50%', pointerEvents: 'none', zIndex: 4,
+      background: `radial-gradient(circle, ${currentSkin.color}3d 0%, ${currentSkin.color}1f 45%, transparent 85%)`,
+    },
     skinLabel: {
       position: 'absolute', top: 'calc(46% + min(195px, 38vw))', left: '50%',
       transform: 'translateX(-50%)', color: '#fff', fontSize: '20px',
@@ -4815,6 +4824,8 @@ export default function App() {
       {/* Glow rings around character */}
       <div style={styles.glowRing} />
       <div style={styles.glowRing2} />
+      {/* Soft inner glow inside the spotlight — makes character pop on busy bgs */}
+      <div style={styles.innerGlow} />
 
       {/* Character (tappable) */}
       <div style={styles.character} onClick={handleTap} onTouchStart={(e) => { e.preventDefault(); handleTap(e); }}>
