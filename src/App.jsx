@@ -105,6 +105,12 @@ const CHARACTERS = [
     rarity: 'Mythic', unlock: 0, emoji: '🏒', color: '#ffd700', mult: 25,
     tag: 'Sportini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #1a3050 0%, #ff4500 35%, #ffd700 60%, #1a0530 100%)' },
+  // Los Hockeys Limited — 3-skin fusion: Stick Stick (#20) + No My Pucks (#21)
+  // + Cupideini Hockini (#26). 30× tap multiplier — top of Limited tier.
+  { id: 27, name: 'Los Hockeys', file: '27_los_hockeys.png', bgNum: '20',
+    rarity: 'Limited', unlock: 0, emoji: '⛸️', color: '#00bfff', mult: 30,
+    tag: 'Sportini', obtain: 'fusion',
+    bg: 'linear-gradient(180deg, #0d3b66 0%, #1e90ff 35%, #00bfff 65%, #06243d 100%)' },
 ];
 
 const AUTO_CLICKERS = [
