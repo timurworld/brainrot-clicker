@@ -3405,14 +3405,18 @@ export default function App() {
     },
     characterImg: {
       maxWidth: '100%', maxHeight: '100%', objectFit: 'contain',
-      // Tightened from 3-layer 8/20/40 stack — outer 40 px halo was bleeding
-      // colored fuzz around eyes/edges. Now: crisp black outline + single
-      // tint glow.
-      filter: `drop-shadow(0 0 4px rgba(0,0,0,0.85)) drop-shadow(0 0 14px ${currentSkin.color}66)`,
+      // Crisp outline + tighter color glow. Reduced color halo from 14px
+      // to 6px because at the per-skin scale boost the 14px bleed was
+      // creating a soft fuzzy halo around eyes/edges that read as "blurry."
+      filter: `drop-shadow(0 0 3px rgba(0,0,0,0.9)) drop-shadow(0 0 6px ${currentSkin.color}66)`,
       // Per-skin scale boost so wide+short characters appear similar in
       // size to tall+skinny ones. Default 1.0 if not in the lookup map.
       transform: `scale(${RENDER_SCALE_BY_ID[currentSkin.id] || 1})`,
       transformOrigin: 'center center',
+      // Keep pixels sharp under transform: scale upscale — the default
+      // browser interpolation (auto/smooth) softens edges visibly when
+      // boosting wide characters by 1.2-1.3×.
+      imageRendering: 'crisp-edges',
     },
     // Animated glow ring around character
     glowRing: {
