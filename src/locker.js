@@ -102,12 +102,18 @@ export function alreadyOwnsLimitedOutput(locker, inventory) {
 
 // Given the locker.recipe array and the player's inventory, returns
 //   { hasAll: bool, missing: [{skin_id, need, have}] }
+//
+// Counts BOTH stackable (serial_number == null) and serial-numbered rows
+// toward the recipe quantity. Mirrors the server-side locker_fuse rewrite
+// in scripts/sql/20: drain stackable first, then burn serial rows highest
+// down. Without this, limited skins like Cupideini Hockini (#26) — which
+// only ever exist as serial-numbered rows — could never satisfy a recipe
+// and the FUSE button stayed greyed for everyone.
 export function checkRecipe(recipe, inventory) {
   const missing = [];
   for (const item of recipe || []) {
     const have = (inventory || []).reduce(
-      (acc, inv) => inv.skin_id === item.skin_id && inv.serial_number == null
-        ? acc + inv.quantity : acc,
+      (acc, inv) => inv.skin_id === item.skin_id ? acc + inv.quantity : acc,
       0
     );
     if (have < item.qty) missing.push({ skin_id: item.skin_id, need: item.qty, have });
