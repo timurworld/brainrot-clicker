@@ -4047,15 +4047,16 @@ export default function App() {
   // ============================================================
   return (
     <div style={styles.container} onClick={(e) => { if (activePanel && !e.target.closest('[data-nav]') && !e.target.closest('[data-panel]')) setActivePanel(null); }}>
-      {/* World Background Image — light blur (1px) so the world detail
-          stays legible. Heavier blur was washing out the new bg art. */}
+      {/* World Background Image — no blur (user wants the polished bg art
+          to show crisp). Slight brightness drop kept to maintain contrast
+          against the character + UI in the foreground. */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
         backgroundImage: `url(/worlds/bg_${currentSkin.bgNum}.jpg)`,
         backgroundSize: 'cover', backgroundPosition: 'center',
-        filter: 'blur(1px) brightness(0.9)',
-        transform: 'scale(1.02)',
+        filter: 'brightness(0.9)',
       }} />
+
 
       {/* Weather particles */}
       {weatherParticles}
