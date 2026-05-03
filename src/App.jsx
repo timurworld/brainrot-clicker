@@ -113,6 +113,26 @@ const CHARACTERS = [
     bg: 'linear-gradient(180deg, #0d3b66 0%, #1e90ff 35%, #00bfff 65%, #06243d 100%)' },
 ];
 
+// Per-skin render scale to harmonize on-screen size in the character spotlight.
+// Tall+skinny characters (Stick Stick aspect 0.45) fill the square spotlight
+// vertically and look "big." Wide+short ones (Hockey Bros 1.29, Los Hockeys
+// 1.49) fill horizontally with empty top/bottom and look smaller. Apply a
+// CSS transform: scale(N) to compensate. Only IDs that need it are listed —
+// missing ids default to 1.0.
+const RENDER_SCALE_BY_ID = {
+  4:  1.10,  // Teddini & Robotini       1.14 aspect
+  5:  1.05,  // Noobini Partini          1.08
+  6:  1.25,  // Cakini Presintini        1.41
+  11: 1.20,  // Rositti Tueletti         1.32
+  12: 1.10,  // Birthdayini Cardini      1.13
+  17: 1.10,  // Chiclitera Cupidini      1.18
+  21: 1.15,  // No My Pucks              1.24
+  22: 1.20,  // Hockey Bros              1.29
+  23: 1.25,  // Sushiro & Soyaro         1.46
+  26: 1.15,  // Cupideini Hockini        1.25 (post-crop)
+  27: 1.30,  // Los Hockeys              1.49 (post-crop)
+};
+
 const AUTO_CLICKERS = [
   { id: 'ac1', name: 'Mini Clicker', baseCost: 50, cps: 1 },
   { id: 'ac2', name: 'Turbo Tap', baseCost: 200, cps: 5 },
@@ -3389,6 +3409,10 @@ export default function App() {
       // colored fuzz around eyes/edges. Now: crisp black outline + single
       // tint glow.
       filter: `drop-shadow(0 0 4px rgba(0,0,0,0.85)) drop-shadow(0 0 14px ${currentSkin.color}66)`,
+      // Per-skin scale boost so wide+short characters appear similar in
+      // size to tall+skinny ones. Default 1.0 if not in the lookup map.
+      transform: `scale(${RENDER_SCALE_BY_ID[currentSkin.id] || 1})`,
+      transformOrigin: 'center center',
     },
     // Animated glow ring around character
     glowRing: {
