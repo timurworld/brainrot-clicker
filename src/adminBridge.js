@@ -15,8 +15,11 @@ export function subscribeToAdmin(callbacks) {
     currentUsername,    // for filtering gifts
   } = callbacks;
 
-  // Initial fetch of current state
-  (async () => {
+  // Pull the current admin state from Postgres. Used both for the initial
+  // hydration and as a polling fallback so we recover when realtime drops —
+  // mobile screens that go to sleep can lose the WebSocket and miss the
+  // "disco off" event, leaving the visual + music stuck on indefinitely.
+  async function reconcile() {
     const { data: ev } = await supabase.from('admin_events').select('*').eq('game_id', GAME_ID).maybeSingle();
     if (ev && onEventStateChange) onEventStateChange(ev.active, ev.event_name);
 
@@ -33,7 +36,18 @@ export function subscribeToAdmin(callbacks) {
       .select('*').eq('game_id', GAME_ID).eq('active', true)
       .order('started_at', { ascending: false }).limit(1).maybeSingle();
     if (vote && onVoteStart) onVoteStart(vote);
-  })();
+  }
+  reconcile();
+
+  // Reconcile when the user comes back to the tab — covers screen-off, app
+  // backgrounding, and short network drops that took the channel down.
+  const onVisibilityChange = () => { if (!document.hidden) reconcile(); };
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
+  // Cheap periodic backstop in case the channel silently dies and the player
+  // never blurs the tab. 30s is fine — DJ effects toggle on the order of
+  // seconds, not sub-second.
+  const reconcileInterval = setInterval(reconcile, 30_000);
 
   const channel = supabase.channel('admin-bridge-' + Math.random())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_events' }, (payload) => {
@@ -72,7 +86,11 @@ export function subscribeToAdmin(callbacks) {
     })
     .subscribe();
 
-  return () => { supabase.removeChannel(channel); };
+  return () => {
+    supabase.removeChannel(channel);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    clearInterval(reconcileInterval);
+  };
 }
 
 export async function submitVote(voteId, choice) {
