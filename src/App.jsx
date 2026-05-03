@@ -442,6 +442,53 @@ class SoundEngine {
     // Reggaeton dembow rim-click
     const rim = (vol) => { tone(900, 'square', 0.025, vol * 0.28); noiseHit(0.02, vol * 0.18, 2000); };
 
+    // ----- Energy / fun layer (added to all tracks via the disco master loop) -----
+    // Crash cymbal — that classic "track change!" splash. Long noise tail filtered high.
+    const crash = (vol) => {
+      if (!this.enabled) return;
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = this.makeNoiseBuffer(0.7);
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 4000;
+      const g = ctx.createGain();
+      src.connect(hp); hp.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol * 0.55, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      src.start(now); src.stop(now + 0.72);
+    };
+    // Riser — white-noise sweep with rising filter. Creates anticipation before drops.
+    // durSec controls length (typically 0.75–1.5 sec to fill a half-bar build).
+    const riser = (vol, durSec) => {
+      if (!this.enabled) return;
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = this.makeNoiseBuffer(durSec);
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass';
+      hp.frequency.setValueAtTime(200, now);
+      hp.frequency.exponentialRampToValueAtTime(8000, now + durSec);
+      const g = ctx.createGain();
+      src.connect(hp); hp.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.exponentialRampToValueAtTime(vol * 0.4, now + durSec * 0.85);
+      g.gain.exponentialRampToValueAtTime(0.001, now + durSec);
+      src.start(now); src.stop(now + durSec + 0.05);
+    };
+    // Snare roll — rapid snare hits accelerating into the drop. Iconic DJ fill.
+    const snareRoll = (vol) => {
+      if (!this.enabled) return;
+      // 4 hits over ~125ms, accelerating dynamics
+      for (let i = 0; i < 4; i++) {
+        setTimeout(() => snare(vol * (0.4 + i * 0.18)), i * 30);
+      }
+    };
+    // Air horn — the "MWOMP" stab. Use sparingly; pure energy.
+    const airHorn = (vol) => {
+      if (!this.enabled) return;
+      tone(220, 'sawtooth', 0.18, vol * 0.4, 180);
+      tone(330, 'sawtooth', 0.18, vol * 0.35, 270);
+      tone(440, 'sawtooth', 0.16, vol * 0.3, 360);
+    };
+
     // 16-step patterns. Each function takes (vol, step) where step is 0..15 (16th notes).
     // Top-40 leaning rotation: festival EDM, future bass, tropical, trap pop, dembow,
     // synthwave, nu-disco, plus a handful of classic disco/house staples for variety.
@@ -471,14 +518,16 @@ class SoundEngine {
         if (s % 4 === 2) trapHat(vol);
         if (s === 14) snare(vol * 0.45);                          // half-bar fill tease
       },
-      // 2 — Tropical house (Kygo vibe): pluck melody hook + soft kick + shaker
+      // 2 — Tropical house (Kygo vibe): pluck hook + kick + shaker, now with
+      // claps on 2/4 and a small fill so it doesn't feel sleepy on a live floor.
       (vol, s) => {
-        if (s % 4 === 0) kick(vol * 0.85);
-        // Pluck riff: 8-note hook, repeats every 2 beats
+        if (s % 4 === 0) kick(vol);
+        if (s === 4 || s === 12) clap(vol * 0.85);                // claps on 2 & 4
         const hook = [659, 0, 784, 0, 880, 0, 784, 659];
-        if (hook[s % 8]) pluck(vol, hook[s % 8]);
+        if (hook[s % 8]) pluck(vol * 1.05, hook[s % 8]);
         if (s % 2 === 1) trapHat(vol * 0.7);                      // shaker-y
-        if (s % 8 === 0) sub808(vol * 0.4, POP_BASS[(s / 8) % 4]);
+        if (s === 14) snare(vol * 0.5);                            // half-bar snare fill
+        if (s % 8 === 0) sub808(vol * 0.45, POP_BASS[(s / 8) % 4]);
       },
       // 3 — Nu-disco bounce (Dua Lipa "Levitating" vibe): walking bass + plucks + claps
       (vol, s) => {
@@ -543,22 +592,32 @@ class SoundEngine {
         if (glass[s % 8]) pluck(vol * 0.7, glass[s % 8]);
         trapHat(vol * 0.6);
       },
-      // 9 — Classic French-touch house (Daft Punk vibe): filter sweep feel
+      // 9 — Classic French-touch house (Daft Punk vibe): filter sweep feel +
+      // disco hat shimmer and pluck top-line for energy, vox stab tease.
       (vol, s) => {
         if (s % 4 === 0) kick(vol);
         if (s === 4 || s === 12) clap(vol);
-        bass(vol * 0.55, s % 8 < 4 ? 55 : 82);
+        bass(vol * 0.65, s % 8 < 4 ? 55 : 82);
+        if (s % 2 === 1) hat(vol * 0.55);                          // 8th-note hat shimmer
         if (s % 4 === 2) openHat(vol * 0.55);
-        if (s % 4 === 0) superSaw(vol * 0.55, POP_CHORDS[(s / 4) % 4], 0.18);
+        if (s % 4 === 0) superSaw(vol * 0.65, POP_CHORDS[(s / 4) % 4], 0.18);
+        // Pluck top-line on offbeats — Daft Punk-y melodic sparkle
+        const top = [0, 0, 784, 0, 0, 0, 880, 0, 0, 0, 784, 0, 0, 0, 659, 0];
+        if (top[s]) pluck(vol * 0.7, top[s]);
+        if (s === 15) voxStab(vol * 0.45);                          // bar-end vocal tease
       },
-      // 10 — 80s synthpop (Weeknd "Save Your Tears" vibe): bright arp + pulsing bass
+      // 10 — 80s synthpop (Weeknd "Save Your Tears" vibe): bright arp + pulsing
+      // bass + clap layer + lead hook so it punches like the chorus, not the verse.
       (vol, s) => {
         if (s % 4 === 0) kick(vol);
         if (s === 4 || s === 12) snare(vol);
+        if (s === 4 || s === 12) clap(vol * 0.65);                // doubled snare+clap
         const synthArp = [392, 523, 659, 784, 659, 523];
-        arp(vol * 0.85, synthArp[s % synthArp.length]);
-        if (s % 2 === 1) hat(vol * 0.4);
-        if (s % 8 === 0) sub808(vol * 0.5, POP_BASS[(s / 8) % 4]);
+        arp(vol * 1.0, synthArp[s % synthArp.length]);
+        // Lead hook on top — punches above the arp
+        if (s === 0 || s === 4 || s === 8 || s === 12) lead(vol * 0.7, [880, 988, 880, 784][((s / 4) % 4)]);
+        if (s % 2 === 1) hat(vol * 0.5);
+        if (s % 8 === 0) sub808(vol * 0.55, POP_BASS[(s / 8) % 4]);
       },
       // 11 — Latin pop (J Balvin vibe): tumbao bass + cowbell + dembow snare
       (vol, s) => {
@@ -569,25 +628,116 @@ class SoundEngine {
         if (s % 2 === 1) hat(vol * 0.55);
         if (s === 4 || s === 12) clap(vol * 0.7);
       },
-      // 12 — Deep house rolling sub: slow kick, deep sub, shimmer hats
+      // 12 — Deep house rolling sub: slow kick + deep sub + shimmer hats, now
+      // with a stronger clap layer and a pluck hook so it has a melodic lift
+      // instead of just chugging.
       (vol, s) => {
         if (s % 4 === 0) subKick(vol);
-        bass(vol * 0.4, 41);
-        if (s === 4 || s === 12) clap(vol * 0.6);
-        if (s % 2 === 1) hat(vol * 0.3);
-        if (s === 7 || s === 15) openHat(vol * 0.4);
+        bass(vol * 0.5, 41);
+        if (s === 4 || s === 12) { clap(vol * 0.85); snare(vol * 0.4); }
+        if (s % 2 === 1) hat(vol * 0.45);
+        if (s === 7 || s === 15) openHat(vol * 0.55);
+        // Pluck top hook — sparse 4-note phrase across the bar
+        const lift = [0, 0, 0, 0, 587, 0, 0, 659, 0, 0, 0, 0, 784, 0, 659, 0];
+        if (lift[s]) pluck(vol * 0.7, lift[s]);
+      },
+      // 13 — Boom-bap hip-hop (J Dilla / Kendrick / J. Cole vibe): swung
+      // pocket, snare on the 2 and 4, walking jazzy bass, sample pluck.
+      (vol, s) => {
+        // Boom-bap kick: hard 1, syncopated 7 (the "chigga-CHIGGA" feel)
+        if (s === 0 || s === 7 || s === 10) kick(vol);
+        if (s === 4 || s === 12) snare(vol);
+        // Walking jazz bass (A min7 outline: A C E G)
+        const jazz = [55, 0, 65, 0, 73, 0, 65, 0, 82, 0, 73, 0, 65, 0, 55, 0];
+        if (jazz[s]) bass(vol * 0.85, jazz[s]);
+        // Vinyl-y hat shimmer
+        if (s % 2 === 1) hat(vol * 0.5);
+        if (s === 6 || s === 14) openHat(vol * 0.45);
+        // Sample-style pluck riff — sparse, jazzy
+        const sample = [0, 0, 0, 0, 0, 0, 880, 0, 0, 784, 0, 0, 0, 0, 659, 0];
+        if (sample[s]) pluck(vol * 0.85, sample[s]);
+      },
+      // 14 — Modern rap-pop (Doja Cat / Drake club vibe): half-time kick,
+      // rolling 808, snappy claps, vox ad-libs.
+      (vol, s) => {
+        if (s === 0 || s === 8) kick(vol * 1.1);                  // half-time hard kick
+        if (s === 4 || s === 12) { snare(vol * 0.95); clap(vol * 0.6); }
+        // Rolling 808 with note moves
+        const sub = [55, 0, 0, 55, 0, 65, 55, 0, 73, 0, 0, 73, 0, 82, 73, 0];
+        if (sub[s]) sub808(vol * 0.7, sub[s]);
+        // Triplet-feel trap hats
+        trapHat(vol * 0.6);
+        if (s === 7 || s === 15) trapHat(vol * 0.85);             // 32nd flutter
+        // Vox ad-libs — sprinkled "yeah!" hooks
+        if (s === 2 || s === 11) voxStab(vol * 0.6);
+        // Pluck top-line top of phrase
+        if (s === 0 || s === 8) pluck(vol * 0.7, [880, 784, 988, 880][(s / 8) % 4]);
+      },
+      // 15 — Modern pop drum (Sabrina Carpenter "Espresso" / Dua Lipa
+      // "Houdini" vibe): bouncy 4-on-floor with walking pop bass, bright
+      // pluck riff, heavy claps. The disco-pop sound currently topping charts.
+      (vol, s) => {
+        if (s % 4 === 0) kick(vol);
+        if (s === 4 || s === 12) clap(vol);
+        // Pop walking bass (D - A - B - F# minor walk, pretty chord movement)
+        const walk = [73, 110, 98, 87];
+        if (s % 2 === 0) bass(vol * 0.95, walk[(s / 2) % 4]);
+        // Bright pluck riff with disco-pop bounce
+        const mel = [0, 587, 0, 659, 784, 0, 587, 659, 0, 0, 587, 659, 880, 0, 659, 587];
+        if (mel[s]) pluck(vol * 1.0, mel[s]);
+        if (s % 2 === 1) hat(vol * 0.6);
+        if (s === 14) snare(vol * 0.5);                            // bar-end fill
+        // Sub on bar starts for body
+        if (s % 8 === 0) sub808(vol * 0.55, [73, 65, 87, 73][(s / 8) % 4]);
       },
     ];
 
     let discoStep = 0; let discoTrackIdx = 0;
     const BARS_PER_TRACK = 4; // 4 bars × 16 steps = 64 steps before rotating
+    const STEPS_PER_TRACK = BARS_PER_TRACK * 16; // 64
     t.disco = function(sustain) {
       // Reset on first tick of fresh activation (sustain array starts empty)
       if (sustain.length === 0) { discoStep = 0; discoTrackIdx = Math.floor(Math.random() * discoTracks.length); sustain.push(true); }
+      const stepInTrack = discoStep % STEPS_PER_TRACK;     // 0..63
+      const stepIn16 = discoStep % 16;                       // 0..15 (track function expects this)
+      const isFirstStep = stepInTrack === 0;
+      const isFinalBar = stepInTrack >= 48;                  // last bar of 4 = build-up window
+
+      // Run the track's regular pattern
       const trk = discoTracks[discoTrackIdx];
-      try { trk(v(), discoStep % 16); } catch (e) { /* ignore */ }
+      try { trk(v(), stepIn16); } catch (e) { /* ignore */ }
+
+      // ENERGY LAYER — adds fun without modifying individual track patterns:
+
+      // Track-change accent: crash cymbal on the first beat of a new track,
+      // skipped on the very first activation so the entry isn't jarring.
+      if (isFirstStep && discoStep > 0) {
+        try { crash(v() * 1.1); } catch (e) {}
+      }
+
+      // Build-up in the final bar — riser at step 56 (1 sec sweep into the drop),
+      // snare roll on the last 2 beats (steps 60+), occasional air horn on the
+      // very last 16th to slam into the new track.
+      if (isFinalBar) {
+        if (stepInTrack === 56) {
+          try { riser(v() * 0.8, 1.0); } catch (e) {}
+        }
+        if (stepInTrack === 60 || stepInTrack === 62) {
+          try { snareRoll(v() * 0.6); } catch (e) {}
+        }
+        if (stepInTrack === 63 && Math.random() < 0.45) {
+          try { airHorn(v() * 0.7); } catch (e) {}
+        }
+      }
+
+      // Random ad-libs sprinkled mid-track on every track — voxStab "yeah!" hook
+      // on a roughly 1-in-32 chance per step, keeps things alive between bars.
+      if (!isFinalBar && Math.random() < 0.03) {
+        try { voxStab(v() * 0.5); } catch (e) {}
+      }
+
       discoStep++;
-      if (discoStep % (BARS_PER_TRACK * 16) === 0) {
+      if (discoStep % STEPS_PER_TRACK === 0) {
         discoTrackIdx = (discoTrackIdx + 1) % discoTracks.length;
       }
     };
