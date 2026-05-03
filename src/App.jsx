@@ -3437,14 +3437,15 @@ export default function App() {
       boxShadow: `0 0 60px ${currentSkin.color}22`,
       animation: 'ringPulse 3s ease-in-out infinite reverse',
     },
-    // Soft inner glow inside the character circle — lifts the brainrot
-    // off detailed bg art so it pops without obscuring the bg.
+    // Soft white fog inside the character circle — lifts the brainrot
+    // off detailed bg art without tinting it. Pure white at low alpha
+    // reads as atmospheric haze rather than a colored halo.
     innerGlow: {
       position: 'absolute', top: '46%', left: '50%',
       transform: 'translate(-50%, -50%)',
       width: 'min(360px, 73vw)', height: 'min(360px, 73vw)',
       borderRadius: '50%', pointerEvents: 'none', zIndex: 4,
-      background: `radial-gradient(circle, ${currentSkin.color}3d 0%, ${currentSkin.color}1f 45%, transparent 85%)`,
+      background: 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 50%, transparent 85%)',
     },
     skinLabel: {
       position: 'absolute', top: 'calc(46% + min(195px, 38vw))', left: '50%',
