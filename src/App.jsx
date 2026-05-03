@@ -2446,6 +2446,19 @@ export default function App() {
       return next;
     });
   }, []);
+  // Same minimize affordance for the drop-event stock pill — on mobile both
+  // popups stack and obscure the character, so tap-to-shrink each is the
+  // escape hatch.
+  const [dropEventMinimized, setDropEventMinimized] = useState(() => {
+    try { return localStorage.getItem('drop_event_minimized') === '1'; } catch { return false; }
+  });
+  const toggleDropEventMinimized = useCallback(() => {
+    setDropEventMinimized(v => {
+      const next = !v;
+      try { localStorage.setItem('drop_event_minimized', next ? '1' : '0'); } catch {}
+      return next;
+    });
+  }, []);
 
   const gameRef = useRef(game);
   const comboRef = useRef(0);
@@ -4528,7 +4541,7 @@ export default function App() {
         }
 
         return (
-          <div style={{
+          <div onClick={toggleLockerMinimized} style={{
             position: 'absolute',
             top: (adminSchedule && !adminEvent.active) ? 'clamp(125px, 18vh, 150px)' : '64px',
             left: '50%', transform: 'translateX(-50%)',
@@ -4544,7 +4557,7 @@ export default function App() {
               : '0 0 60px rgba(255,215,0,0.45), inset 0 0 24px rgba(255,215,0,0.12)',
             color: '#fff', fontFamily: FONTS.ui,
             animation: isSoldOut ? 'none' : 'lockerGlow 2.4s ease-in-out infinite',
-            overflow: 'hidden',
+            overflow: 'hidden', cursor: 'pointer',
           }}>
             {/* Sparkle drift layer (decorative — pointer-events none) */}
             {!isSoldOut && (
@@ -4671,7 +4684,7 @@ export default function App() {
 
                 <button
                   disabled={!canFuse}
-                  onClick={() => setFuseConfirm(true)}
+                  onClick={(e) => { e.stopPropagation(); setFuseConfirm(true); }}
                   style={{
                     width: '100%', padding: '14px', borderRadius: '12px',
                     border: 'none', cursor: canFuse ? 'pointer' : 'not-allowed',
@@ -4801,10 +4814,45 @@ export default function App() {
 
       {/* V2: Drop event stock indicator — compact pill, top-right under header.
           Pushes down when admin schedule banner is showing so it doesn't collide
-          with the gear/sound buttons (which also shift). */}
-      {dropEvent && dropEvent.status === 'active' && !activePanel && (
+          with the gear/sound buttons (which also shift). Tap anywhere on the
+          pill to minimize it down to a small icon (mirrors the locker UX). */}
+      {dropEvent && dropEvent.status === 'active' && !activePanel && dropEventMinimized && (() => {
+        const totalLeft = dropEvent.drop_pool.reduce((sum, p) => sum + (p.remaining || 0), 0);
+        return (
+          <button
+            onClick={toggleDropEventMinimized}
+            title={`Drop event — ${totalLeft} left · click to open`}
+            style={{
+              position: 'absolute',
+              top: (adminSchedule && !adminEvent.active) ? 'clamp(125px, 18vh, 150px)' : '60px',
+              right: '10px', zIndex: 24,
+              width: '48px', height: '48px', borderRadius: '50%',
+              border: '1px solid rgba(255,215,0,0.45)',
+              background: 'linear-gradient(135deg, #ff8c00, #ff5500)',
+              boxShadow: '0 0 14px rgba(255,140,0,0.5)',
+              cursor: 'pointer', padding: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '24px',
+            }}
+          >
+            🎁
+            <span style={{
+              position: 'absolute', top: '-4px', right: '-4px',
+              minWidth: '20px', height: '20px', padding: '0 4px',
+              borderRadius: '999px',
+              background: '#0a0420', border: '2px solid #ffd700',
+              color: '#ffd700', fontSize: '10px', fontWeight: 'bold',
+              fontFamily: FONTS.meta,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              lineHeight: 1,
+            }}>{totalLeft}</span>
+          </button>
+        );
+      })()}
+      {dropEvent && dropEvent.status === 'active' && !activePanel && !dropEventMinimized && (
         <div
-          title="Items left in the drop pool — tap to roll for them"
+          onClick={toggleDropEventMinimized}
+          title="Items left in the drop pool — tap to minimize"
           style={{
             position: 'absolute',
             top: (adminSchedule && !adminEvent.active) ? 'clamp(125px, 18vh, 150px)' : '60px',
@@ -4814,6 +4862,7 @@ export default function App() {
             boxShadow: '0 0 14px rgba(255,215,0,0.2)',
             color: '#fff', fontSize: '11px', fontFamily: FONTS.ui,
             letterSpacing: LETTER_SPACING.tight, maxWidth: '190px', lineHeight: 1.3,
+            cursor: 'pointer',
           }}
         >
           <div style={{ color: '#ffd700', fontSize: '12px', marginBottom: '1px' }}>🎁 DROP EVENT</div>
