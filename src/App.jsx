@@ -1786,37 +1786,68 @@ function AdminEffectFireworks({ setGame }) {
         animation: `fwFlash 0.6s ease-out ${s.delay + 1.5}s infinite`,
       }} />
     ))}
-    {/* Burst sparks — large glowing particles flying outward */}
+    {/* Burst tracers — many tiny bright streaks radiating outward, with
+        slight gravity drift so the burst arcs downward like a real firework
+        instead of staying as a static ring of balloons. */}
     {shells.flatMap((s, i) => {
-      const numSparks = s.big ? 28 : 20;
-      const dist = s.big ? 480 : 340;
+      const numSparks = s.big ? 80 : 56;
+      const dist = s.big ? 420 : 300;
       return [...Array(numSparks)].map((_, j) => {
-        const ang = (j / numSparks) * 360 + (i * 7);
-        const sparkColor = j % 3 === 0 ? s.altColor : s.color;
-        const sz = s.big ? 30 + (j % 3) * 6 : 22 + (j % 3) * 4;
+        const ang = (j / numSparks) * 360 + (i * 7) + (Math.random() - 0.5) * 6;
+        const sparkColor = j % 4 === 0 ? '#fff' : j % 3 === 0 ? s.altColor : s.color;
+        const sz = 4 + (j % 3);
+        const len = 14 + (j % 4) * 4; // streak length via box-shadow chain
+        const sparkDist = dist + ((j * 13) % 90);
         return (
           <div key={`sp${i}-${j}`} style={{
             position: 'absolute', bottom: `${s.yEnd}%`, left: `${s.x}%`,
             width: sz, height: sz, borderRadius: '50%',
-            background: `radial-gradient(circle, #fff 0%, ${sparkColor} 45%, transparent 80%)`,
-            boxShadow: `0 0 24px ${sparkColor}, 0 0 48px ${sparkColor}, 0 0 80px ${sparkColor}66`,
+            background: '#fff',
+            boxShadow: `
+              0 0 6px #fff,
+              0 0 12px ${sparkColor},
+              0 0 24px ${sparkColor},
+              0 ${len}px 8px ${sparkColor}aa,
+              0 ${len * 1.6}px 10px ${sparkColor}77,
+              0 ${len * 2.2}px 12px ${sparkColor}33`,
             zIndex: 18, opacity: 0, transform: 'translate(-50%, 50%)',
-            animation: `fwBurst 2s cubic-bezier(0.2, 0.8, 0.4, 1) ${s.delay + 1.5}s infinite`,
+            animation: `fwBurst 1.6s cubic-bezier(0.15, 0.7, 0.3, 1) ${s.delay + 1.5}s infinite`,
             ['--ang']: `${ang}deg`,
-            ['--dist']: `${dist + (j % 4) * 80}px`,
+            ['--dist']: `${sparkDist}px`,
           }} />
         );
       });
     })}
-    {/* Trail sparkles — bigger falling embers after burst */}
-    {shells.flatMap((s, i) => [...Array(10)].map((_, j) => (
+    {/* Crackle layer — secondary white twinkles that fire ~150ms after the
+        main burst, scattered around the explosion. Real shells have these
+        as the "popping" sound's visual partner. */}
+    {shells.flatMap((s, i) => [...Array(s.big ? 18 : 12)].map((_, j) => {
+      const r = 60 + (j * 13) % 200;
+      const ang = (j / 12) * 360 + i * 17;
+      const xOff = Math.cos((ang * Math.PI) / 180) * r;
+      const yOff = Math.sin((ang * Math.PI) / 180) * r;
+      return (
+        <div key={`ck${i}-${j}`} style={{
+          position: 'absolute', bottom: `calc(${s.yEnd}% + ${yOff}px)`,
+          left: `calc(${s.x}% + ${xOff}px)`,
+          width: 3, height: 3, borderRadius: '50%',
+          background: '#fff',
+          boxShadow: '0 0 8px #fff, 0 0 16px #fff',
+          zIndex: 18, opacity: 0,
+          animation: `fwCrackle 0.7s ease-out ${s.delay + 1.65 + (j * 0.02)}s infinite`,
+        }} />
+      );
+    }))}
+    {/* Drooping ember trails — every 3rd shell is a "willow" that drops
+        glowing embers slowly after the main burst. Adds visual variety. */}
+    {shells.filter((_, i) => i % 3 === 0).flatMap((s, i) => [...Array(14)].map((_, j) => (
       <div key={`tr${i}-${j}`} style={{
-        position: 'absolute', bottom: `${s.yEnd}%`, left: `${s.x + (j - 5) * 5}%`,
-        width: 10, height: 10, borderRadius: '50%',
-        background: `radial-gradient(circle, #fff 0%, ${s.color} 60%, transparent)`,
-        boxShadow: `0 0 16px ${s.color}, 0 0 32px ${s.color}`,
+        position: 'absolute', bottom: `${s.yEnd}%`, left: `${s.x + (j - 7) * 3.5}%`,
+        width: 3, height: 3, borderRadius: '50%',
+        background: '#fff',
+        boxShadow: `0 0 6px ${s.color}, 0 0 14px ${s.color}, 0 0 28px ${s.color}88`,
         zIndex: 17, opacity: 0,
-        animation: `fwTrail 2.4s ease-in ${s.delay + 1.7}s infinite`,
+        animation: `fwTrail 2.2s ease-in ${s.delay + 1.7 + (j * 0.04)}s infinite`,
       }} />
     )))}
     {/* Catchable coin pickups — drift down, tap to claim +250 */}
@@ -1851,13 +1882,20 @@ function AdminEffectFireworks({ setGame }) {
         100% { opacity: 0; transform: translate(-50%, 50%) scale(2); }
       }
       @keyframes fwBurst {
-        0% { opacity: 1; transform: translate(-50%, 50%) rotate(var(--ang)) translateY(0) scale(1.4); }
-        70% { opacity: 1; transform: translate(-50%, 50%) rotate(var(--ang)) translateY(calc(-1 * var(--dist))) scale(1); }
-        100% { opacity: 0; transform: translate(-50%, 50%) rotate(var(--ang)) translateY(calc(-1 * var(--dist) - 40px)) scale(0.3); }
+        0%   { opacity: 1; transform: translate(-50%, 50%) rotate(var(--ang)) translateY(0) scale(1); }
+        50%  { opacity: 1; transform: translate(-50%, 50%) rotate(var(--ang)) translateY(calc(-0.8 * var(--dist))) scale(1); }
+        80%  { opacity: 0.7; transform: translate(-50%, 50%) rotate(var(--ang)) translateY(calc(-1 * var(--dist))) translateX(0) scale(0.7); }
+        100% { opacity: 0; transform: translate(-50%, calc(50% + 80px)) rotate(var(--ang)) translateY(calc(-1 * var(--dist) + 30px)) scale(0.3); }
+      }
+      @keyframes fwCrackle {
+        0%   { opacity: 0; transform: scale(0.4); }
+        15%  { opacity: 1; transform: scale(1.6); }
+        40%  { opacity: 0.8; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.6); }
       }
       @keyframes fwTrail {
-        0% { opacity: 1; transform: translate(-50%, 50%); }
-        100% { opacity: 0; transform: translate(-50%, calc(50% + 220px)); }
+        0%   { opacity: 1; transform: translate(-50%, 50%); }
+        100% { opacity: 0; transform: translate(-50%, calc(50% + 240px)); }
       }
       @keyframes fwBannerPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.08); } }
       @keyframes pickupFall {
