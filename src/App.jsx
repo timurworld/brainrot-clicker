@@ -3347,7 +3347,10 @@ export default function App() {
       }
       if (c.type === 'cps') updates.bonusCps = (game.bonusCps || 0) + c.value;
       if (c.type === 'unlockall') {
-        updates.unlockedSkins = CHARACTERS.map((_, i) => i);
+        // Limited rarity skins (Hockey Bros #22, Los Hockeys #27) stay locked
+        // behind their fusion lockers — the cheat code shouldn't bypass
+        // scarcity since Limited is the rarest tier in the game economy.
+        updates.unlockedSkins = CHARACTERS.flatMap((ch, i) => ch.rarity === 'Limited' ? [] : [i]);
         updates.points = game.points + 10000000;
         updates.lifetimePoints = game.lifetimePoints + 10000000;
       }
