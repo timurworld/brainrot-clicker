@@ -144,6 +144,12 @@ const CHARACTERS = [
     rarity: 'Secret', unlock: 0, emoji: '🌀', color: '#e74c3c', mult: 16,
     tag: 'Fidgetini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #1a0530 0%, #e74c3c 35%, #ff4500 65%, #06243d 100%)' },
+  // Stressini Ballini — blue stress ball squishy with face + arms + legs.
+  // 5th Fidgetini drop, slots between Popini (13×) and Cubini (15×).
+  { id: 33, name: 'Stressini Ballini', file: '33_Stressini_ballini.png', bgNum: '04',
+    rarity: 'Secret', unlock: 0, emoji: '🔵', color: '#3498db', mult: 14,
+    tag: 'Fidgetini', obtain: 'drop',
+    bg: 'linear-gradient(180deg, #06243d 0%, #3498db 35%, #4db8db 65%, #1a0530 100%)' },
 ];
 
 // Per-skin render scale to harmonize on-screen size in the character spotlight.
