@@ -99,18 +99,45 @@ const CHARACTERS = [
     obtain: 'prestige', prestigeUnlock: 5,
     bg: 'linear-gradient(180deg, #1a0530 0%, #6a0dad 40%, #a259ff 70%, #2a0a4a 100%)' },
   // Maple Cup Mythic — fusion of Cupidini Hotspottini (#19) + Hockey Bros (#22).
-  // First Mythic tier in the game. Bears Timur's signature: jersey "T" + #7
-  // helmet — single creator-signed Mythic. 10 stock. 25× tap multiplier.
+  // First Mythic in the game; signed by Timur (jersey "T" + #7 helmet). 10
+  // stock, 25× multiplier. Joined later by Dragini Sqishini (#30) as a drop-
+  // tier Mythic at 18× — Cupideini stays the apex Mythic (fusion + signed).
   { id: 26, name: 'Cupideini Hockini', file: '26_cupideini_hockini.png', bgNum: '24',
     rarity: 'Mythic', unlock: 0, emoji: '🏒', color: '#ffd700', mult: 25,
     tag: 'Sportini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #1a3050 0%, #ff4500 35%, #ffd700 60%, #1a0530 100%)' },
   // Los Hockeys Limited — 3-skin fusion: Stick Stick (#20) + No My Pucks (#21)
-  // + Cupideini Hockini (#26). 30× tap multiplier — top of Limited tier.
+  // + Cupideini Hockini (#26). 30× tap multiplier — top of Limited tier until
+  // La Fidget Combination (#31) joined at 35×.
   { id: 27, name: 'Los Hockeys', file: '27_los_hockeys.png', bgNum: '25',
     rarity: 'Limited', unlock: 0, emoji: '⛸️', color: '#00bfff', mult: 30,
     tag: 'Sportini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #0d3b66 0%, #1e90ff 35%, #00bfff 65%, #06243d 100%)' },
+  // ▼ FIDGETINI CLASS — pop-it / fidget cube / squishy drop event. Three Secret-
+  //   to-Mythic drops fuse into the Limited La Fidget Combination (#31). Mirrors
+  //   the Sportini pattern (3 ingredients → 1 Limited fusion).
+  { id: 28, name: 'Popini Itini', file: '28_popini_itini.png', bgNum: '20',
+    rarity: 'Secret', unlock: 0, emoji: '🧩', color: '#4db8db', mult: 13,
+    tag: 'Fidgetini', obtain: 'drop',
+    bg: 'linear-gradient(180deg, #1a0530 0%, #4db8db 35%, #2ecc71 65%, #06243d 100%)' },
+  { id: 29, name: 'Fidgetini Cubini', file: '29_fidgetini_cubini.png', bgNum: '20',
+    rarity: 'Secret', unlock: 0, emoji: '🎲', color: '#9b8ec4', mult: 15,
+    tag: 'Fidgetini', obtain: 'drop',
+    bg: 'linear-gradient(180deg, #06243d 0%, #4db8db 35%, #9b8ec4 65%, #1a0530 100%)' },
+  // Dragini Sqishini — Mythic via drop (not fusion). Second Mythic in game;
+  // 18× sits below the fusion-Mythic Cupideini Hockini (25×) so the apex
+  // Mythic narrative stays intact.
+  { id: 30, name: 'Dragini Sqishini', file: '30_dragini_sqishini.png', bgNum: '20',
+    rarity: 'Mythic', unlock: 0, emoji: '🐉', color: '#c0392b', mult: 18,
+    tag: 'Fidgetini', obtain: 'drop',
+    bg: 'linear-gradient(180deg, #0d1f4d 0%, #c0392b 35%, #1e90ff 65%, #1a0530 100%)' },
+  // La Fidget Combination Limited — 3-skin fusion: Popini Itini (#28) +
+  // Fidgetini Cubini (#29) + Dragini Sqishini (#30). Dragon head + cube body
+  // + pop-it ball in hand. 35× — new top of the tap-multiplier ladder.
+  { id: 31, name: 'La Fidget Combination', file: '31_la_fidget_combination.png', bgNum: '20',
+    rarity: 'Limited', unlock: 0, emoji: '🧪', color: '#ff4500', mult: 35,
+    tag: 'Fidgetini', obtain: 'fusion',
+    bg: 'linear-gradient(180deg, #0d3b66 0%, #c0392b 35%, #ff4500 60%, #1a0530 100%)' },
 ];
 
 // Per-skin render scale to harmonize on-screen size in the character spotlight.
