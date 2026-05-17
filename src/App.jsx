@@ -138,6 +138,12 @@ const CHARACTERS = [
     rarity: 'Limited', unlock: 0, emoji: '🧪', color: '#ff4500', mult: 35,
     tag: 'Fidgetini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #0d3b66 0%, #c0392b 35%, #ff4500 60%, #1a0530 100%)' },
+  // Spinirino — red fidget spinner with face + legs. 4th Fidgetini drop,
+  // sits between Cubini (15×) and Dragini (18×) on the multiplier ladder.
+  { id: 32, name: 'Spinirino', file: '32_Spinirino.png', bgNum: '04',
+    rarity: 'Secret', unlock: 0, emoji: '🌀', color: '#e74c3c', mult: 16,
+    tag: 'Fidgetini', obtain: 'drop',
+    bg: 'linear-gradient(180deg, #1a0530 0%, #e74c3c 35%, #ff4500 65%, #06243d 100%)' },
 ];
 
 // Per-skin render scale to harmonize on-screen size in the character spotlight.
