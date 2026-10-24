@@ -304,13 +304,20 @@ const AUTO_CLICKERS = [
   { id: 'ac10', name: 'Skibidi God', baseCost: 50000000, cps: 1000000 },
 ];
 
+// Each tier is roughly 4x the power of the one below for ~8x the cost, so
+// every upgrade stays worth buying. Sigma God used to be 1,000,000 power for
+// 50M -- 20,000x the tier below it for 500x the cost -- which made the whole
+// shop below it pointless the moment you could afford one.
 const TAP_UPGRADES = [
   { id: 'tp1', name: 'Stronger Finger', baseCost: 100, power: 1 },
-  { id: 'tp2', name: 'Double Tap', baseCost: 500, power: 2 },
-  { id: 'tp3', name: 'Power Poke', baseCost: 2500, power: 5 },
-  { id: 'tp4', name: 'Thunder Thumb', baseCost: 15000, power: 15 },
-  { id: 'tp5', name: 'Sigma Slap', baseCost: 100000, power: 50 },
-  { id: 'tp6', name: 'Sigma God', baseCost: 50000000, power: 1000000 },
+  { id: 'tp2', name: 'Double Tap', baseCost: 500, power: 3 },
+  { id: 'tp3', name: 'Power Poke', baseCost: 3000, power: 12 },
+  { id: 'tp4', name: 'Thunder Thumb', baseCost: 20000, power: 50 },
+  { id: 'tp5', name: 'Sigma Slap', baseCost: 150000, power: 200 },
+  { id: 'tp6', name: 'Sigma God', baseCost: 1200000, power: 850 },
+  { id: 'tp7', name: 'Galaxy Grip', baseCost: 10000000, power: 3500 },
+  { id: 'tp8', name: 'Infinity Finger', baseCost: 90000000, power: 15000 },
+  { id: 'tp9', name: 'Brainrot Singularity', baseCost: 800000000, power: 65000 },
 ];
 
 const EFFICIENCY_UPGRADES = [
