@@ -1101,6 +1101,22 @@ class SoundEngine {
     t.bomb.intervalMs = 2400;
 
     // CROWD — continuous cheering crowd noise + sporadic whoops
+    // CANDY RAIN — light music-box plinks, like sweets landing on glass
+    t.candy = function() {
+      const ctx = ctxOf(); const now = ctx.currentTime;
+      const scale = [1047, 1175, 1319, 1568, 1760, 2093];
+      const f = scale[(Math.random() * scale.length) | 0];
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(f, now);
+      o.frequency.exponentialRampToValueAtTime(f * 0.92, now + 0.22);
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(v() * 0.22, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      o.start(now); o.stop(now + 0.32);
+    };
+    t.candy.intervalMs = 340;
+
     t.crowd = function(sustain) {
       if (!sustain.length) {
         const ctx = ctxOf(); const now = ctx.currentTime;
@@ -2455,6 +2471,112 @@ function AdminEffectBomb({ grant }) {
         100% { transform: translate(-50%, -50%) rotate(var(--ang)) translateY(-700px) rotate(calc(-1 * var(--ang) + 1080deg)) scale(0.4); opacity: 0; }
       }
     `}</style>
+  </>);
+}
+
+function AdminEffectCandy({ grant }) {
+  // Candy Rain — the most interactive effect: nothing is given away. Candy
+  // falls continuously and only pays when the player actually catches it,
+  // so the DJ is setting up a scramble rather than handing out points.
+  // Rarer sweets fall faster and pay more, and a caught streak multiplies.
+  const timersRef = useRef([]);
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
+
+  const KINDS = [
+    { emoji: '🍬', secs: 2,  weight: 46, size: 40, fall: 4.2, glow: '#ff8fd0' },
+    { emoji: '🍫', secs: 4,  weight: 26, size: 46, fall: 3.6, glow: '#c98b5a' },
+    { emoji: '🍭', secs: 7,  weight: 17, size: 52, fall: 3.0, glow: '#9be8ff' },
+    { emoji: '🎃', secs: 14, weight:  9, size: 58, fall: 2.4, glow: '#FF7A1A' },
+    { emoji: '👻', secs: 30, weight:  2, size: 64, fall: 1.9, glow: '#e8e2ff' },
+  ];
+  const pick = () => {
+    let r = Math.random() * KINDS.reduce((a, k) => a + k.weight, 0);
+    for (const k of KINDS) { if ((r -= k.weight) <= 0) return k; }
+    return KINDS[0];
+  };
+
+  const [drops, setDrops] = useState([]);
+  const [pops, setPops] = useState([]);
+  const [streak, setStreak] = useState(0);
+  const idRef = useRef(0);
+  const streakTimer = useRef(null);
+
+  // Spawn a steady shower. Each drop clears itself once it has fallen past
+  // the bottom, so the DOM never grows without bound.
+  useEffect(() => {
+    const spawn = () => {
+      const k = pick();
+      const id = idRef.current++;
+      setDrops(d => [...d, { id, k, left: 3 + Math.random() * 92, spin: (Math.random() * 180 - 90) | 0 }]);
+      timersRef.current.push(setTimeout(() => setDrops(d => d.filter(x => x.id !== id)), k.fall * 1000 + 200));
+    };
+    const i = setInterval(spawn, 260);
+    for (let n = 0; n < 5; n++) spawn();
+    return () => clearInterval(i);
+  }, []);
+
+  const grab = (e, d) => {
+    e.stopPropagation();
+    const next = streak + 1;
+    setStreak(next);
+    clearTimeout(streakTimer.current);
+    streakTimer.current = setTimeout(() => setStreak(0), 1600);   // drop the chain if you stall
+    const mult = next >= 12 ? 3 : next >= 6 ? 2 : 1;
+    grant(d.k.secs * mult);
+    const r = e.currentTarget.getBoundingClientRect();
+    const pid = idRef.current++;
+    setPops(ps => [...ps, { id: pid, x: r.left + r.width / 2, y: r.top, label: `+${d.k.secs * mult}s`, glow: d.k.glow, mult }]);
+    timersRef.current.push(setTimeout(() => setPops(ps => ps.filter(x => x.id !== pid)), 850));
+    setDrops(ds => ds.filter(x => x.id !== d.id));
+  };
+
+  const mult = streak >= 12 ? 3 : streak >= 6 ? 2 : 1;
+
+  return (<>
+    <div style={{ position: 'absolute', inset: 0, zIndex: 12, pointerEvents: 'none',
+      background: 'radial-gradient(ellipse at 50% 0%, rgba(255,122,26,0.30), rgba(91,42,134,0.42) 65%, rgba(10,4,20,0.6) 100%)' }} />
+
+    {drops.map(d => (
+      <div key={d.id} onClick={(e) => grab(e, d)} style={{
+        position: 'absolute', top: '-9%', left: `${d.left}%`,
+        fontSize: `${d.k.size}px`, zIndex: 16, cursor: 'pointer', pointerEvents: 'auto',
+        '--djspin': `${d.spin}deg`,
+        filter: `drop-shadow(0 0 10px ${d.k.glow})`,
+        animation: `candyFall ${d.k.fall}s linear forwards`,
+        padding: 10, margin: -10,          // bigger tap target than the glyph
+      }}>{d.k.emoji}</div>
+    ))}
+
+    {pops.map(p => (
+      <div key={p.id} style={{
+        position: 'fixed', left: p.x, top: p.y, transform: 'translate(-50%,-50%)',
+        zIndex: 30, pointerEvents: 'none', fontFamily: FONTS.display,
+        fontSize: p.mult > 1 ? '26px' : '20px', color: '#fff',
+        textShadow: `0 0 12px ${p.glow}, 0 2px 0 rgba(0,0,0,0.8)`,
+        animation: 'floatUpFade 0.85s ease-out forwards',
+      }}>{p.label}{p.mult > 1 ? ` x${p.mult}` : ''}</div>
+    ))}
+
+    {streak >= 3 && (
+      <div style={{
+        position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)',
+        zIndex: 18, pointerEvents: 'none', fontFamily: FONTS.display,
+        fontSize: 'clamp(16px, 4vw, 24px)', color: mult > 1 ? '#FF7A1A' : '#fff',
+        letterSpacing: LETTER_SPACING.wide, whiteSpace: 'nowrap',
+        textShadow: '0 0 16px #FF7A1A, 0 2px 0 rgba(0,0,0,0.8)',
+        animation: 'discoBannerPulse 0.6s ease-in-out infinite',
+      }}>{streak} CAUGHT{mult > 1 ? ` · ${mult}x` : ''}</div>
+    )}
+
+    <div className="dj-vignette" />
+
+    <div style={{
+      position: 'absolute', top: '14%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
+      fontFamily: FONTS.display, fontSize: 'clamp(22px, 6vw, 36px)', color: '#fff',
+      letterSpacing: LETTER_SPACING.display, whiteSpace: 'nowrap', pointerEvents: 'none',
+      textShadow: '0 0 18px #FF7A1A, 0 0 44px #5B2A86, 0 3px 0 rgba(0,0,0,0.8)',
+      animation: 'discoBannerPulse 0.8s ease-in-out infinite',
+    }}>🍬 CANDY RAIN — CATCH IT! 🍬</div>
   </>);
 }
 
@@ -5307,6 +5429,7 @@ export default function App() {
         {adminEffects.tsunami && <AdminEffectTsunami grant={grantEffectPoints} />}
         {adminEffects.lightning && <AdminEffectLightning />}
         {adminEffects.bomb && <AdminEffectBomb grant={grantEffectPoints} />}
+        {adminEffects.candy && <AdminEffectCandy grant={grantEffectPoints} />}
         {adminEffects.crowd && <AdminEffectCrowd />}
       </div>
 
@@ -6568,6 +6691,7 @@ export default function App() {
            Shared primitives so each effect can read as a modern stage
            show rather than flat neon: bloom, depth, shockwaves, shake,
            and spring easing instead of linear/steps. */
+        @keyframes candyFall { to { transform: translateY(118vh) rotate(var(--djspin, 120deg)); } }
         @keyframes djShockwave {
           0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 0.75; border-width: 14px; }
           100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0;    border-width: 1px; }
