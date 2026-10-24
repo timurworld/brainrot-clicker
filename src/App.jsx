@@ -220,11 +220,11 @@ const CHARACTERS = [
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #0d0318 0%, #2ecc71 36%, #5B2A86 70%, #150520 100%)' },
   { id: 45, name: 'Vampire Dragini', file: '45_Vampire_Dragini.png', bgNum: '19',
-    rarity: 'Divine', unlock: 2000000000, emoji: '🧛', color: '#FF7A1A', mult: 28,
+    rarity: 'Divine', unlock: 2000000000, emoji: '🧛', color: '#FF7A1A', mult: 750000000,
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #150520 0%, #5B2A86 35%, #FF7A1A 68%, #0d0318 100%)' },
   { id: 46, name: 'Headlessini Pumpkini', file: '42_Headlessini_Pumpkini.png', bgNum: '19',
-    rarity: 'Divine', unlock: 5000000000, emoji: '🎃', color: '#FF7A1A', mult: 32,
+    rarity: 'Divine', unlock: 5000000000, emoji: '🎃', color: '#FF7A1A', mult: 1000000000,
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #0d0318 0%, #FF7A1A 38%, #5B2A86 72%, #150520 100%)' },
   // ══ Lovini / Mother's Day / Summerini batch (ids 34-41) ══
@@ -4564,7 +4564,7 @@ export default function App() {
           <span>⚡ {formatNumber(cps)}/s</span>
           <span>👆 {formatNumber(tapPower)}/tap</span>
           <span>🌤️ {getWeatherName(weather)}</span>
-          <span style={{ color: currentSkin.mult >= 5 ? '#ffd700' : '#fff' }}>✖️ {currentSkin.mult}x</span>
+          <span style={{ color: currentSkin.mult >= 5 ? '#ffd700' : '#fff' }}>✖️ {formatNumber(currentSkin.mult)}x</span>
           {game.brainCells > 0 && <span>🧬 {game.brainCells}</span>}
         </div>
 
@@ -5632,7 +5632,7 @@ export default function App() {
                   </div>
                   <div style={{ color: '#fff', fontFamily: FONTS.data, fontSize: '15px', fontWeight: 700, lineHeight: 1.2, textShadow: '1px 1px 2px #000' }}>{ch.name}</div>
                   <div style={{ color: tierColor, fontFamily: FONTS.data, fontSize: '10px', fontWeight: 600, marginTop: '2px' }}>
-                    {ch.rarity} | {ch.mult}x
+                    {ch.rarity} | {formatNumber(ch.mult)}x
                   </div>
                   {/* Top-LEFT badge: ONE rule across all skin types.
                       • Own 1 copy → no badge (would just say "×1" / "#1" — noise)
