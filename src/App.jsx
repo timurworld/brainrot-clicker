@@ -87,38 +87,38 @@ const DIVINE_MOTES = [
 ];
 
 const CHARACTERS = [
-  { id: 1, name: 'Noobini Lovini', file: '01_noobini_lovini.png', bgNum: '01', rarity: 'Common', unlock: 0, emoji: '💖', color: '#ff69b4', mult: 1,
+  { id: 1, name: 'Noobini Lovini', file: '01_noobini_lovini.png', bgNum: '01', rarity: 'Common', unlock: 0, emoji: '💖', color: '#ff69b4', mult: 1.0,
     bg: 'linear-gradient(180deg, #6a11cb 0%, #bc4dff 50%, #6a11cb 100%)' },
-  { id: 2, name: 'Romantini Grandini', file: '02_la_romantic_grande.png', bgNum: '02', rarity: 'Common', unlock: 500, emoji: '🌹', color: '#e74c3c', mult: 1.5,
+  { id: 2, name: 'Romantini Grandini', file: '02_la_romantic_grande.png', bgNum: '02', rarity: 'Common', unlock: 500, emoji: '🌹', color: '#e74c3c', mult: 2.15,
     bg: 'linear-gradient(180deg, #c0392b 0%, #ff6b6b 40%, #e74c3c 70%, #922b21 100%)' },
-  { id: 3, name: 'Lovini Lovini Lovini', file: '03_lovini_lovini_lovini.png', bgNum: '03', rarity: 'Brainrot God', unlock: 2000, emoji: '💕', color: '#ff1493', mult: 2,
+  { id: 3, name: 'Lovini Lovini Lovini', file: '03_lovini_lovini_lovini.png', bgNum: '03', rarity: 'Brainrot God', unlock: 2000, emoji: '💕', color: '#ff1493', mult: 4.62,
     bg: 'linear-gradient(180deg, #ff1493 0%, #ff69b4 35%, #ff1493 65%, #c71585 100%)' },
-  { id: 4, name: 'Teddini & Robotini', file: '04_teddy_and_rosie.png', bgNum: '04', rarity: 'Legendary', unlock: 10000, emoji: '🧸', color: '#c8894f', mult: 2.5,
+  { id: 4, name: 'Teddini & Robotini', file: '04_teddy_and_rosie.png', bgNum: '04', rarity: 'Legendary', unlock: 10000, emoji: '🧸', color: '#c8894f', mult: 9.93,
     bg: 'linear-gradient(180deg, #8B5E3C 0%, #D4A574 35%, #C08050 65%, #6B4226 100%)' },
-  { id: 5, name: 'Noobini Partini', file: '05_noobini_partini.png', bgNum: '05', rarity: 'Brainrot God', unlock: 50000, emoji: '🎉', color: '#ff6347', mult: 3,
+  { id: 5, name: 'Noobini Partini', file: '05_noobini_partini.png', bgNum: '05', rarity: 'Brainrot God', unlock: 50000, emoji: '🎉', color: '#ff6347', mult: 21,
     bg: 'linear-gradient(180deg, #ff4500 0%, #ff8c42 30%, #ff6347 60%, #e63900 100%)' },
-  { id: 6, name: 'Cakini Presintini', file: '06_cakini_and_presintini.png', bgNum: '06', rarity: 'Secret', unlock: 100000, emoji: '🎂', color: '#ff8c00', mult: 3.5,
+  { id: 6, name: 'Cakini Presintini', file: '06_cakini_and_presintini.png', bgNum: '06', rarity: 'Secret', unlock: 100000, emoji: '🎂', color: '#ff8c00', mult: 46,
     bg: 'linear-gradient(180deg, #ff8c00 0%, #ffb347 35%, #ffa500 65%, #cc7000 100%)' },
-  { id: 7, name: 'Lovini Rosetti', file: '07_lovin_rose.png', bgNum: '07', rarity: 'Rare', unlock: 250000, emoji: '🌷', color: '#4db8db', mult: 4,
+  { id: 7, name: 'Lovini Rosetti', file: '07_lovin_rose.png', bgNum: '07', rarity: 'Rare', unlock: 250000, emoji: '🌷', color: '#4db8db', mult: 99,
     bg: 'linear-gradient(180deg, #0d4f6b 0%, #1a8aad 35%, #127a9a 65%, #0a3d55 100%)' },
-  { id: 8, name: 'Heartini Smilekurro', file: '08_heartini_smilekur.png', bgNum: '08', rarity: 'Common', unlock: 500000, emoji: '😊', color: '#40c4c4', mult: 4.5,
+  { id: 8, name: 'Heartini Smilekurro', file: '08_heartini_smilekur.png', bgNum: '08', rarity: 'Common', unlock: 500000, emoji: '😊', color: '#40c4c4', mult: 212,
     bg: 'linear-gradient(180deg, #0a5a5a 0%, #1aadad 35%, #12888a 65%, #084848 100%)' },
-  { id: 9, name: 'Dragini Partini', file: '09_dragon_partyini.png', bgNum: '06', rarity: 'OG', unlock: 1000000, emoji: '🐉', color: '#ffd700', mult: 5,
+  { id: 9, name: 'Dragini Partini', file: '09_dragon_partyini.png', bgNum: '06', rarity: 'OG', unlock: 1000000, emoji: '🐉', color: '#ffd700', mult: 455,
     bg: 'linear-gradient(180deg, #ff8c00 0%, #ffb347 35%, #ffa500 65%, #cc7000 100%)' },
-  { id: 10, name: 'Cupidini Sahuroni', file: '10_cupid_cupid_sahur.png', bgNum: '10', rarity: 'Legendary', unlock: 2500000, emoji: '💘', color: '#ff1493', mult: 5.5,
+  { id: 10, name: 'Cupidini Sahuroni', file: '10_cupid_cupid_sahur.png', bgNum: '10', rarity: 'Legendary', unlock: 2500000, emoji: '💘', color: '#ff1493', mult: 979,
     bg: 'linear-gradient(180deg, #8e24aa 0%, #e040fb 30%, #ab47bc 60%, #6a1b9a 100%)' },
-  { id: 11, name: 'Rositti Tueletti', file: '11_rositti_tueletti.png', bgNum: '11', rarity: 'Rare', unlock: 5000000, emoji: '🌺', color: '#ba55d3', mult: 6,
+  { id: 11, name: 'Rositti Tueletti', file: '11_rositti_tueletti.png', bgNum: '11', rarity: 'Rare', unlock: 5000000, emoji: '🌺', color: '#ba55d3', mult: 2100,
     bg: 'linear-gradient(180deg, #4a148c 0%, #9c27b0 30%, #7b1fa2 60%, #38006b 100%)' },
-  { id: 12, name: 'Birthdayini Cardini', file: '12_birthdayini_cardini.png', bgNum: '12', rarity: 'Brainrot God', unlock: 10000000, emoji: '🎈', color: '#ffd700', mult: 6.5,
+  { id: 12, name: 'Birthdayini Cardini', file: '12_birthdayini_cardini.png', bgNum: '12', rarity: 'Brainrot God', unlock: 10000000, emoji: '🎈', color: '#ffd700', mult: 9720,
     bg: 'linear-gradient(180deg, #f9a825 0%, #ffd54f 30%, #ffca28 60%, #f57f17 100%)' },
-  { id: 13, name: 'Cakini Elephantini', file: '13_cakini_elephantini.png', bgNum: '13', rarity: 'OG', unlock: 15000000, emoji: '🐘', color: '#9b8ec4', mult: 6.75,
+  { id: 13, name: 'Cakini Elephantini', file: '13_cakini_elephantini.png', bgNum: '13', rarity: 'OG', unlock: 15000000, emoji: '🐘', color: '#9b8ec4', mult: 20900,
     bg: 'linear-gradient(180deg, #4a148c 0%, #9575cd 30%, #7e57c2 60%, #311b92 100%)' },
   // Characters 14, 16, 17 removed — will be re-added with clean art
-  { id: 15, name: 'Pizzini Partyini', file: '15_noobini_partyini.png', bgNum: '15', rarity: 'Brainrot God', unlock: 25000000, emoji: '🍕', color: '#2ecc71', mult: 7,
+  { id: 15, name: 'Pizzini Partyini', file: '15_noobini_partyini.png', bgNum: '15', rarity: 'Brainrot God', unlock: 25000000, emoji: '🍕', color: '#2ecc71', mult: 44900,
     bg: 'linear-gradient(180deg, #0a5c2a 0%, #1fb85a 30%, #16a04c 60%, #084a22 100%)' },
-  { id: 18, name: 'Noo Mio Heartini', file: '18_noo_my_heart.png', bgNum: '18', rarity: 'Rare', unlock: 50000000, emoji: '💔', color: '#8b0000', mult: 8,
+  { id: 18, name: 'Noo Mio Heartini', file: '18_noo_my_heart.png', bgNum: '18', rarity: 'Rare', unlock: 50000000, emoji: '💔', color: '#8b0000', mult: 446000,
     bg: 'linear-gradient(180deg, #1a237e 0%, #5c6bc0 30%, #3f51b5 60%, #0d1453 100%)' },
-  { id: 19, name: 'Cupidini Hotspottini', file: '19_cupid_hotspot.png', bgNum: '19', rarity: 'Legendary', unlock: 100000000, emoji: '🔥', color: '#ff4500', mult: 9,
+  { id: 19, name: 'Cupidini Hotspottini', file: '19_cupid_hotspot.png', bgNum: '19', rarity: 'Legendary', unlock: 100000000, emoji: '🔥', color: '#ff4500', mult: 2060000,
     bg: 'linear-gradient(180deg, #ff6d00 0%, #ffab00 25%, #ff8f00 50%, #ff6d00 75%, #e65100 100%)' },
   // Sportini event skins — earned via drops (ingredients) or locker fusion (output).
   // obtain !== 'points' hides them from the standard skins shop.
@@ -126,26 +126,26 @@ const CHARACTERS = [
   // (timur-world Projects.tsx) — that's the published source of truth.
   // DO NOT change these values without explicit approval; they affect live
   // player tap power and are visible to anyone browsing timur.world.
-  { id: 20, name: 'Stick Stick',  file: '20_stick_stick.png',  bgNum: '20', rarity: 'Secret',  unlock: 0, emoji: '🏒', color: '#8b4513', mult: 9.5, tag: 'Sportini', obtain: 'drop',
+  { id: 20, name: 'Stick Stick',  file: '20_stick_stick.png',  bgNum: '20', rarity: 'Secret',  unlock: 0, emoji: '🏒', color: '#8b4513', mult: 5790000, tag: 'Sportini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
-  { id: 21, name: 'No My Pucks',  file: '21_no_my_pucks.png',  bgNum: '20', rarity: 'Secret',  unlock: 0, emoji: '🥅', color: '#1a1a1a', mult: 12,  tag: 'Sportini', obtain: 'drop',
+  { id: 21, name: 'No My Pucks',  file: '21_no_my_pucks.png',  bgNum: '20', rarity: 'Secret',  unlock: 0, emoji: '🥅', color: '#1a1a1a', mult: 25300000,  tag: 'Sportini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #2a4d6f 0%, #4a7da8 35%, #356a93 65%, #1d3a55 100%)' },
-  { id: 22, name: 'Hockey Bros',  file: '22_hockey_bros.png',  bgNum: '20', rarity: 'Limited', unlock: 0, emoji: '🏆', color: '#c0392b', mult: 22,  tag: 'Sportini', obtain: 'fusion',
+  { id: 22, name: 'Hockey Bros',  file: '22_hockey_bros.png',  bgNum: '20', rarity: 'Limited', unlock: 0, emoji: '🏆', color: '#c0392b', mult: 203000000,  tag: 'Sportini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #c0392b 0%, #ff6b6b 35%, #e74c3c 65%, #922b21 100%)' },
   // ▼ PRESTIGE SKINS — unlocked by ascending N times.
   //   prestigeUnlock = number of ascensions required.
   //   obtain: 'prestige' tells the framework these go through the ascend ladder
   //   (auto-unlocks via skin checker, lands in unlockedSkins[]).
   { id: 23, name: 'Sushiro & Soyaro', file: '23_sushiro_soyaro.png', bgNum: '23',
-    rarity: 'Prestige', unlock: 0, emoji: '🍣', color: '#ff6f61', mult: 12,
+    rarity: 'Prestige', unlock: 0, emoji: '🍣', color: '#ff6f61', mult: 25300000,
     obtain: 'prestige', prestigeUnlock: 1,
     bg: 'linear-gradient(180deg, #2a0a4a 0%, #ff6f61 40%, #c0392b 70%, #1a0530 100%)' },
   { id: 24, name: 'Kingurini Orangini', file: '24_kinguru_orange.png', bgNum: '21',
-    rarity: 'Prestige', unlock: 0, emoji: '🍊', color: '#ff8c00', mult: 18,
+    rarity: 'Prestige', unlock: 0, emoji: '🍊', color: '#ff8c00', mult: 125000000,
     obtain: 'prestige', prestigeUnlock: 3,
     bg: 'linear-gradient(180deg, #2a0a4a 0%, #ff8c00 40%, #ffd700 70%, #1a0530 100%)' },
   { id: 25, name: 'Auraberry', file: '25_auraberry.png', bgNum: '22',
-    rarity: 'Prestige', unlock: 0, emoji: '🫐', color: '#a259ff', mult: 20,
+    rarity: 'Prestige', unlock: 0, emoji: '🫐', color: '#a259ff', mult: 161000000,
     obtain: 'prestige', prestigeUnlock: 5,
     bg: 'linear-gradient(180deg, #1a0530 0%, #6a0dad 40%, #a259ff 70%, #2a0a4a 100%)' },
   // Maple Cup Mythic — fusion of Cupidini Hotspottini (#19) + Hockey Bros (#22).
@@ -153,51 +153,51 @@ const CHARACTERS = [
   // stock, 25× multiplier. Joined later by Dragini Sqishini (#30) as a drop-
   // tier Mythic at 18× — Cupideini stays the apex Mythic (fusion + signed).
   { id: 26, name: 'Cupideini Hockini', file: '26_cupideini_hockini.png', bgNum: '24',
-    rarity: 'Mythic', unlock: 0, emoji: '🏒', color: '#ffd700', mult: 25,
+    rarity: 'Mythic', unlock: 0, emoji: '🏒', color: '#ffd700', mult: 231000000,
     tag: 'Sportini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #1a3050 0%, #ff4500 35%, #ffd700 60%, #1a0530 100%)' },
   // Los Hockeys Limited — 3-skin fusion: Stick Stick (#20) + No My Pucks (#21)
   // + Cupideini Hockini (#26). 30× tap multiplier — top of Limited tier until
   // La Fidget Combination (#31) joined at 35×.
   { id: 27, name: 'Los Hockeys', file: '27_los_hockeys.png', bgNum: '25',
-    rarity: 'Limited', unlock: 0, emoji: '⛸️', color: '#00bfff', mult: 30,
+    rarity: 'Limited', unlock: 0, emoji: '⛸️', color: '#00bfff', mult: 277000000,
     tag: 'Sportini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #0d3b66 0%, #1e90ff 35%, #00bfff 65%, #06243d 100%)' },
   // ▼ FIDGETINI CLASS — pop-it / fidget cube / squishy drop event. Three Secret-
   //   to-Mythic drops fuse into the Limited La Fidget Combination (#31). Mirrors
   //   the Sportini pattern (3 ingredients → 1 Limited fusion).
   { id: 28, name: 'Popini Itini', file: '28_popini_itini.png', bgNum: '26',
-    rarity: 'Secret', unlock: 0, emoji: '🧩', color: '#4db8db', mult: 13,
+    rarity: 'Secret', unlock: 0, emoji: '🧩', color: '#4db8db', mult: 30900000,
     tag: 'Fidgetini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #1a0530 0%, #4db8db 35%, #2ecc71 65%, #06243d 100%)' },
   { id: 29, name: 'Fidgetini Cubini', file: '29_fidgetini_cubini.png', bgNum: '26',
-    rarity: 'Secret', unlock: 0, emoji: '🎲', color: '#9b8ec4', mult: 15,
+    rarity: 'Secret', unlock: 0, emoji: '🎲', color: '#9b8ec4', mult: 43900000,
     tag: 'Fidgetini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #06243d 0%, #4db8db 35%, #9b8ec4 65%, #1a0530 100%)' },
   // Dragini Sqishini — Mythic via drop (not fusion). Second Mythic in game;
   // 18× sits below the fusion-Mythic Cupideini Hockini (25×) so the apex
   // Mythic narrative stays intact.
   { id: 30, name: 'Dragini Sqishini', file: '30_dragini_sqishini.png', bgNum: '26',
-    rarity: 'Mythic', unlock: 0, emoji: '🐉', color: '#c0392b', mult: 18,
+    rarity: 'Mythic', unlock: 0, emoji: '🐉', color: '#c0392b', mult: 125000000,
     tag: 'Fidgetini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #0d1f4d 0%, #c0392b 35%, #1e90ff 65%, #1a0530 100%)' },
   // La Fidget Combination Limited — 3-skin fusion: Popini Itini (#28) +
   // Fidgetini Cubini (#29) + Dragini Sqishini (#30). Dragon head + cube body
   // + pop-it ball in hand. 35× — new top of the tap-multiplier ladder.
   { id: 31, name: 'La Fidget Combination', file: '31_la_fidget_combination.png', bgNum: '26',
-    rarity: 'Limited', unlock: 0, emoji: '🧪', color: '#ff4500', mult: 35,
+    rarity: 'Limited', unlock: 0, emoji: '🧪', color: '#ff4500', mult: 323000000,
     tag: 'Fidgetini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #0d3b66 0%, #c0392b 35%, #ff4500 60%, #1a0530 100%)' },
   // Spinirino — red fidget spinner with face + legs. 4th Fidgetini drop,
   // sits between Cubini (15×) and Dragini (18×) on the multiplier ladder.
   { id: 32, name: 'Spinirino', file: '32_Spinirino.png', bgNum: '26',
-    rarity: 'Secret', unlock: 0, emoji: '🌀', color: '#e74c3c', mult: 16,
+    rarity: 'Secret', unlock: 0, emoji: '🌀', color: '#e74c3c', mult: 94400000,
     tag: 'Fidgetini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #1a0530 0%, #e74c3c 35%, #ff4500 65%, #06243d 100%)' },
   // Stressini Ballini — blue stress ball squishy with face + arms + legs.
   // 5th Fidgetini drop, slots between Popini (13×) and Cubini (15×).
   { id: 33, name: 'Stressini Ballini', file: '33_Stressini_ballini.png', bgNum: '26',
-    rarity: 'Secret', unlock: 0, emoji: '🔵', color: '#3498db', mult: 14,
+    rarity: 'Secret', unlock: 0, emoji: '🔵', color: '#3498db', mult: 37100000,
     tag: 'Fidgetini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #06243d 0%, #3498db 35%, #4db8db 65%, #1a0530 100%)' },
 
@@ -208,15 +208,15 @@ const CHARACTERS = [
   // unlock in the game, and 32× keeps it under the 35× Limited fusion so the
   // apex fusion narrative stays intact.
   { id: 42, name: 'Candini Bucketini', file: '43_Candini_Bucketini.png', bgNum: '19',
-    rarity: 'Common', unlock: 5000000, emoji: '🍬', color: '#FF7A1A', mult: 8,
+    rarity: 'Common', unlock: 5000000, emoji: '🍬', color: '#FF7A1A', mult: 4520,
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #2a0a3d 0%, #FF7A1A 40%, #5B2A86 72%, #150520 100%)' },
   { id: 43, name: 'Ghostini Mechini', file: '44_ghostini_mechini.png', bgNum: '19',
-    rarity: 'Epic', unlock: 150000000, emoji: '👻', color: '#9b59b6', mult: 16,
+    rarity: 'Epic', unlock: 150000000, emoji: '👻', color: '#9b59b6', mult: 9510000,
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #150520 0%, #9b59b6 38%, #5B2A86 70%, #0d0318 100%)' },
   { id: 44, name: 'Frankenstini Squalini', file: '46_Frankenstini_Sharkini.png', bgNum: '19',
-    rarity: 'Legendary', unlock: 500000000, emoji: '🧟', color: '#2ecc71', mult: 22,
+    rarity: 'Legendary', unlock: 500000000, emoji: '🧟', color: '#2ecc71', mult: 203000000,
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #0d0318 0%, #2ecc71 36%, #5B2A86 70%, #150520 100%)' },
   { id: 45, name: 'Vampire Dragini', file: '45_Vampire_Dragini.png', bgNum: '19',
@@ -224,7 +224,7 @@ const CHARACTERS = [
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #150520 0%, #5B2A86 35%, #FF7A1A 68%, #0d0318 100%)' },
   { id: 46, name: 'Headlessini Pumpkini', file: '42_Headlessini_Pumpkini.png', bgNum: '19',
-    rarity: 'Divine', unlock: 5000000000, emoji: '🎃', color: '#FF7A1A', mult: 1000000000,
+    rarity: 'Divine', unlock: 5000000000, emoji: '🎃', color: '#FF7A1A', mult: 2000000000,
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #0d0318 0%, #FF7A1A 38%, #5B2A86 72%, #150520 100%)' },
   // ══ Lovini / Mother's Day / Summerini batch (ids 34-41) ══
@@ -236,37 +236,37 @@ const CHARACTERS = [
   // Halloween skin a different character instead. Display order is grouped by
   // rarity in the locker, so array order is not user-visible anyway.
   { id: 41, name: 'Toastini Butterini', file: '41_toastini_butterini.png', bgNum: '06',
-    rarity: 'Rare', unlock: 30000000, emoji: '🍞', color: '#d4a574', mult: 7.5,
+    rarity: 'Rare', unlock: 30000000, emoji: '🍞', color: '#d4a574', mult: 96500,
     tag: 'Lovini',
     bg: 'linear-gradient(180deg, #4a3415 0%, #d4a574 38%, #f5deb3 68%, #2a1c08 100%)' },
   { id: 39, name: 'Lemon Lemon Sahur', file: '39_lemon_lemon_sahur.png', bgNum: '24',
-    rarity: 'Rare', unlock: 35000000, emoji: '🍋', color: '#f4d03f', mult: 7.5,
+    rarity: 'Rare', unlock: 35000000, emoji: '🍋', color: '#f4d03f', mult: 207000,
     tag: 'Summerini',
     bg: 'linear-gradient(180deg, #0d3b66 0%, #f4d03f 42%, #4db8db 72%, #06243d 100%)' },
   { id: 35, name: 'Cappy Family', file: '35_cappy_family.png', bgNum: '08',
-    rarity: 'Rare', unlock: 60000000, emoji: '🦫', color: '#b8860b', mult: 8,
+    rarity: 'Rare', unlock: 60000000, emoji: '🦫', color: '#b8860b', mult: 958000,
     tag: 'Lovini',
     bg: 'linear-gradient(180deg, #4a3415 0%, #b8860b 38%, #d4a574 68%, #2a1c08 100%)' },
   { id: 38, name: 'Cuppini Triondini', file: '38_cuppini_triondini.png', bgNum: '20',
-    rarity: 'Legendary', unlock: 120000000, emoji: '🏆', color: '#ffd700', mult: 9,
+    rarity: 'Legendary', unlock: 120000000, emoji: '🏆', color: '#ffd700', mult: 4430000,
     tag: 'Summerini',
     bg: 'linear-gradient(180deg, #1a3a5c 0%, #ffd700 40%, #2ecc71 70%, #0a1f33 100%)' },
   { id: 37, name: 'Cupcakini Sweetini', file: '37_cupcakini_sweetini.png', bgNum: '06',
-    rarity: 'Secret', unlock: 200000000, emoji: '🧁', color: '#ff8fab', mult: 10.5,
+    rarity: 'Secret', unlock: 200000000, emoji: '🧁', color: '#ff8fab', mult: 20400000,
     tag: 'Lovini',
     bg: 'linear-gradient(180deg, #5a2440 0%, #ff8fab 38%, #ffd1dc 68%, #2a0a20 100%)' },
   { id: 34, name: 'Bobini Lovini', file: '34_bobini_lovini.png', bgNum: '11',
-    rarity: 'Secret', unlock: 250000000, emoji: '🧋', color: '#c98bb9', mult: 11,
+    rarity: 'Secret', unlock: 250000000, emoji: '🧋', color: '#c98bb9', mult: 43900000,
     tag: 'Lovini',
     bg: 'linear-gradient(180deg, #4a1f3d 0%, #c98bb9 38%, #ff69b4 68%, #2a0a30 100%)' },
   { id: 36, name: 'Chillen Lemonade', file: '36_chillen_lemonade.png', bgNum: '24',
-    rarity: 'Secret', unlock: 400000000, emoji: '🍋', color: '#ffd700', mult: 15,
+    rarity: 'Secret', unlock: 400000000, emoji: '🍋', color: '#ffd700', mult: 94400000,
     tag: 'Summerini',
     bg: 'linear-gradient(180deg, #0d3b66 0%, #4db8db 35%, #ffd700 70%, #06243d 100%)' },
   // Limited fusion of the Lovini cast — fusion-only like Hockey Bros and Los
   // Hockeys, so it never auto-unlocks from points.
   { id: 40, name: 'Lovini Vibini', file: '40_lovini_vibini.png', bgNum: '01',
-    rarity: 'Limited', unlock: 0, emoji: '💞', color: '#ff1493', mult: 28,
+    rarity: 'Limited', unlock: 0, emoji: '💞', color: '#ff1493', mult: 258000000,
     tag: 'Lovini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #4a0d3d 0%, #ff1493 35%, #ff69b4 65%, #2a0530 100%)' },
 ];
