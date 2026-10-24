@@ -227,6 +227,48 @@ const CHARACTERS = [
     rarity: 'Divine', unlock: 5000000000, emoji: '🎃', color: '#FF7A1A', mult: 32,
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #0d0318 0%, #FF7A1A 38%, #5B2A86 72%, #150520 100%)' },
+  // ══ Lovini / Mother's Day / Summerini batch (ids 34-41) ══
+  // Shipped on the site in August but never added to the game.
+  //
+  // Appended AFTER the Halloween skins rather than slotted in by id, because
+  // save files store unlockedSkins as indices into this array. Inserting in
+  // the middle would shift ids 42-46 and silently hand anyone who unlocked a
+  // Halloween skin a different character instead. Display order is grouped by
+  // rarity in the locker, so array order is not user-visible anyway.
+  { id: 41, name: 'Toastini Butterini', file: '41_toastini_butterini.png', bgNum: '06',
+    rarity: 'Rare', unlock: 30000000, emoji: '🍞', color: '#d4a574', mult: 7.5,
+    tag: 'Lovini',
+    bg: 'linear-gradient(180deg, #4a3415 0%, #d4a574 38%, #f5deb3 68%, #2a1c08 100%)' },
+  { id: 39, name: 'Lemon Lemon Sahur', file: '39_lemon_lemon_sahur.png', bgNum: '24',
+    rarity: 'Rare', unlock: 35000000, emoji: '🍋', color: '#f4d03f', mult: 7.5,
+    tag: 'Summerini',
+    bg: 'linear-gradient(180deg, #0d3b66 0%, #f4d03f 42%, #4db8db 72%, #06243d 100%)' },
+  { id: 35, name: 'Cappy Family', file: '35_cappy_family.png', bgNum: '08',
+    rarity: 'Rare', unlock: 60000000, emoji: '🦫', color: '#b8860b', mult: 8,
+    tag: 'Lovini',
+    bg: 'linear-gradient(180deg, #4a3415 0%, #b8860b 38%, #d4a574 68%, #2a1c08 100%)' },
+  { id: 38, name: 'Cuppini Triondini', file: '38_cuppini_triondini.png', bgNum: '20',
+    rarity: 'Legendary', unlock: 120000000, emoji: '🏆', color: '#ffd700', mult: 9,
+    tag: 'Summerini',
+    bg: 'linear-gradient(180deg, #1a3a5c 0%, #ffd700 40%, #2ecc71 70%, #0a1f33 100%)' },
+  { id: 37, name: 'Cupcakini Sweetini', file: '37_cupcakini_sweetini.png', bgNum: '06',
+    rarity: 'Secret', unlock: 200000000, emoji: '🧁', color: '#ff8fab', mult: 10.5,
+    tag: 'Lovini',
+    bg: 'linear-gradient(180deg, #5a2440 0%, #ff8fab 38%, #ffd1dc 68%, #2a0a20 100%)' },
+  { id: 34, name: 'Bobini Lovini', file: '34_bobini_lovini.png', bgNum: '11',
+    rarity: 'Secret', unlock: 250000000, emoji: '🧋', color: '#c98bb9', mult: 11,
+    tag: 'Lovini',
+    bg: 'linear-gradient(180deg, #4a1f3d 0%, #c98bb9 38%, #ff69b4 68%, #2a0a30 100%)' },
+  { id: 36, name: 'Chillen Lemonade', file: '36_chillen_lemonade.png', bgNum: '24',
+    rarity: 'Secret', unlock: 400000000, emoji: '🍋', color: '#ffd700', mult: 15,
+    tag: 'Summerini',
+    bg: 'linear-gradient(180deg, #0d3b66 0%, #4db8db 35%, #ffd700 70%, #06243d 100%)' },
+  // Limited fusion of the Lovini cast — fusion-only like Hockey Bros and Los
+  // Hockeys, so it never auto-unlocks from points.
+  { id: 40, name: 'Lovini Vibini', file: '40_lovini_vibini.png', bgNum: '01',
+    rarity: 'Limited', unlock: 0, emoji: '💞', color: '#ff1493', mult: 28,
+    tag: 'Lovini', obtain: 'fusion',
+    bg: 'linear-gradient(180deg, #4a0d3d 0%, #ff1493 35%, #ff69b4 65%, #2a0530 100%)' },
 ];
 
 // Per-skin render scale to harmonize on-screen size in the character spotlight.
