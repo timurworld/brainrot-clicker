@@ -289,6 +289,10 @@ const CHEAT_CODES = {
   // code — Divine skins must be earned, never handed out by a cheat.
   'spooky': { type: 'points', value: 13000, msg: '+13,000 Points! 🎃' },
   'tmoneyunlock': { type: 'unlockall', value: 0, msg: 'ALL CHARACTERS UNLOCKED!' },
+  // Parent/admin master code. Unlike tmoneyunlock this holds nothing back —
+  // Limited fusions and the Divine seasonal tier included — so the whole
+  // roster can be shown off or checked without grinding to 5B points.
+  'emoneyunlock': { type: 'unlockevery', value: 0, msg: 'EVERY CHARACTER UNLOCKED!' },
 };
 
 const ACHIEVEMENTS = [
@@ -3482,6 +3486,13 @@ export default function App() {
         });
         updates.points = game.points + 10000000;
         updates.lifetimePoints = game.lifetimePoints + 10000000;
+      }
+      if (c.type === 'unlockevery') {
+        // Every skin, no exclusions, plus enough lifetime points that the
+        // Divine tier stays unlocked on the next unlock-checker pass.
+        updates.unlockedSkins = CHARACTERS.map((_, i) => i);
+        updates.points = game.points + 10000000000;
+        updates.lifetimePoints = game.lifetimePoints + 10000000000;
       }
       setGame(prev => ({ ...prev, ...updates }));
       setCodeResult({ success: true, msg: c.msg });
