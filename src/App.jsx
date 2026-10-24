@@ -36,6 +36,56 @@ const LETTER_SPACING = {
   display: '4px',
 };
 
+// ============================================================
+// RARITY LADDER — single source of truth
+// `tier` orders the ladder. Divine sits above Mythic and is
+// seasonal-exclusive: no core skin may ever use it.
+// ============================================================
+const RARITY_META = {
+  'Common':         { tier: 1,  color: '#aaa' },
+  'Rare':           { tier: 2,  color: '#4db8db' },
+  'OG':             { tier: 3,  color: '#00ff00' },
+  'Epic':           { tier: 4,  color: '#9b59b6' },
+  'Legendary':      { tier: 5,  color: '#ffd700' },
+  'Brainrot God':   { tier: 6,  color: '#ff00ff' },
+  'Secret':         { tier: 7,  color: '#ff4500' },
+  'Prestige':       { tier: 8,  color: '#a259ff' },
+  'Limited':        { tier: 9,  color: '#ff4500' },
+  'Mythic':         { tier: 10, color: '#ff44ff' },
+  'Mythic Limited': { tier: 10, color: '#ff44ff' },
+  'Divine':         { tier: 11, color: '#FF7A1A', seasonalOnly: true },
+};
+
+function rarityColor(rarity) {
+  return RARITY_META[rarity]?.color || '#aaa';
+}
+
+// ============================================================
+// HALLOWEEN 2026 — limited seasonal collection
+// One config value for the whole window. Past this instant,
+// already-unlocked Halloween skins stay owned forever; locked
+// ones read "Seasonal – returns next Halloween".
+// (Nov 2 2026 is PST — US DST ends Nov 1 2026.)
+// ============================================================
+const HALLOWEEN_2026_END = new Date('2026-11-02T23:59:59-08:00').getTime();
+
+function isHalloweenSeasonOpen(now = Date.now()) {
+  return now <= HALLOWEEN_2026_END;
+}
+
+// Fixed scatter for the Divine aura's light particles — precomputed so they
+// don't re-randomise on every render and jump around.
+const DIVINE_MOTES = [
+  { angle: 18,  radius: 206, size: 5, dur: 3.4, delay: 0,    purple: false },
+  { angle: 64,  radius: 224, size: 4, dur: 4.1, delay: 0.7,  purple: true  },
+  { angle: 112, radius: 198, size: 6, dur: 3.8, delay: 1.5,  purple: false },
+  { angle: 158, radius: 230, size: 4, dur: 4.6, delay: 0.3,  purple: true  },
+  { angle: 204, radius: 210, size: 5, dur: 3.2, delay: 2.1,  purple: false },
+  { angle: 248, radius: 220, size: 4, dur: 4.3, delay: 1.1,  purple: true  },
+  { angle: 296, radius: 202, size: 6, dur: 3.6, delay: 2.6,  purple: false },
+  { angle: 338, radius: 228, size: 4, dur: 4.0, delay: 0.5,  purple: true  },
+];
+
 const CHARACTERS = [
   { id: 1, name: 'Noobini Lovini', file: '01_noobini_lovini.png', bgNum: '01', rarity: 'Common', unlock: 0, emoji: '💖', color: '#ff69b4', mult: 1,
     bg: 'linear-gradient(180deg, #6a11cb 0%, #bc4dff 50%, #6a11cb 100%)' },
@@ -150,6 +200,33 @@ const CHARACTERS = [
     rarity: 'Secret', unlock: 0, emoji: '🔵', color: '#3498db', mult: 14,
     tag: 'Fidgetini', obtain: 'drop',
     bg: 'linear-gradient(180deg, #06243d 0%, #3498db 35%, #4db8db 65%, #1a0530 100%)' },
+
+  // ══ Halloween 2026 — limited seasonal collection ══
+  // Points-unlocked like the core ladder, but gated by `seasonal` so they stop
+  // unlocking once the window closes. The two Divine skins extend the ladder
+  // past its old 100M ceiling; Headlessini Pumpkini at 5B is the hardest
+  // unlock in the game, and 32× keeps it under the 35× Limited fusion so the
+  // apex fusion narrative stays intact.
+  { id: 42, name: 'Candini Bucketini', file: '43_Candini_Bucketini.png', bgNum: '19',
+    rarity: 'Common', unlock: 5000000, emoji: '🍬', color: '#FF7A1A', mult: 8,
+    tag: 'Halloween 2026', seasonal: 'halloween2026',
+    bg: 'linear-gradient(180deg, #2a0a3d 0%, #FF7A1A 40%, #5B2A86 72%, #150520 100%)' },
+  { id: 43, name: 'Ghostini Mechini', file: '44_ghostini_mechini.png', bgNum: '19',
+    rarity: 'Epic', unlock: 150000000, emoji: '👻', color: '#9b59b6', mult: 16,
+    tag: 'Halloween 2026', seasonal: 'halloween2026',
+    bg: 'linear-gradient(180deg, #150520 0%, #9b59b6 38%, #5B2A86 70%, #0d0318 100%)' },
+  { id: 44, name: 'Frankenstini Squalini', file: '46_Frankenstini_Sharkini.png', bgNum: '19',
+    rarity: 'Legendary', unlock: 500000000, emoji: '🧟', color: '#2ecc71', mult: 22,
+    tag: 'Halloween 2026', seasonal: 'halloween2026',
+    bg: 'linear-gradient(180deg, #0d0318 0%, #2ecc71 36%, #5B2A86 70%, #150520 100%)' },
+  { id: 45, name: 'Vampire Dragini', file: '45_Vampire_Dragini.png', bgNum: '19',
+    rarity: 'Divine', unlock: 2000000000, emoji: '🧛', color: '#FF7A1A', mult: 28,
+    tag: 'Halloween 2026', seasonal: 'halloween2026',
+    bg: 'linear-gradient(180deg, #150520 0%, #5B2A86 35%, #FF7A1A 68%, #0d0318 100%)' },
+  { id: 46, name: 'Headlessini Pumpkini', file: '42_Headlessini_Pumpkini.png', bgNum: '19',
+    rarity: 'Divine', unlock: 5000000000, emoji: '🎃', color: '#FF7A1A', mult: 32,
+    tag: 'Halloween 2026', seasonal: 'halloween2026',
+    bg: 'linear-gradient(180deg, #0d0318 0%, #FF7A1A 38%, #5B2A86 72%, #150520 100%)' },
 ];
 
 // Per-skin render scale to harmonize on-screen size in the character spotlight.
@@ -208,6 +285,9 @@ const CHEAT_CODES = {
   'hockey': { type: 'skin', value: 2, msg: 'Skin Unlocked!' },
   'sigma': { type: 'cps', value: 1, msg: '+1 Click/sec!' },
   'lego': { type: 'points', value: 10000, msg: '+10,000 Points!' },
+  // Halloween 2026 one-time boost. Deliberately a points code, not a skin
+  // code — Divine skins must be earned, never handed out by a cheat.
+  'spooky': { type: 'points', value: 13000, msg: '+13,000 Points! 🎃' },
   'tmoneyunlock': { type: 'unlockall', value: 0, msg: 'ALL CHARACTERS UNLOCKED!' },
 };
 
@@ -224,9 +304,10 @@ const ACHIEVEMENTS = [
   { id: 'a10', name: 'Shopaholic', desc: '10 upgrades', icon: '🛍️', check: s => s.totalUpgrades >= 10 },
   { id: 'a11', name: 'Addict', desc: '50 upgrades', icon: '🤯', check: s => s.totalUpgrades >= 50 },
   { id: 'a12', name: 'Skin Collector', desc: '4 skins', icon: '🕴️', check: s => s.unlockedSkins.length >= 4 },
-  { id: 'a13', name: 'Fashion Icon', desc: 'All skins', icon: '👑', check: s => s.unlockedSkins.length >= 19 },
+  // Counts core skins only, so limited seasonal drops can never shortcut it.
+  { id: 'a13', name: 'Fashion Icon', desc: 'All skins', icon: '👑', check: s => s.unlockedSkins.filter(i => !CHARACTERS[i]?.seasonal).length >= 19 },
   { id: 'a14', name: 'Code Breaker', desc: '1 code', icon: '🔓', check: s => s.usedCodes.length >= 1 },
-  { id: 'a15', name: 'Hacker Man', desc: 'All codes', icon: '💻', check: s => s.usedCodes.length >= 5 },
+  { id: 'a15', name: 'Hacker Man', desc: 'All codes', icon: '💻', check: s => s.usedCodes.length >= 6 },
   { id: 'a16', name: 'Speed Demon', desc: '100/sec', icon: '⚡', check: s => s.cps >= 100 },
   { id: 'a17', name: 'Idle Master', desc: '1000/sec', icon: '🧘', check: s => s.cps >= 1000 },
   { id: 'a18', name: 'First Rebirth', desc: 'Ascend 1x', icon: '🔄', check: s => s.prestigeCount >= 1 },
@@ -3137,6 +3218,9 @@ export default function App() {
   useEffect(() => {
     CHARACTERS.forEach((ch, idx) => {
       if (game.unlockedSkins.includes(idx)) return;
+      // Limited seasonal skins only unlock while their season is open. Anything
+      // already owned stays owned — this gate only blocks *new* unlocks.
+      if (ch.seasonal === 'halloween2026' && !isHalloweenSeasonOpen()) return;
       const obtain = ch.obtain || 'points';
       let earned = false;
       if (obtain === 'points' && game.lifetimePoints >= ch.unlock) earned = true;
@@ -3389,7 +3473,13 @@ export default function App() {
         // Limited rarity skins (Hockey Bros #22, Los Hockeys #27) stay locked
         // behind their fusion lockers — the cheat code shouldn't bypass
         // scarcity since Limited is the rarest tier in the game economy.
-        updates.unlockedSkins = CHARACTERS.flatMap((ch, i) => ch.rarity === 'Limited' ? [] : [i]);
+        // Divine is rarer still, and out-of-season seasonals aren't obtainable
+        // at all, so both are excluded too.
+        updates.unlockedSkins = CHARACTERS.flatMap((ch, i) => {
+          if (ch.rarity === 'Limited' || ch.rarity === 'Divine') return [];
+          if (ch.seasonal === 'halloween2026' && !isHalloweenSeasonOpen()) return [];
+          return [i];
+        });
         updates.points = game.points + 10000000;
         updates.lifetimePoints = game.lifetimePoints + 10000000;
       }
@@ -3689,6 +3779,34 @@ export default function App() {
       width: 'min(360px, 73vw)', height: 'min(360px, 73vw)',
       borderRadius: '50%', pointerEvents: 'none', zIndex: 4,
       background: 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 50%, transparent 85%)',
+    },
+    // Divine aura — seasonal-exclusive top tier. A second counter-rotating
+    // ring in pumpkin orange over deep purple, sitting outside the normal
+    // glow rings so it reads as "more" rather than replacing them.
+    // A masked conic ring rather than a filled disc: the bright world
+    // backgrounds swallow a soft wash, but a defined orange/purple ring
+    // sitting just outside the normal glow rings reads on any of them.
+    divineAura: {
+      position: 'absolute', top: '46%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: 'min(470px, 94vw)', height: 'min(470px, 94vw)',
+      borderRadius: '50%', pointerEvents: 'none', zIndex: 6,
+      background: 'conic-gradient(from 0deg, #FF7A1A, #5B2A86 18%, #C77DFF 36%, #FFB01F 54%, #5B2A86 76%, #FF7A1A 100%)',
+      WebkitMaskImage: 'radial-gradient(closest-side, transparent 76%, #000 83%, #000 93%, transparent 99%)',
+      maskImage: 'radial-gradient(closest-side, transparent 76%, #000 83%, #000 93%, transparent 99%)',
+      filter: 'blur(4px) saturate(1.25)',
+      opacity: 0.9,
+      animation: 'divineSpin 9s linear infinite',
+    },
+    // Soft bloom behind the character so the ring doesn't float unsupported.
+    divineBloom: {
+      position: 'absolute', top: '46%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: 'min(430px, 88vw)', height: 'min(430px, 88vw)',
+      borderRadius: '50%', pointerEvents: 'none', zIndex: 3,
+      background: 'radial-gradient(circle, rgba(91,42,134,0.55) 0%, rgba(255,122,26,0.28) 55%, transparent 78%)',
+      filter: 'blur(18px)',
+      animation: 'ringPulse 3.5s ease-in-out infinite',
     },
     skinLabel: {
       position: 'absolute', top: 'calc(46% + min(195px, 38vw))', left: '50%',
@@ -5101,6 +5219,29 @@ export default function App() {
         background: `radial-gradient(circle, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.15) 75%, transparent 100%)`,
         boxShadow: `0 0 60px 20px rgba(0,0,0,0.3)`,
       }} />
+      {/* Divine aura + light particles — top-tier seasonal skins only */}
+      {currentSkin.rarity === 'Divine' && (
+        <>
+          <div style={styles.divineBloom} />
+          <div style={styles.divineAura} />
+          {DIVINE_MOTES.map((m, i) => (
+            <div key={i} style={{
+              position: 'absolute', top: '46%', left: '50%',
+              width: '0', height: '0', pointerEvents: 'none', zIndex: 6,
+              transform: `translate(-50%, -50%) rotate(${m.angle}deg)`,
+            }}>
+              <div style={{
+                position: 'absolute', left: m.radius + 'px', top: '-3px',
+                width: m.size + 'px', height: m.size + 'px', borderRadius: '50%',
+                background: m.purple ? '#E6C4FF' : '#FFE8A3',
+                boxShadow: `0 0 10px 3px ${m.purple ? 'rgba(199,125,255,0.95)' : 'rgba(255,122,26,0.95)'}, 0 0 20px 6px ${m.purple ? 'rgba(91,42,134,0.55)' : 'rgba(255,122,26,0.4)'}`,
+                animation: `divineMote ${m.dur}s ease-in-out ${m.delay}s infinite`,
+              }} />
+            </div>
+          ))}
+        </>
+      )}
+
       {/* Glow rings around character */}
       <div style={styles.glowRing} />
       <div style={styles.glowRing2} />
@@ -5154,9 +5295,12 @@ export default function App() {
         <div onClick={(e) => { e.stopPropagation(); handleGoldenTap(); }} style={{
           position: 'absolute', left: goldenBrain.x + '%', top: goldenBrain.y + '%',
           fontSize: '48px', cursor: 'pointer', zIndex: 25,
-          filter: 'drop-shadow(0 0 20px gold)',
+          // Golden brain becomes a golden pumpkin for the spooky season.
+          filter: getSeason() === 'spooky'
+            ? 'drop-shadow(0 0 20px #FF7A1A)'
+            : 'drop-shadow(0 0 20px gold)',
           animation: 'pulse 0.5s ease-in-out infinite',
-        }}>🧠</div>
+        }}>{getSeason() === 'spooky' ? '🎃' : '🧠'}</div>
       )}
 
       {/* Bottom Navigation */}
@@ -5403,7 +5547,11 @@ export default function App() {
               const totalQty = invRows.reduce((s, r) => s + (r.quantity || 1), 0);
               const equipped = game.equippedSkin === idx;
               const isPointSkin = !ch.obtain || ch.obtain === 'points';
-              const unlockHint = isPointSkin
+              // A locked seasonal skin past its window can't be earned at all.
+              const seasonClosed = ch.seasonal === 'halloween2026' && !isHalloweenSeasonOpen();
+              const unlockHint = seasonClosed
+                ? 'Seasonal – returns next Halloween'
+                : isPointSkin
                 ? `${formatNumber(ch.unlock)} pts`
                 : ch.obtain === 'fusion'
                   ? 'Fuse in Locker'
@@ -5413,16 +5561,7 @@ export default function App() {
               const locked = invRow ? isTradeLocked(invRow) : false;
               const reserved = invRow ? !!invRow.reserved_by_listing : false;
               const canList = unlocked && !locked && !reserved && !!player?.id;
-              const tierColor =
-                ch.rarity === 'Mythic' || ch.rarity === 'Mythic Limited' ? '#ff44ff'
-                : ch.rarity === 'Brainrot God' ? '#ff00ff'
-                : ch.rarity === 'Legendary' ? '#ffd700'
-                : ch.rarity === 'OG' ? '#00ff00'
-                : ch.rarity === 'Secret' ? '#ff4500'
-                : ch.rarity === 'Rare' ? '#4db8db'
-                : ch.rarity === 'Prestige' ? '#a259ff'
-                : ch.rarity === 'Limited' ? '#ff4500'
-                : '#aaa';
+              const tierColor = rarityColor(ch.rarity);
               return (
                 <div key={idx} onClick={() => unlocked && setGame(prev => ({ ...prev, equippedSkin: idx }))} style={{
                   padding: '8px', borderRadius: '12px', textAlign: 'center', cursor: unlocked ? 'pointer' : 'default',
@@ -6328,6 +6467,14 @@ export default function App() {
         @keyframes ringPulse {
           0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
           50% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+        }
+        @keyframes divineSpin {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to   { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        @keyframes divineMote {
+          0%, 100% { transform: translateY(0) scale(0.7); opacity: 0.35; }
+          50%      { transform: translateY(-16px) scale(1.25); opacity: 1; }
         }
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         @keyframes emoteFloat {

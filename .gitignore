@@ -1,3 +1,6 @@
 node_modules
 dist
 .DS_Store
+
+# Local Claude Code settings — may contain API keys
+.claude/settings.local.json
