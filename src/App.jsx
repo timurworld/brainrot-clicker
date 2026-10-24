@@ -1851,47 +1851,71 @@ function AdminCountdown({ schedule }) {
  * ================================================================== */
 
 function AdminEffectDisco() {
-  // Strobe color cycle, dance floor grid, multiple disco balls, beat banner
+  // Rebuilt as a lighting rig rather than a colour wash: sweeping beams with
+  // depth, a bloomed mirror ball, floor spill and beat shockwaves. The old
+  // version leaned on a full-screen rainbow overlay plus a hard strobe, which
+  // flattened the character art and read as a 90s screensaver.
+  const BEAMS = [
+    { x: 14, hue: '#ff2d95', delay: 0,    dur: 2.6 },
+    { x: 32, hue: '#00e5ff', delay: 0.45, dur: 3.1 },
+    { x: 54, hue: '#b14dff', delay: 0.2,  dur: 2.8 },
+    { x: 72, hue: '#ffd23f', delay: 0.7,  dur: 3.3 },
+    { x: 88, hue: '#2dff8a', delay: 0.9,  dur: 2.5 },
+  ];
   return (<>
-    {/* Strobe color wash */}
-    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(45deg, #ff00ff60, #00ffff60, #ffff0060, #ff00ff60)', backgroundSize: '400% 400%', animation: 'discoWash 1.2s linear infinite', zIndex: 15, pointerEvents: 'none', mixBlendMode: 'screen' }} />
-    {/* Strobe flash */}
-    <div style={{ position: 'absolute', inset: 0, background: '#fff', animation: 'discoStrobe 0.4s steps(2) infinite', zIndex: 16, pointerEvents: 'none' }} />
-    {/* Dance floor squares */}
-    {[...Array(20)].map((_, i) => (
-      <div key={'sq'+i} style={{
-        position: 'absolute', bottom: `${(i % 5) * 15}%`, left: `${(i % 4) * 25}%`,
-        width: '25%', height: '15%', zIndex: 14,
-        background: ['#ff00ff','#00ffff','#ffff00','#00ff00','#ff0066'][i % 5],
-        opacity: 0.35, animation: `floorPulse 0.6s ease-in-out infinite`, animationDelay: `${i * 0.05}s`,
-        mixBlendMode: 'overlay',
+    {/* Depth: a dark stage behind everything so the lights read as light */}
+    <div style={{ position: 'absolute', inset: 0, background:
+      'radial-gradient(ellipse at 50% 120%, rgba(90,20,140,0.55), rgba(8,4,20,0.78) 70%)',
+      zIndex: 12, pointerEvents: 'none' }} />
+
+    {/* Sweeping beams — angled, blurred, parallaxed by duration */}
+    {BEAMS.map((b, i) => (
+      <div key={'bm'+i} style={{
+        position: 'absolute', top: '-10%', left: `${b.x}%`, width: '14%', height: '120%',
+        background: `linear-gradient(to bottom, ${b.hue}cc, ${b.hue}22 55%, transparent 85%)`,
+        filter: 'blur(14px)', transformOrigin: 'top center', zIndex: 14, pointerEvents: 'none',
+        animation: `djSweep ${b.dur}s cubic-bezier(.45,0,.55,1) ${b.delay}s infinite`,
       }} />
     ))}
-    {/* Multiple disco balls */}
-    <div style={{ position: 'absolute', top: '5%', left: '20%', fontSize: '70px', zIndex: 17, animation: 'discoSwing 1.4s ease-in-out infinite' }}>🪩</div>
-    <div style={{ position: 'absolute', top: '8%', left: '50%', transform: 'translateX(-50%)', fontSize: '110px', zIndex: 17, animation: 'discoSpin 1.5s linear infinite, discoBob 2s ease-in-out infinite', filter: 'drop-shadow(0 0 30px #ff00ff)' }}>🪩</div>
-    <div style={{ position: 'absolute', top: '5%', right: '20%', fontSize: '70px', zIndex: 17, animation: 'discoSwing 1.4s ease-in-out 0.3s infinite reverse' }}>🪩</div>
-    {/* Banner */}
+
+    {/* Beat shockwaves out of the floor */}
+    {[0, 0.8, 1.6].map((d, i) => (
+      <div key={'sw'+i} style={{
+        position: 'absolute', left: '50%', top: '62%', width: '38vw', height: '38vw',
+        border: '10px solid rgba(255,255,255,0.5)', borderRadius: '50%',
+        transform: 'translate(-50%,-50%)', zIndex: 15, pointerEvents: 'none',
+        animation: `djShockwave 2.4s cubic-bezier(.2,.7,.3,1) ${d}s infinite`,
+      }} />
+    ))}
+
+    {/* Mirror ball with real bloom instead of a flat emoji */}
+    <div className="dj-bloom" style={{
+      position: 'absolute', top: '7%', left: '50%', transform: 'translateX(-50%)',
+      fontSize: 'clamp(64px, 14vw, 120px)', zIndex: 17, color: '#d9e8ff', pointerEvents: 'none',
+      animation: 'discoSpin 3.4s linear infinite, discoBob 2.6s ease-in-out infinite',
+    }}>🪩</div>
+
+    {/* Floor spill */}
     <div style={{
-      position: 'absolute', top: '14%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
+      position: 'absolute', left: '50%', top: '78%', width: '86vw', height: '34vw',
+      transform: 'translate(-50%,-50%)', borderRadius: '50%', zIndex: 13, pointerEvents: 'none',
+      background: 'radial-gradient(ellipse, rgba(255,120,220,0.38), rgba(80,0,140,0) 72%)',
+      filter: 'blur(26px)', animation: 'djBreathe 1.3s ease-in-out infinite',
+    }} />
+
+    <div className="dj-vignette" />
+
+    <div style={{
+      position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', zIndex: 18,
       fontFamily: FONTS.display, fontSize: 'clamp(22px, 6vw, 36px)', color: '#fff',
-      textShadow: '0 0 18px #ff00ff, 0 0 36px #00ffff, 3px 3px 0 #000',
-      letterSpacing: LETTER_SPACING.title, whiteSpace: 'nowrap',
-      animation: 'discoBannerPulse 0.5s ease-in-out infinite',
+      letterSpacing: LETTER_SPACING.display, whiteSpace: 'nowrap', pointerEvents: 'none',
+      textShadow: '0 0 18px #ff2d95, 0 0 44px #b14dff, 0 3px 0 rgba(0,0,0,0.8)',
+      animation: 'discoBannerPulse 0.75s ease-in-out infinite',
     }}>🎧 DJ TIMUR ON THE DECKS 🎧</div>
-    <style>{`
-      @keyframes discoWash { 0% { background-position: 0% 0%; } 100% { background-position: 400% 400%; } }
-      @keyframes discoStrobe { 0%, 100% { opacity: 0; } 50% { opacity: 0.18; } }
-      @keyframes floorPulse { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.55; } }
-      @keyframes discoSwing { 0%, 100% { transform: rotate(-25deg); } 50% { transform: rotate(25deg); } }
-      @keyframes discoSpin { from { transform: translateX(-50%) rotate(0deg); } to { transform: translateX(-50%) rotate(360deg); } }
-      @keyframes discoBob { 0%, 100% { margin-top: 0; } 50% { margin-top: 20px; } }
-      @keyframes discoBannerPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.1); } }
-    `}</style>
   </>);
 }
 
-function AdminEffectFireworks({ setGame }) {
+function AdminEffectFireworks({ grant }) {
   // Big shell bursts + catchable falling coin pickups (250 each)
   const colors = ['#ff3060','#ffd900','#00f0ff','#ff00ff','#33ff66','#ff7a00','#ffffff','#ff5599','#ffa500','#88ff00'];
   const [pickups, setPickups] = useState([]);
@@ -1913,7 +1937,7 @@ function AdminEffectFireworks({ setGame }) {
   }, []);
 
   const grab = (id) => {
-    setGame(prev => ({ ...prev, points: prev.points + 250, lifetimePoints: prev.lifetimePoints + 250 }));
+    grant(3);   // ~3 seconds of income per burst
     setPickups(prev => prev.filter(p => p.id !== id));
   };
   // 8 burst sites — each gets a launching shell + bigger explosion
@@ -2187,7 +2211,12 @@ function AdminEffectRocket() {
   </>);
 }
 
-function AdminEffectCats({ setGame }) {
+function AdminEffectCats({ grant }) {
+  // The DJ can switch an effect off mid-flight; without this the pending
+  // timeouts keep firing into an unmounted component.
+  const timersRef = useRef([]);
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
+
   // Cats in waves, varying sizes, bouncing — TAP to catch for +500 coins
   const [caught, setCaught] = useState(new Set());
   const [popups, setPopups] = useState([]);
@@ -2196,15 +2225,15 @@ function AdminEffectCats({ setGame }) {
   const catchCat = (e, i) => {
     e.stopPropagation();
     if (caught.has(i)) return;
-    setGame(prev => ({ ...prev, points: prev.points + 500, lifetimePoints: prev.lifetimePoints + 500 }));
+    grant(4);   // ~4 seconds of income per cat caught
     setCaught(s => new Set([...s, i]));
     // +500 popup at click point
     const pid = popupIdRef.current++;
     const r = e.currentTarget.getBoundingClientRect();
     setPopups(prev => [...prev, { id: pid, x: r.left + r.width / 2, y: r.top }]);
-    setTimeout(() => setPopups(prev => prev.filter(p => p.id !== pid)), 900);
+    timersRef.current.push(setTimeout(() => setPopups(prev => prev.filter(p => p.id !== pid)), 900));
     // Cat respawns after 1.5s so the rave keeps moving
-    setTimeout(() => setCaught(s => { const n = new Set(s); n.delete(i); return n; }), 1500);
+    timersRef.current.push(setTimeout(() => setCaught(s => { const n = new Set(s); n.delete(i); return n; }), 1500));
   };
 
   return (<>
@@ -2261,11 +2290,11 @@ function AdminEffectCats({ setGame }) {
   </>);
 }
 
-function AdminEffectTsunami({ setGame }) {
+function AdminEffectTsunami({ grant }) {
   useEffect(() => {
-    const i = setInterval(() => setGame(prev => ({ ...prev, points: prev.points + 100, lifetimePoints: prev.lifetimePoints + 100 })), 300);
+    const i = setInterval(() => grant(0.6), 300);   // a steady wave of income
     return () => clearInterval(i);
-  }, [setGame]);
+  }, [grant]);
   return (<>
     {/* Blue overlay */}
     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,80,180,0.15), rgba(0,150,220,0.45))', zIndex: 13, pointerEvents: 'none' }} />
@@ -2365,14 +2394,14 @@ function AdminEffectLightning() {
   </>);
 }
 
-function AdminEffectBomb({ setGame }) {
+function AdminEffectBomb({ grant }) {
   // Big explosion ring + character shrapnel + repeating — each boom gives +1000 coins
   useEffect(() => {
-    const give = () => setGame(prev => ({ ...prev, points: prev.points + 1000, lifetimePoints: prev.lifetimePoints + 1000 }));
+    const give = () => grant(6);   // ~6 seconds of income per blast
     give(); // first boom on activation
     const i = setInterval(give, 2400); // matches visual loop
     return () => clearInterval(i);
-  }, [setGame]);
+  }, [grant]);
   const chars = ['01_noobini_lovini','02_la_romantic_grande','03_lovini_lovini_lovini','04_teddy_and_rosie','05_noobini_partini','06_cakini_and_presintini','07_lovin_rose','08_heartini_smilekur','09_dragon_partyini'];
   return (<>
     {/* Sky darken */}
@@ -2729,6 +2758,17 @@ export default function App() {
     if (adminEffectsRef.current?.rocket) cps *= 3;
     return cps;
   }, []);
+
+  // DJ effects used to pay flat amounts (100-1000 points) chosen when a good
+  // income was thousands per second. Against millions or billions they are
+  // invisible, so rewards are now worth N seconds of the player's own CPS,
+  // with a floor so a brand-new save still sees something.
+  const grantEffectPoints = useCallback((seconds) => {
+    setGame(prev => {
+      const amt = Math.max(50, Math.floor(calcCPS(prev) * seconds));
+      return { ...prev, points: prev.points + amt, lifetimePoints: prev.lifetimePoints + amt };
+    });
+  }, [calcCPS]);
 
   const calcTapPower = useCallback((g) => {
     let power = 1;
@@ -5260,13 +5300,13 @@ export default function App() {
           Individual elements inside (catchable cats, coin pickups) re-enable pointer-events. */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         {adminEffects.disco && <AdminEffectDisco />}
-        {adminEffects.fireworks && <AdminEffectFireworks setGame={setGame} />}
+        {adminEffects.fireworks && <AdminEffectFireworks grant={grantEffectPoints} />}
         {adminEffects.poop && <AdminEffectPoop />}
         {adminEffects.rocket && <AdminEffectRocket />}
-        {adminEffects.cats && <AdminEffectCats setGame={setGame} />}
-        {adminEffects.tsunami && <AdminEffectTsunami setGame={setGame} />}
+        {adminEffects.cats && <AdminEffectCats grant={grantEffectPoints} />}
+        {adminEffects.tsunami && <AdminEffectTsunami grant={grantEffectPoints} />}
         {adminEffects.lightning && <AdminEffectLightning />}
-        {adminEffects.bomb && <AdminEffectBomb setGame={setGame} />}
+        {adminEffects.bomb && <AdminEffectBomb grant={grantEffectPoints} />}
         {adminEffects.crowd && <AdminEffectCrowd />}
       </div>
 
@@ -6524,6 +6564,55 @@ export default function App() {
       {/* CSS Animations */}
       <style>{`
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+        /* ── DJ VFX toolkit ──────────────────────────────────────────
+           Shared primitives so each effect can read as a modern stage
+           show rather than flat neon: bloom, depth, shockwaves, shake,
+           and spring easing instead of linear/steps. */
+        @keyframes djShockwave {
+          0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 0.75; border-width: 14px; }
+          100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0;    border-width: 1px; }
+        }
+        @keyframes djShake {
+          0%,100% { transform: translate(0,0) rotate(0deg); }
+          20%  { transform: translate(-5px, 3px) rotate(-0.5deg); }
+          40%  { transform: translate(4px, -4px) rotate(0.4deg); }
+          60%  { transform: translate(-3px, -2px) rotate(-0.3deg); }
+          80%  { transform: translate(3px, 3px) rotate(0.3deg); }
+        }
+        @keyframes djRise {
+          0%   { transform: translateY(0) scale(0.6) rotate(0deg); opacity: 0; }
+          12%  { opacity: 1; }
+          100% { transform: translateY(-78vh) scale(1.25) rotate(var(--djspin, 180deg)); opacity: 0; }
+        }
+        @keyframes djBreathe {
+          0%,100% { transform: translate(-50%,-50%) scale(1);    opacity: 0.55; }
+          50%     { transform: translate(-50%,-50%) scale(1.12); opacity: 0.9; }
+        }
+        @keyframes djSweep {
+          0%   { transform: translateX(-60%) skewX(-18deg); opacity: 0; }
+          15%  { opacity: 0.8; }
+          100% { transform: translateX(160%) skewX(-18deg); opacity: 0; }
+        }
+        /* Soft vignette: frames the screen without washing the art out,
+           which is what the old full-screen colour overlays did. */
+        .dj-vignette {
+          position: absolute; inset: 0; pointer-events: none; z-index: 13;
+          background: radial-gradient(ellipse at 50% 45%, transparent 38%, rgba(0,0,0,0.55) 100%);
+        }
+        .dj-bloom { filter: drop-shadow(0 0 18px currentColor) drop-shadow(0 0 42px currentColor); }
+        .dj-shake { animation: djShake 0.45s cubic-bezier(.36,.07,.19,.97) infinite; }
+
+        /* Anyone who asks for less motion gets the colour and staging but
+           none of the strobing, shaking or flying particles. */
+        @media (prefers-reduced-motion: reduce) {
+          .dj-shake { animation: none !important; }
+          [class*="dj-"], [style*="djShockwave"], [style*="djRise"],
+          [style*="djSweep"], [style*="discoStrobe"], [style*="thunderFlash"] {
+            animation-duration: 0.001s !important;
+            animation-iteration-count: 1 !important;
+          }
+        }
+
         @keyframes ringPulse {
           0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
           50% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
