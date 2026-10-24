@@ -12,6 +12,18 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd '/Users/emccleave/Documents/CCODE/Timur Admin Hub' && npm run dev"],
       "port": 3002
+    },
+    {
+      "name": "timur-world",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd '/Users/emccleave/Documents/CCODE/Timur World SIte/timur-world' && npm run dev"],
+      "port": 3000
+    },
+    {
+      "name": "pact-family",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd '/Users/emccleave/Documents/CCODE/Pact Family/pact-family' && npm run dev -- --port 3100"],
+      "port": 3100
     }
   ]
 }
