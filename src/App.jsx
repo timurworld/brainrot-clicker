@@ -2497,12 +2497,15 @@ function AdminEffectCandy({ grant }) {
   const timersRef = useRef([]);
   useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
+  // fall = seconds to cross the screen. Rarer sweets still fall faster, so
+  // there is a skill gradient, but the quickest now takes 3.6s rather than
+  // 1.9s -- the original was near-untappable on a phone.
   const KINDS = [
-    { emoji: '🍬', secs: 2,  weight: 46, size: 40, fall: 4.2, glow: '#ff8fd0' },
-    { emoji: '🍫', secs: 4,  weight: 26, size: 46, fall: 3.6, glow: '#c98b5a' },
-    { emoji: '🍭', secs: 7,  weight: 17, size: 52, fall: 3.0, glow: '#9be8ff' },
-    { emoji: '🎃', secs: 14, weight:  9, size: 58, fall: 2.4, glow: '#FF7A1A' },
-    { emoji: '👻', secs: 30, weight:  2, size: 64, fall: 1.9, glow: '#e8e2ff' },
+    { emoji: '🍬', secs: 2,  weight: 46, size: 40, fall: 7.0, glow: '#ff8fd0' },
+    { emoji: '🍫', secs: 4,  weight: 26, size: 46, fall: 6.2, glow: '#c98b5a' },
+    { emoji: '🍭', secs: 7,  weight: 17, size: 52, fall: 5.3, glow: '#9be8ff' },
+    { emoji: '🎃', secs: 14, weight:  9, size: 58, fall: 4.4, glow: '#FF7A1A' },
+    { emoji: '👻', secs: 30, weight:  2, size: 64, fall: 3.6, glow: '#e8e2ff' },
   ];
   const pick = () => {
     let r = Math.random() * KINDS.reduce((a, k) => a + k.weight, 0);
@@ -2525,7 +2528,7 @@ function AdminEffectCandy({ grant }) {
       setDrops(d => [...d, { id, k, left: 3 + Math.random() * 92, spin: (Math.random() * 180 - 90) | 0 }]);
       timersRef.current.push(setTimeout(() => setDrops(d => d.filter(x => x.id !== id)), k.fall * 1000 + 200));
     };
-    const i = setInterval(spawn, 260);
+    const i = setInterval(spawn, 420);
     for (let n = 0; n < 5; n++) spawn();
     return () => clearInterval(i);
   }, []);
@@ -2535,7 +2538,7 @@ function AdminEffectCandy({ grant }) {
     const next = streak + 1;
     setStreak(next);
     clearTimeout(streakTimer.current);
-    streakTimer.current = setTimeout(() => setStreak(0), 1600);   // drop the chain if you stall
+    streakTimer.current = setTimeout(() => setStreak(0), 2400);   // drop the chain if you stall
     const mult = next >= 12 ? 3 : next >= 6 ? 2 : 1;
     grant(d.k.secs * mult);
     const r = e.currentTarget.getBoundingClientRect();
