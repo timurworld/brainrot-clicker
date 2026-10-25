@@ -5766,7 +5766,11 @@ export default function App() {
               // makes the next become "first" on next render.
               const invRows = inventory.filter(inv => inv.skin_id === ch.id);
               const invRow = invRows[0] || null;
-              const unlocked = !!invRow;
+              // Signed-in players are server-authoritative: a skin is owned iff a row
+              // exists. Guests have no inventory at all, so fall back to the local
+              // save -- otherwise every skin, including the one they are wearing,
+              // renders as locked.
+              const unlocked = player?.id ? !!invRow : game.unlockedSkins.includes(idx);
               const totalQty = invRows.reduce((s, r) => s + (r.quantity || 1), 0);
               const equipped = game.equippedSkin === idx;
               const isPointSkin = !ch.obtain || ch.obtain === 'points';
