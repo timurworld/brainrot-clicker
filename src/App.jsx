@@ -269,6 +269,21 @@ const CHARACTERS = [
     rarity: 'Limited', unlock: 0, emoji: '💞', color: '#ff1493', mult: 28,
     tag: 'Lovini', obtain: 'fusion',
     bg: 'linear-gradient(180deg, #4a0d3d 0%, #ff1493 35%, #ff69b4 65%, #2a0530 100%)' },
+  // ══ Hockini: the Cupiddini line (ids 47-48) ══
+  // Appended at the end, like every batch since Halloween, because saves
+  // store unlockedSkins as indices into this array.
+  //
+  // Cyberini slots above Cupideini Hockini (25x) and below Los Hockeys (30x);
+  // Divinini is the first permanent Divine, sitting between the two Halloween
+  // Divines at 40x and 55x, and priced between them to match.
+  { id: 47, name: 'Cupiddini Cyberini', file: '47_Cupiddini_Cyberini.png', bgNum: '20',
+    rarity: 'Mythic', unlock: 700000000, emoji: '🏒', color: '#00e5ff', mult: 28,
+    tag: 'Sportini',
+    bg: 'linear-gradient(180deg, #0a0520 0%, #00e5ff 36%, #b14dff 68%, #050312 100%)' },
+  { id: 48, name: 'Cupiddini Divinini', file: '48_Cupiddini_Divinini.png', bgNum: '20',
+    rarity: 'Divine', unlock: 3000000000, emoji: '👑', color: '#ffd700', mult: 45,
+    tag: 'Sportini',
+    bg: 'linear-gradient(180deg, #1a1405 0%, #ffd700 38%, #fff4c2 66%, #2a2008 100%)' },
 ];
 
 // Per-skin render scale to harmonize on-screen size in the character spotlight.
