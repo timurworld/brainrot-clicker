@@ -215,7 +215,7 @@ const CHARACTERS = [
     rarity: 'Epic', unlock: 150000000, emoji: '👻', color: '#9b59b6', mult: 13,
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #150520 0%, #9b59b6 38%, #5B2A86 70%, #0d0318 100%)' },
-  { id: 44, name: 'Frankenstini Squalini', file: '46_Frankenstini_Sharkini.png', bgNum: '19',
+  { id: 44, name: 'Frankenstini Sharkini', file: '46_Frankenstini_Sharkini.png', bgNum: '19',
     rarity: 'Legendary', unlock: 500000000, emoji: '🧟', color: '#2ecc71', mult: 22,
     tag: 'Halloween 2026', seasonal: 'halloween2026',
     bg: 'linear-gradient(180deg, #0d0318 0%, #2ecc71 36%, #5B2A86 70%, #150520 100%)' },
